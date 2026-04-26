@@ -121,6 +121,7 @@ try
 
     var server = new Service.Mcp.Server.McpServer(nameof(McpHost), Versions.McpHost);
 
+    // 只注册 Host 层面的管理工具，不暴露 CLI 内部工具
     var bridgeTools = serviceProvider.GetService<CliBridgeTools>();
     if (bridgeTools is not null)
     {
