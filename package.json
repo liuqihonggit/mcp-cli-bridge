@@ -1,6 +1,6 @@
 {
   "name": "@jingjingbox/mcp-cli-bridge",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "MCP-CLI Bridge - Call CLI tools through MCP protocol",
   "main": "index.js",
   "bin": {
@@ -9,8 +9,11 @@
   "files": [
     "McpHost.exe",
     "MemoryCli.exe",
+    "FileReaderCli.exe",
     "index.js",
-    "README.md"
+    "README.md",
+    "MemoryCli说明.md",
+    "FileReaderCli说明.md"
   ],
   "keywords": [
     "mcp",
