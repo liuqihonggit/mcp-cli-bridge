@@ -437,3 +437,8 @@ healthchecksdb
 
 **/Properties/launchSettings.json
 .x/
+
+# Binary files (exe/dll/pdb)
+*.exe
+*.dll
+*.pdb
