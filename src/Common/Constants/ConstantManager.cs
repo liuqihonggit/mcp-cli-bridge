@@ -117,11 +117,6 @@ public static class ConstantManager
         // 内容类型
         Register(nameof(ContentTypes.Text), Categories.ContentType, null, "text");
 
-        // 默认路径
-        Register(nameof(DefaultPaths.DriveC), Categories.DefaultPath, null, "C:\\");
-        Register(nameof(DefaultPaths.McpDirectory), Categories.DefaultPath, null, "MCP");
-        Register(nameof(DefaultPaths.MemoryDirectory), Categories.DefaultPath, null, "Memory");
-
         // 版本号
         Register(nameof(Versions.McpHost), Categories.Version, null, "1.0.0");
 
@@ -418,7 +413,6 @@ public static class ConstantManager
         public const string DateTimeFormat = nameof(DateTimeFormat);
         public const string JsonValueType = nameof(JsonValueType);
         public const string ContentType = nameof(ContentType);
-        public const string DefaultPath = nameof(DefaultPath);
         public const string Version = nameof(Version);
         public const string ProjectPath = nameof(ProjectPath);
         public const string Command = nameof(Command);
@@ -582,16 +576,6 @@ public static class ConstantManager
     public static class ContentTypes
     {
         public static string Text => GetString(nameof(Text));
-    }
-
-    /// <summary>
-    /// 默认路径
-    /// </summary>
-    public static class DefaultPaths
-    {
-        public static string DriveC => GetString(nameof(DriveC));
-        public static string McpDirectory => GetString(nameof(McpDirectory));
-        public static string MemoryDirectory => GetString(nameof(MemoryDirectory));
     }
 
     /// <summary>

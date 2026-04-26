@@ -1,6 +1,6 @@
 namespace Common.Configuration;
 
-public sealed class MemoryOptions
+public sealed class MemoryOptions : OptionsBase<MemoryOptions>
 {
     private const string MemoryPathEnvVar = "MCP_MEMORY_PATH";
 
@@ -14,18 +14,27 @@ public sealed class MemoryOptions
 
     public MemoryOptions()
     {
-        BaseDirectory = GetBaseDirectoryFromEnvironment()
-            ?? Path.Combine(Path.GetPathRoot(Environment.SystemDirectory) ?? DefaultPaths.DriveC, DefaultPaths.McpDirectory, DefaultPaths.MemoryDirectory);
+        BaseDirectory = ResolveBaseDirectory();
     }
 
-    private static string? GetBaseDirectoryFromEnvironment()
+    public MemoryOptions(string baseDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
+        BaseDirectory = Path.GetFullPath(baseDirectory);
+    }
+
+    private static string ResolveBaseDirectory()
     {
         var envPath = Environment.GetEnvironmentVariable(MemoryPathEnvVar);
         if (!string.IsNullOrWhiteSpace(envPath))
         {
-            return envPath;
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(envPath));
         }
-        return null;
+
+        throw new InvalidOperationException(
+            $"未设置记忆存储路径。请通过以下任一方式配置:{Environment.NewLine}" +
+            $"  1. 设置环境变量 {MemoryPathEnvVar}{Environment.NewLine}" +
+            $"  2. 或通过构造函数传入 baseDirectory 参数");
     }
 
     public string GetMemoryPath() => Path.Combine(BaseDirectory, MemoryFileName);
