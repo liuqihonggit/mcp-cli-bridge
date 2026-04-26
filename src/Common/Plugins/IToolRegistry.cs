@@ -25,6 +25,13 @@ public interface IToolRegistry
     IReadOnlyList<IToolMetadata> GetAllTools();
 
     /// <summary>
+    /// 按需获取指定插件的命令详情列表（渐进式发现）
+    /// </summary>
+    /// <param name="pluginName">插件/提供者名称</param>
+    /// <returns>命令元数据列表，如果插件不存在返回空列表</returns>
+    Task<IReadOnlyList<IToolMetadata>> GetPluginCommandsAsync(string pluginName);
+
+    /// <summary>
     /// 根据工具名称获取工具元数据
     /// </summary>
     /// <param name="toolName">工具名称</param>

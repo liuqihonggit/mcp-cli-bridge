@@ -107,7 +107,7 @@ try
         if (discovered)
         {
             toolRegistry.RegisterProvider(provider);
-            logger.Info($"Registered provider: {pluginName} with {provider.GetAvailableTools().Count} tools");
+            logger.Info($"Registered plugin: {pluginName}");
         }
         else
         {
@@ -116,8 +116,7 @@ try
         }
     }
 
-    logger.Info($"Total providers registered: {toolRegistry.GetProviderNames().Count}");
-    logger.Info($"Total tools registered: {toolRegistry.GetAllTools().Count}");
+    logger.Info($"Total plugins registered: {toolRegistry.GetProviderNames().Count}");
 
     var server = new Service.Mcp.Server.McpServer(nameof(McpHost), Versions.McpHost);
 

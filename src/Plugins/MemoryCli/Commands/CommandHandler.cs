@@ -29,6 +29,7 @@ internal sealed class CommandHandler
             "delete_entities" => await DeleteEntitiesAsync(request),
             "open_nodes" => await OpenNodesAsync(request),
             "list_tools" => ListTools(),
+            "list_commands" => ListCommands(),
             _ => Fail($"Unknown command: {request.Command}")
         };
     }
@@ -286,6 +287,20 @@ internal sealed class CommandHandler
     }
 
     private static OperationResult<JsonElement> ListTools()
+    {
+        var pluginDescriptor = new PluginDescriptor
+        {
+            Name = "memory",
+            Description = "Knowledge Graph CLI - Manage entities, relations, and observations in a persistent knowledge graph",
+            Category = "knowledge-graph",
+            CommandCount = 7,
+            HasDocumentation = true
+        };
+
+        return Ok(pluginDescriptor, "", CommonJsonContext.Default.PluginDescriptor);
+    }
+
+    private static OperationResult<JsonElement> ListCommands()
     {
         var tools = new List<ToolDefinition>
         {

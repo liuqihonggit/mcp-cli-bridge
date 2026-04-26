@@ -13,6 +13,8 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
     private readonly TimeSpan _defaultTimeout;
     private readonly string? _executablePath;
     private readonly string _cliCommand;
+    private PluginDescriptor? _pluginMetadata;
+    private bool _commandsLoaded;
     private bool _disposed;
 
     public string ProviderName => _configuration.Name;
@@ -62,7 +64,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
                 return false;
             }
 
-            return ParseDiscoveredTools(result.Message);
+            return ParsePluginDescriptor(result.Message);
         }
         catch (Exception ex)
         {
@@ -73,6 +75,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
 
     public IReadOnlyList<IToolMetadata> GetAvailableTools()
     {
+        EnsureCommandsLoaded();
         return _tools.Values.Cast<IToolMetadata>().ToList().AsReadOnly();
     }
 
@@ -86,10 +89,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
             return CreateErrorResult("Tool name cannot be empty");
         }
 
-        if (!_tools.TryGetValue(toolName, out var metadata))
-        {
-            return CreateErrorResult($"Tool not found: {toolName}");
-        }
+        EnsureCommandsLoaded();
 
         var executablePath = ResolveExecutablePath();
         if (string.IsNullOrEmpty(executablePath))
@@ -98,9 +98,9 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
             return CreateErrorResult($"{_cliCommand} executable not found");
         }
 
-        var timeout = TimeSpan.FromMilliseconds(metadata.DefaultTimeout > 0
-            ? metadata.DefaultTimeout
-            : _defaultTimeout.TotalMilliseconds);
+        var timeout = _tools.TryGetValue(toolName, out var metadata) && metadata.DefaultTimeout > 0
+            ? TimeSpan.FromMilliseconds(metadata.DefaultTimeout)
+            : _defaultTimeout;
 
         return await ExecuteCliAsync(executablePath, parameters, timeout, cancellationToken);
     }
@@ -112,25 +112,118 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
 
     #region Tool Discovery
 
-    private bool ParseDiscoveredTools(string output)
+    private bool ParsePluginDescriptor(string output)
     {
         try
         {
-            var response = JsonSerializer.Deserialize(output, CommonJsonContext.Default.OperationResultListToolDefinition);
+            var response = JsonSerializer.Deserialize(output, CommonJsonContext.Default.OperationResultPluginDescriptor);
             if (response is null || !response.Success)
             {
                 _logger.Log(LogLevel.Warn, $"CLI returned unsuccessful response: {response?.Message ?? "null"}");
                 return false;
             }
 
-            if (response.Data is null || response.Data.Count == 0)
+            if (response.Data is null)
             {
-                _logger.Log(LogLevel.Warn, $"{_cliCommand} reported no available tools");
+                _logger.Log(LogLevel.Warn, $"{_cliCommand} reported no plugin descriptor");
                 return false;
             }
 
-            _tools.Clear();
+            _pluginMetadata = response.Data;
+            _logger.Log(LogLevel.Info,
+                $"Discovered plugin: {_pluginMetadata.Name} ({_pluginMetadata.Description}) with {_pluginMetadata.CommandCount} commands");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(LogLevel.Error, ex, $"Failed to parse plugin descriptor from {_cliCommand}");
+            return false;
+        }
+    }
 
+    private void EnsureCommandsLoaded()
+    {
+        if (_commandsLoaded) return;
+        LoadCommandsSync();
+        _commandsLoaded = true;
+    }
+
+    private void LoadCommandsSync()
+    {
+        var executablePath = ResolveExecutablePath();
+        if (string.IsNullOrEmpty(executablePath)) return;
+
+        try
+        {
+            var args = BuildListCommandsArguments();
+            var result = ExecuteCliRawSync(executablePath, args, _defaultTimeout);
+
+            if (result.Success)
+            {
+                ParseCommandList(result.Message);
+            }
+            else
+            {
+                _logger.Log(LogLevel.Warn, $"Failed to load commands from {_cliCommand}: {result.Error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(LogLevel.Error, ex, $"Error loading commands from {_cliCommand}");
+        }
+    }
+
+    private OperationResult ExecuteCliRawSync(string executablePath, string arguments, TimeSpan timeout)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = executablePath,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
+        };
+
+        using var cts = new CancellationTokenSource(timeout);
+        using var process = new Process { StartInfo = startInfo };
+
+        try
+        {
+            process.Start();
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
+            var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);
+            process.WaitForExitAsync(cts.Token).GetAwaiter().GetResult();
+            stopwatch.Stop();
+
+            var stdout = stdoutTask.Result ?? string.Empty;
+            return new OperationResult
+            {
+                Success = process.ExitCode == 0,
+                ExitCode = process.ExitCode,
+                ExecutionTimeMs = stopwatch.Elapsed.TotalMilliseconds,
+                Message = stdout
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            stopwatch.Stop();
+            try { process.Kill(entireProcessTree: true); } catch { }
+            return OperationResultFactoryNonGeneric.Timeout(timeout, stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
+
+    private void ParseCommandList(string output)
+    {
+        try
+        {
+            var response = JsonSerializer.Deserialize(output, CommonJsonContext.Default.OperationResultListToolDefinition);
+            if (response is null || !response.Success || response.Data is null) return;
+
+            _tools.Clear();
             foreach (var toolDef in response.Data)
             {
                 var metadata = new CliToolMetadata
@@ -143,22 +236,20 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
                     RequiredPermissions = [],
                     CliCommand = _cliCommand
                 };
-
                 _tools[metadata.Name] = metadata;
-                _logger.Log(LogLevel.Debug, $"Discovered tool: {metadata.Name} - {metadata.Description}");
             }
 
-            _logger.Log(LogLevel.Info, $"Discovered {_tools.Count} tools from {_cliCommand}");
-            return true;
+            _logger.Log(LogLevel.Info, $"Loaded {_tools.Count} commands from {_cliCommand}");
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Failed to parse discovered tools from {_cliCommand}");
-            return false;
+            _logger.Log(LogLevel.Error, ex, $"Failed to parse command list from {_cliCommand}");
         }
     }
 
     private static string BuildListToolsArguments() => CliDiscoveryRequestBuilder.BuildListToolsArguments();
+
+    private static string BuildListCommandsArguments() => CliDiscoveryRequestBuilder.BuildListCommandsArguments();
 
     #endregion
 
@@ -183,6 +274,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
             _tools[metadata.Name] = metadata;
         }
 
+        _commandsLoaded = _tools.Count > 0;
         _logger.Log(LogLevel.Info, $"Loaded {_tools.Count} tools from configuration for {_cliCommand}");
     }
 

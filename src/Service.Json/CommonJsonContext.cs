@@ -21,6 +21,7 @@ namespace Service.Json;
 [JsonSerializable(typeof(OperationResult<List<string>>))]
 [JsonSerializable(typeof(OperationResult<Dictionary<string, object>>))]
 [JsonSerializable(typeof(OperationResult<List<ToolDefinition>>))]
+[JsonSerializable(typeof(OperationResult<PluginDescriptor>))]
 [JsonSerializable(typeof(OperationResult<KnowledgeGraphData>))]
 
 // fix:问题是 OperationResult<object> 中的 Data 属性是 object 类型，在 AOT 编译后，JSON Source Generator 无法确定如何序列化这个 object 类型的数据。
@@ -68,9 +69,12 @@ namespace Service.Json;
 // CLI 桥接模型
 [JsonSerializable(typeof(ToolSearchResult))]
 [JsonSerializable(typeof(List<ToolSearchResult>))]
-[JsonSerializable(typeof(ToolInfoResult))]
+[JsonSerializable(typeof(PluginDescriptor))]
+[JsonSerializable(typeof(List<PluginDescriptor>))]
+[JsonSerializable(typeof(CommandDescriptor))]
+[JsonSerializable(typeof(List<CommandDescriptor>))]
+[JsonSerializable(typeof(PluginDescribeResult))]
 [JsonSerializable(typeof(ToolListResult))]
-[JsonSerializable(typeof(ToolSummary))]
 [JsonSerializable(typeof(ProviderListResult))]
 [JsonSerializable(typeof(ProviderInfo))]
 [JsonSerializable(typeof(ErrorResponse))]

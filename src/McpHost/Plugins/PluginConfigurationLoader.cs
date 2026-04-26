@@ -77,7 +77,7 @@ public sealed class PluginConfigurationLoader
                 }
 
                 providers.Add(provider);
-                _logger.Log(LogLevel.Info, $"Loaded provider: {provider.ProviderName} with {provider.GetAvailableTools().Count} tools");
+                _logger.Log(LogLevel.Info, $"Loaded provider: {provider.ProviderName}");
             }
 
             return providers;

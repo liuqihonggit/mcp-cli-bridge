@@ -73,15 +73,15 @@ public static class SecurityConfigurationLoader
         {
             AllowedTools =
             {
-                "memory_create_entities",
-                "memory_create_relations",
-                "memory_read_graph",
-                "memory_search_nodes",
-                "memory_add_observations",
-                "memory_delete_entities",
-                "memory_open_nodes"
+                "tool_list",
+                "tool_describe",
+                "tool_search",
+                "tool_execute",
+                "provider_list",
+                "package_status",
+                "package_install"
             },
-            AllowedCliCommands = { "MemoryCli" },
+            AllowedCliCommands = { "MemoryCli", "FileReaderCli" },
             IsEnabled = true
         };
     }

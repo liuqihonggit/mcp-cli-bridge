@@ -25,6 +25,7 @@ internal sealed class CommandHandler
             "read_head" => await ReadHeadAsync(request),
             "read_tail" => await ReadTailAsync(request),
             "list_tools" => ListTools(),
+            "list_commands" => ListCommands(),
             _ => Fail($"Unknown command: {request.Command}")
         };
     }
@@ -90,6 +91,20 @@ internal sealed class CommandHandler
     }
 
     private static OperationResult<JsonElement> ListTools()
+    {
+        var pluginDescriptor = new PluginDescriptor
+        {
+            Name = "file_reader",
+            Description = "File Reader CLI - Read file contents (head/tail) with line control",
+            Category = "file-operations",
+            CommandCount = 2,
+            HasDocumentation = true
+        };
+
+        return Ok(pluginDescriptor, "", CommonJsonContext.Default.PluginDescriptor);
+    }
+
+    private static OperationResult<JsonElement> ListCommands()
     {
         var tools = new List<ToolDefinition>
         {

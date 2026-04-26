@@ -16,9 +16,9 @@ public sealed class ToolSearchResult
 }
 
 /// <summary>
-/// 工具信息结果
+/// 插件描述符 - MCP层面只展示插件级别信息，不暴露CLI内部工具名
 /// </summary>
-public sealed class ToolInfoResult
+public sealed class PluginDescriptor
 {
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
@@ -28,39 +28,54 @@ public sealed class ToolInfoResult
 
     [JsonPropertyName("category")]
     public string Category { get; set; } = string.Empty;
+
+    [JsonPropertyName("commandCount")]
+    public int CommandCount { get; set; }
+
+    [JsonPropertyName("hasDocumentation")]
+    public bool HasDocumentation { get; set; }
+}
+
+/// <summary>
+/// 命令描述符 - 插件内部的CLI命令（仅通过tool_describe按需获取）
+/// </summary>
+public sealed class CommandDescriptor
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
 
     [JsonPropertyName("inputSchema")]
     public JsonElement InputSchema { get; set; }
 }
 
 /// <summary>
-/// 工具列表结果
+/// 插件详情结果（tool_describe的返回值）
 /// </summary>
-public sealed class ToolListResult
+public sealed class PluginDescribeResult
 {
-    [JsonPropertyName("totalTools")]
-    public int TotalTools { get; set; }
-
-    [JsonPropertyName("providers")]
-    public IReadOnlyList<string> Providers { get; set; } = [];
-
-    [JsonPropertyName("tools")]
-    public List<ToolSummary> Tools { get; set; } = [];
-}
-
-/// <summary>
-/// 工具摘要
-/// </summary>
-public sealed class ToolSummary
-{
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("pluginName")]
+    public string PluginName { get; set; } = string.Empty;
 
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
-    [JsonPropertyName("category")]
-    public string Category { get; set; } = string.Empty;
+    [JsonPropertyName("commands")]
+    public List<CommandDescriptor> Commands { get; set; } = [];
+}
+
+/// <summary>
+/// 工具列表结果 - 只显示插件级别摘要
+/// </summary>
+public sealed class ToolListResult
+{
+    [JsonPropertyName("totalPlugins")]
+    public int TotalPlugins { get; set; }
+
+    [JsonPropertyName("plugins")]
+    public List<PluginDescriptor> Plugins { get; set; } = [];
 }
 
 /// <summary>

@@ -1,7 +1,8 @@
 namespace Common.Plugins;
 
 /// <summary>
-/// 工具注册中心实现，管理工具提供者的注册和工具发现
+/// 工具注册中心实现 — 渐进式发现架构
+/// 启动时不预加载CLI内部工具，只在 tool_describe / tool_execute 时按需获取
 /// 线程安全，支持AOT编译，支持缓存
 /// </summary>
 public sealed class ToolRegistry : IToolRegistry
@@ -13,9 +14,6 @@ public sealed class ToolRegistry : IToolRegistry
     private readonly Lock _registrationLock = new();
     private bool _toolListCacheInvalidated = true;
 
-    /// <summary>
-    /// 工具注册信息，包含工具元数据和所属提供者
-    /// </summary>
     private sealed class ToolRegistration
     {
         public required IToolMetadata Metadata { get; init; }
@@ -23,11 +21,6 @@ public sealed class ToolRegistry : IToolRegistry
         public required string ProviderName { get; init; }
     }
 
-    /// <summary>
-    /// 初始化工具注册中心
-    /// </summary>
-    /// <param name="logger">日志记录器</param>
-    /// <param name="cache">缓存提供者（可选）</param>
     public ToolRegistry(ILogger logger, ICacheProvider? cache = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -35,6 +28,10 @@ public sealed class ToolRegistry : IToolRegistry
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 只注册 provider，不预加载其内部工具。
+    /// CLI 内部工具通过 tool_describe / tool_execute 按需渐进式获取。
+    /// </remarks>
     public void RegisterProvider(IToolProvider provider)
     {
         ArgumentNullException.ThrowIfNull(provider);
@@ -54,37 +51,9 @@ public sealed class ToolRegistry : IToolRegistry
                 return;
             }
 
-            var tools = provider.GetAvailableTools();
-            var registeredCount = 0;
-            var conflictCount = 0;
-
-            foreach (var tool in tools)
-            {
-                var toolName = tool.Name;
-
-                if (_toolRegistry.TryAdd(toolName, new ToolRegistration
-                {
-                    Metadata = tool,
-                    Provider = provider,
-                    ProviderName = providerName
-                }))
-                {
-                    registeredCount++;
-                }
-                else
-                {
-                    conflictCount++;
-                    _logger.Log(LogLevel.Warn,
-                        $"Tool '{toolName}' from provider '{providerName}' conflicts with existing registration. " +
-                        $"Existing provider: '{_toolRegistry[toolName].ProviderName}'. Skipping.");
-                }
-            }
-
             _providers[providerName] = provider;
             _toolListCacheInvalidated = true;
-            _logger.Log(LogLevel.Info,
-                $"Provider '{providerName}' registered successfully. " +
-                $"Tools: {registeredCount} registered, {conflictCount} conflicts skipped.");
+            _logger.Log(LogLevel.Info, $"Plugin '{providerName}' registered successfully.");
         }
     }
 
@@ -112,24 +81,24 @@ public sealed class ToolRegistry : IToolRegistry
             }
 
             _toolListCacheInvalidated = true;
-            _logger.Log(LogLevel.Info,
-                $"Provider '{providerName}' unregistered successfully. " +
-                $"Removed {toolsToRemove.Count} tools.");
+            _logger.Log(LogLevel.Info, $"Plugin '{providerName}' unregistered successfully.");
 
             return true;
         }
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 返回已被访问/缓存过的工具元数据。
+    /// 不触发任何 CLI 调用，不预加载未访问的工具。
+    /// </remarks>
     public IReadOnlyList<IToolMetadata> GetAllTools()
     {
-        // 尝试从缓存获取
         if (_cache is not null && !_toolListCacheInvalidated)
         {
             var cacheKey = CacheKeyGenerator.ForToolList();
             if (_cache.TryGet<IReadOnlyList<IToolMetadata>>(cacheKey, out var cachedTools))
             {
-                _logger.Log(LogLevel.Debug, "Tool list retrieved from cache.");
                 return cachedTools!;
             }
         }
@@ -139,30 +108,54 @@ public sealed class ToolRegistry : IToolRegistry
             .ToList()
             .AsReadOnly();
 
-        // 缓存结果
         if (_cache is not null)
         {
             var cacheKey = CacheKeyGenerator.ForToolList();
             _cache.Set(cacheKey, tools, CacheOptions.LongLived);
             _toolListCacheInvalidated = false;
-            _logger.Log(LogLevel.Debug, "Tool list cached.");
         }
 
         return tools;
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 按需获取指定插件的完整命令列表（渐进式发现入口）。
+    /// 会触发 CLI 的 list_commands 调用。
+    /// </remarks>
+    public async Task<IReadOnlyList<IToolMetadata>> GetPluginCommandsAsync(string pluginName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pluginName);
+
+        if (!_providers.TryGetValue(pluginName, out var provider))
+        {
+            _logger.Log(LogLevel.Warn, $"Provider '{pluginName}' not found.");
+            return [];
+        }
+
+        var commands = provider.GetAvailableTools();
+
+        foreach (var command in commands)
+        {
+            EnsureToolRegistered(command, provider, pluginName);
+        }
+
+        return commands;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 三级查找：缓存 → 已注册字典 → 按需遍历 provider
+    /// </remarks>
     public bool TryGetTool(string toolName, [NotNullWhen(true)] out IToolMetadata? metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolName);
 
-        // 尝试从缓存获取
         if (_cache is not null)
         {
             var cacheKey = CacheKeyGenerator.ForToolMetadata(toolName);
             if (_cache.TryGet<IToolMetadata>(cacheKey, out var cachedMetadata) && cachedMetadata is not null)
             {
-                _logger.Log(LogLevel.Debug, $"Tool '{toolName}' metadata retrieved from cache.");
                 metadata = cachedMetadata;
                 return true;
             }
@@ -171,15 +164,7 @@ public sealed class ToolRegistry : IToolRegistry
         if (_toolRegistry.TryGetValue(toolName, out var registration))
         {
             metadata = registration.Metadata;
-
-            // 缓存结果
-            if (_cache is not null)
-            {
-                var cacheKey = CacheKeyGenerator.ForToolMetadata(toolName);
-                _cache.Set(cacheKey, metadata, CacheOptions.LongLived);
-                _logger.Log(LogLevel.Debug, $"Tool '{toolName}' metadata cached.");
-            }
-
+            CacheToolMetadata(toolName, metadata);
             return true;
         }
 
@@ -188,6 +173,9 @@ public sealed class ToolRegistry : IToolRegistry
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 两级执行：已注册字典 → 按需遍历 provider
+    /// </remarks>
     public async Task<OperationResult> ExecuteToolAsync(
         string toolName,
         IReadOnlyDictionary<string, JsonElement> parameters,
@@ -196,48 +184,28 @@ public sealed class ToolRegistry : IToolRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(toolName);
         ArgumentNullException.ThrowIfNull(parameters);
 
-        if (!_toolRegistry.TryGetValue(toolName, out var registration))
+        if (_toolRegistry.TryGetValue(toolName, out var registration))
         {
-            _logger.Log(LogLevel.Error, $"Tool '{toolName}' not found in registry.");
-            return OperationResultFactoryNonGeneric.CliFailure($"Tool '{toolName}' not found.");
+            return await ExecuteViaProviderAsync(registration.Provider, registration.ProviderName, toolName, parameters, cancellationToken);
         }
 
-        var provider = registration.Provider;
-        var providerName = registration.ProviderName;
-
-        _logger.Log(LogLevel.Debug,
-            $"Executing tool '{toolName}' via provider '{providerName}'.");
-
-        var stopwatch = Stopwatch.StartNew();
-
-        try
+        foreach (var kvp in _providers)
         {
-            var result = await provider.ExecuteAsync(toolName, parameters, cancellationToken)
-                .ConfigureAwait(false);
+            var providerName = kvp.Key;
+            var provider = kvp.Value;
 
-            stopwatch.Stop();
+            var commands = provider.GetAvailableTools();
+            var matched = commands.FirstOrDefault(c => c.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
 
-            _logger.Log(LogLevel.Debug,
-                $"Tool '{toolName}' executed by '{providerName}' in {stopwatch.ElapsedMilliseconds}ms. " +
-                $"Success: {result.Success}");
-
-            return result;
+            if (matched is not null)
+            {
+                EnsureToolRegistered(matched, provider, providerName);
+                return await ExecuteViaProviderAsync(provider, providerName, toolName, parameters, cancellationToken);
+            }
         }
-        catch (OperationCanceledException)
-        {
-            stopwatch.Stop();
-            _logger.Log(LogLevel.Warn, $"Tool '{toolName}' execution was cancelled.");
 
-            return OperationResultFactoryNonGeneric.Cancelled(stopwatch.Elapsed.TotalMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            _logger.Log(LogLevel.Error, ex,
-                $"Tool '{toolName}' execution failed with error: {ex.Message}");
-
-            return OperationResultFactoryNonGeneric.FromException(ex, stopwatch.Elapsed.TotalMilliseconds);
-        }
+        _logger.Log(LogLevel.Error, $"Tool '{toolName}' not found in any provider.");
+        return OperationResultFactoryNonGeneric.CliFailure($"Tool '{toolName}' not found.");
     }
 
     /// <inheritdoc />
@@ -246,12 +214,6 @@ public sealed class ToolRegistry : IToolRegistry
         return _providers.Keys.ToList().AsReadOnly();
     }
 
-    /// <summary>
-    /// 获取指定工具的提供者名称
-    /// </summary>
-    /// <param name="toolName">工具名称</param>
-    /// <param name="providerName">提供者名称（如果找到）</param>
-    /// <returns>是否找到指定工具</returns>
     public bool TryGetProviderName(string toolName, [NotNullWhen(true)] out string? providerName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolName);
@@ -266,13 +228,67 @@ public sealed class ToolRegistry : IToolRegistry
         return false;
     }
 
-    /// <summary>
-    /// 获取已注册的工具数量
-    /// </summary>
     public int ToolCount => _toolRegistry.Count;
-
-    /// <summary>
-    /// 获取已注册的提供者数量
-    /// </summary>
     public int ProviderCount => _providers.Count;
+
+    private void EnsureToolRegistered(IToolMetadata metadata, IToolProvider provider, string providerName)
+    {
+        if (_toolRegistry.ContainsKey(metadata.Name)) return;
+
+        _toolRegistry.TryAdd(metadata.Name, new ToolRegistration
+        {
+            Metadata = metadata,
+            Provider = provider,
+            ProviderName = providerName
+        });
+
+        _toolListCacheInvalidated = true;
+        CacheToolMetadata(metadata.Name, metadata);
+    }
+
+    private void CacheToolMetadata(string toolName, IToolMetadata metadata)
+    {
+        if (_cache is not null)
+        {
+            var cacheKey = CacheKeyGenerator.ForToolMetadata(toolName);
+            _cache.Set(cacheKey, metadata, CacheOptions.LongLived);
+        }
+    }
+
+    private async Task<OperationResult> ExecuteViaProviderAsync(
+        IToolProvider provider,
+        string providerName,
+        string toolName,
+        IReadOnlyDictionary<string, JsonElement> parameters,
+        CancellationToken cancellationToken)
+    {
+        _logger.Log(LogLevel.Debug, $"Executing tool '{toolName}' via provider '{providerName}'.");
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            var result = await provider.ExecuteAsync(toolName, parameters, cancellationToken)
+                .ConfigureAwait(false);
+
+            stopwatch.Stop();
+
+            _logger.Log(LogLevel.Debug,
+                $"Tool '{toolName}' executed by '{providerName}' in {stopwatch.ElapsedMilliseconds}ms. Success: {result.Success}");
+
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            stopwatch.Stop();
+            _logger.Log(LogLevel.Warn, $"Tool '{toolName}' execution was cancelled.");
+            return OperationResultFactoryNonGeneric.Cancelled(stopwatch.Elapsed.TotalMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.Log(LogLevel.Error, ex, $"Tool '{toolName}' execution failed: {ex.Message}");
+            return OperationResultFactoryNonGeneric.FromException(ex, stopwatch.Elapsed.TotalMilliseconds);
+        }
+    }
 }

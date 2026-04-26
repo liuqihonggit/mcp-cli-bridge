@@ -12,8 +12,8 @@ public static class SecurityUsageExample
 
         var whitelistConfig = new WhitelistConfiguration
         {
-            AllowedTools = { "memory_create_entities", "memory_read_graph" },
-            AllowedCliCommands = { "MemoryCli" },
+            AllowedTools = { "tool_execute", "tool_describe" },
+            AllowedCliCommands = { "MemoryCli", "FileReaderCli" },
             IsEnabled = true
         };
 
@@ -51,7 +51,7 @@ public static class SecurityUsageExample
     public static async Task Example4_ManualValidation(ISecurityService securityService)
     {
         var validationResult = await securityService.ValidateInputAsync(
-            "memory_create_entities",
+            "tool_execute",
             new Dictionary<string, JsonElement>(),
             JsonConstants.EmptyObject);
 
@@ -61,9 +61,9 @@ public static class SecurityUsageExample
         }
 
         var permissionResult = await securityService.CheckPermissionAsync(
-            "memory_delete_entities",
+            "tool_describe",
             "user@example.com",
-            new List<string> { "delete" });
+            new List<string> { "read" });
 
         if (!permissionResult.IsAllowed)
         {
@@ -73,7 +73,7 @@ public static class SecurityUsageExample
         await securityService.LogSecurityEventAsync(new SecurityAuditEntry
         {
             EventType = "CUSTOM_EVENT",
-            ToolName = "memory_create_entities",
+            ToolName = "tool_execute",
             UserId = "user@example.com",
             IsSuccess = true,
             Message = "自定义安全事件"

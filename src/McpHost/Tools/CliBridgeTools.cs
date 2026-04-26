@@ -3,8 +3,9 @@ global using static Common.Constants.ConstantManager;
 namespace McpHost.Tools;
 
 /// <summary>
-/// MCP工具桥接器 - 使用插件架构
-/// 通过IToolRegistry执行工具，支持动态插件注册
+/// MCP工具桥接器 - Host层面管理工具
+/// 只暴露管理接口，CLI内部工具通过 tool_execute 间接调用
+/// LLM 通过 tool_describe 按需渐进式获取插件命令详情
 /// </summary>
 internal sealed class CliBridgeTools : IDisposable
 {
@@ -24,9 +25,63 @@ internal sealed class CliBridgeTools : IDisposable
     }
 
     /// <summary>
-    /// 搜索可用工具
+    /// 列出所有已注册插件（只显示插件级别信息，不暴露内部工具名）
     /// </summary>
-    [McpTool("tool_search", "Search available CLI tools by keyword")]
+    [McpTool("tool_list", "List all registered plugins with summary info")]
+    public string ToolList()
+    {
+        var providers = _toolRegistry.GetProviderNames();
+        var plugins = providers.Select(p => new PluginDescriptor
+        {
+            Name = p,
+            Description = GetPluginDescription(p),
+            Category = GetPluginCategory(p),
+            CommandCount = GetPluginCommandCount(p),
+            HasDocumentation = true
+        }).ToList();
+
+        var result = new ToolListResult
+        {
+            TotalPlugins = plugins.Count,
+            Plugins = plugins
+        };
+
+        return JsonSerializer.Serialize(result, CommonJsonContext.Default.ToolListResult);
+    }
+
+    /// <summary>
+    /// 按需获取插件的详细命令列表（渐进式发现，降低上下文成本）
+    /// </summary>
+    [McpTool("tool_describe", "Get detailed command list for a specific plugin (progressive discovery)")]
+    public async Task<string> ToolDescribe(
+        [McpParameter("Plugin name to describe")] string pluginName)
+    {
+        if (string.IsNullOrWhiteSpace(pluginName))
+            return CreateErrorResponse("Plugin name cannot be empty");
+
+        var commands = await _toolRegistry.GetPluginCommandsAsync(pluginName);
+        if (commands is null || commands.Count == 0)
+            return CreateErrorResponse($"Plugin not found or no commands: {pluginName}");
+
+        var result = new PluginDescribeResult
+        {
+            PluginName = pluginName,
+            Description = GetPluginDescription(pluginName),
+            Commands = commands.Select(c => new CommandDescriptor
+            {
+                Name = c.Name,
+                Description = c.Description,
+                InputSchema = c.InputSchema
+            }).ToList()
+        };
+
+        return JsonSerializer.Serialize(result, CommonJsonContext.Default.PluginDescribeResult);
+    }
+
+    /// <summary>
+    /// 搜索可用插件（搜索插件名和描述，不搜索内部工具名）
+    /// </summary>
+    [McpTool("tool_search", "Search available plugins by keyword")]
     public string ToolSearch(
         [McpParameter("Search keyword")] string query,
         [McpParameter("Maximum number of results")] int limit = 10)
@@ -34,55 +89,33 @@ internal sealed class CliBridgeTools : IDisposable
         if (string.IsNullOrWhiteSpace(query))
             return CreateErrorResponse("Query cannot be empty");
 
-        var allTools = _toolRegistry.GetAllTools();
-        var matches = allTools
-            .Where(t => t.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                        t.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
+        var providers = _toolRegistry.GetProviderNames();
+        var matches = providers
+            .Where(p => p.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                        GetPluginDescription(p).Contains(query, StringComparison.OrdinalIgnoreCase))
             .Take(limit)
-            .Select(t => new ToolSearchResult
+            .Select(p => new PluginDescriptor
             {
-                Name = t.Name,
-                Description = t.Description,
-                Category = t.Category
+                Name = p,
+                Description = GetPluginDescription(p),
+                Category = GetPluginCategory(p),
+                CommandCount = GetPluginCommandCount(p),
+                HasDocumentation = true
             })
             .ToList();
 
         if (matches.Count == 0)
-            return CreateErrorResponse($"No tools found matching '{query}'");
+            return CreateErrorResponse($"No plugins found matching '{query}'");
 
-        return JsonSerializer.Serialize(matches, CommonJsonContext.Default.ListToolSearchResult);
+        return JsonSerializer.Serialize(matches, CommonJsonContext.Default.ListPluginDescriptor);
     }
 
     /// <summary>
-    /// 获取工具详细信息
+    /// 执行CLI工具（唯一能调用内部工具的入口）
     /// </summary>
-    [McpTool("tool_get", "Get detailed information about a specific tool")]
-    public string ToolGet(
-        [McpParameter("Tool name")] string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return CreateErrorResponse("Tool name cannot be empty");
-
-        if (!_toolRegistry.TryGetTool(name, out var metadata) || metadata is null)
-            return CreateErrorResponse($"Tool not found: {name}");
-
-        var toolInfo = new ToolInfoResult
-        {
-            Name = metadata.Name,
-            Description = metadata.Description,
-            Category = metadata.Category,
-            InputSchema = metadata.InputSchema
-        };
-
-        return JsonSerializer.Serialize(toolInfo, CommonJsonContext.Default.ToolInfoResult);
-    }
-
-    /// <summary>
-    /// 执行工具
-    /// </summary>
-    [McpTool("tool_execute", "Execute a CLI tool with JSON parameters")]
+    [McpTool("tool_execute", "Execute a CLI tool command with JSON parameters")]
     public async Task<string> ToolExecute(
-        [McpParameter("Tool name")] string tool,
+        [McpParameter("Tool/Command name")] string tool,
         [McpParameter("Tool parameters as JSON object")] Dictionary<string, JsonElement> parameters)
     {
         if (string.IsNullOrWhiteSpace(tool))
@@ -94,8 +127,6 @@ internal sealed class CliBridgeTools : IDisposable
         try
         {
             var result = await _toolRegistry.ExecuteToolAsync(tool, parameters);
-
-            // CLI 工具返回的已经是 OperationResult<JsonElement> 格式的 JSON，直接返回
             return result.Output ?? "{\"success\":false,\"message\":\"No output from CLI tool\",\"data\":null}";
         }
         catch (Exception ex)
@@ -106,42 +137,17 @@ internal sealed class CliBridgeTools : IDisposable
     }
 
     /// <summary>
-    /// 获取所有已注册工具列表
-    /// </summary>
-    [McpTool("tool_list", "List all registered tools")]
-    public string ToolList()
-    {
-        var tools = _toolRegistry.GetAllTools();
-        var providers = _toolRegistry.GetProviderNames();
-
-        var result = new ToolListResult
-        {
-            TotalTools = tools.Count,
-            Providers = providers,
-            Tools = tools.Select(t => new ToolSummary
-            {
-                Name = t.Name,
-                Description = t.Description,
-                Category = t.Category
-            }).ToList()
-        };
-
-        return JsonSerializer.Serialize(result, CommonJsonContext.Default.ToolListResult);
-    }
-
-    /// <summary>
     /// 获取提供者信息
     /// </summary>
     [McpTool("provider_list", "List all registered tool providers")]
     public string ProviderList()
     {
         var providers = _toolRegistry.GetProviderNames();
-        var tools = _toolRegistry.GetAllTools();
 
         var providerInfo = providers.Select(p => new ProviderInfo
         {
             Name = p,
-            ToolCount = tools.Count(t => true)
+            ToolCount = GetPluginCommandCount(p)
         }).ToList();
 
         var result = new ProviderListResult
@@ -198,6 +204,36 @@ internal sealed class CliBridgeTools : IDisposable
             _logger.Log(LogLevel.Error, ex, $"Package installation failed: {packageName}");
             return CreateErrorResponse($"Failed to install package {packageName}: {ex.Message}");
         }
+    }
+
+    private static string GetPluginDescription(string providerName)
+    {
+        return providerName.ToLowerInvariant() switch
+        {
+            "memory" or "memorycli" or "jj_memory" => "Knowledge Graph CLI - Manage entities, relations, and observations",
+            "file_reader" or "filereadercli" or "file_reader_cli" => "File Reader CLI - Read file contents with line control",
+            _ => $"{providerName} CLI Plugin"
+        };
+    }
+
+    private static string GetPluginCategory(string providerName)
+    {
+        return providerName.ToLowerInvariant() switch
+        {
+            "memory" or "memorycli" or "jj_memory" => "knowledge-graph",
+            "file_reader" or "filereadercli" or "file_reader_cli" => "file-operations",
+            _ => "general"
+        };
+    }
+
+    private int GetPluginCommandCount(string providerName)
+    {
+        return providerName.ToLowerInvariant() switch
+        {
+            "memory" or "memorycli" or "jj_memory" => 7,
+            "file_reader" or "filereadercli" or "file_reader_cli" => 2,
+            _ => 0
+        };
     }
 
     private static string CreateErrorResponse(string message)

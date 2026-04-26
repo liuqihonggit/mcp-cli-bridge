@@ -17,6 +17,17 @@ public static class CliDiscoveryRequestBuilder
         return $"--json-input {base64Input}";
     }
 
+    public static string BuildListCommandsArguments()
+    {
+        var request = new Dictionary<string, string>
+        {
+            ["command"] = "list_commands"
+        };
+        var jsonParams = JsonSerializer.Serialize(request, CommonJsonContext.Default.DictionaryStringString);
+        var base64Input = Convert.ToBase64String(Encoding.UTF8.GetBytes(jsonParams));
+        return $"--json-input {base64Input}";
+    }
+
     public static string BuildCommandArguments(IReadOnlyDictionary<string, JsonElement> parameters)
     {
         var jsonParams = JsonSerializer.Serialize(parameters, CommonJsonContext.Default.DictionaryStringJsonElement);
