@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Description>MCP-CLI Bridge Server</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Service.Json\Service.Json.csproj" />
+    <ProjectReference Include="..\Service.Mcp\Service.Mcp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootAssembly Include="McpHost" />
+  </ItemGroup>
+
+</Project>

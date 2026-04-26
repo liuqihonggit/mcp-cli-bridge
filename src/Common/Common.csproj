@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Common utilities and logging service</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Contracts\Common.Contracts.csproj" />
+    <ProjectReference Include="..\Service.Json\Service.Json.csproj" />
+  </ItemGroup>
+
+</Project>

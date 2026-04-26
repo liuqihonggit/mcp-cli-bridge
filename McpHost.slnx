@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Common/Common.csproj" />
+    <Project Path="src/Common.Contracts/Common.Contracts.csproj" />
+    <Project Path="src/Service.Json.Contracts/Service.Json.Contracts.csproj" />
+    <Project Path="src/Service.Json/Service.Json.csproj" />
+    <Project Path="src/Service.Mcp/Service.Mcp.csproj" />
+    <Project Path="src/McpHost/McpHost.csproj" />
+    <Project Path="src/Plugins/MemoryCli/MemoryCli.csproj" />
+    <Project Path="src/Plugins/FileReaderCli/FileReaderCli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Benchmarks/Benchmarks.csproj" />
+    <Project Path="tests/E2E/MyMemoryServer.E2E.csproj" />
+    <Project Path="tests/SecurityTests/MyMemoryServer.SecurityTests.csproj" />
+    <Project Path="tests/UnitTests/MyMemoryServer.UnitTests.csproj" />
+  </Folder>
+</Solution>

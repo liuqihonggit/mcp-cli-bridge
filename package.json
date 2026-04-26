@@ -1,0 +1,43 @@
+{
+  "name": "@jingjingbox/mcp-cli-bridge",
+  "version": "2.0.0",
+  "description": "MCP-CLI Bridge - Call CLI tools through MCP protocol",
+  "main": "index.js",
+  "bin": {
+    "mcp-cli-bridge": "index.js"
+  },
+  "files": [
+    "McpHost.exe",
+    "MemoryCli.exe",
+    "index.js",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "cli",
+    "bridge",
+    "tools",
+    "ai",
+    "memory",
+    "knowledge-graph"
+  ],
+  "author": "JJbox",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/JJbox/memory.git"
+  },
+  "bugs": {
+    "url": "https://gitee.com/JJbox/memory/issues"
+  },
+  "homepage": "https://gitee.com/JJbox/memory#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ]
+}

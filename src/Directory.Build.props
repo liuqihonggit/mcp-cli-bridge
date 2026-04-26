@@ -1,0 +1,43 @@
+<Project>
+  <!-- 全局配置 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodePage>65001</CodePage>
+    <UTF8Output>true</UTF8Output>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <!-- 禁用卫星资源程序集（多语言资源） -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Release 配置 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishAot>true</PublishAot>
+    <TrimMode>full</TrimMode>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <UseWindowsThreadPool>true</UseWindowsThreadPool>
+    <MetricsSupport>false</MetricsSupport>
+  </PropertyGroup>
+
+  <!-- 完全禁用多语言和 ICU 库的运行时配置 -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeHostConfigurationOption Include="System.Globalization.Invariant" Value="true" />
+  </ItemGroup>
+
+  <!-- 可执行项目配置 - 输出到根目录的 publish/ 文件夹 -->
+  <!-- 排除测试项目（以 Tests 或 E2E 结尾的项目） -->
+  <PropertyGroup Condition="'$(OutputType)' == 'Exe' AND !$(MSBuildProjectName.EndsWith('Tests')) AND !$(MSBuildProjectName.EndsWith('E2E'))">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    <!-- 统一 Build 和 Publish 输出路径到根目录 publish/ 文件夹 -->
+    <PublishDir>$(MSBuildThisFileDirectory)..\..\publish</PublishDir>
+    <OutputPath>$(PublishDir)</OutputPath>
+    <BaseOutputPath>$(PublishDir)</BaseOutputPath>
+  </PropertyGroup>
+</Project>
