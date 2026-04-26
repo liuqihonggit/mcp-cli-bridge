@@ -2,24 +2,23 @@
 
 MCP-CLI 桥接服务器 - 通过 MCP 协议调用 CLI 工具。
 
-## 架构
+## 架构 (v3.0 渐进式发现)
 
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
 │   Trae IDE  │────▶│    McpHost      │────▶│  MemoryCli  │
 │ (MCP Client)│◄────│  (MCP Server)   │◄────│  (CLI Tool) │
 └─────────────┘     └─────────────────┘     └─────────────┘
-                            │
-                            ▼
-                     ┌─────────────┐
-                     │  tool.json  │
-                     │ (工具定义)   │
-                     └─────────────┘
+                         │
+            ┌────────────┼────────────┐
+            ▼            ▼            ▼
+       tool_list   tool_describe  tool_execute
+       (插件摘要)  (按需获取详情)   (执行命令)
 ```
 
-- **McpHost**: MCP 服务器入口，暴露 `tool_search` 和 `tool_execute` 工具
-- **MemoryCli**: 纯 CLI 工具，提供知识图谱记忆功能
-- **tools.json**: 定义可用的 CLI 工具及其参数
+- **McpHost**: MCP 服务器入口，只暴露 Host 层管理工具（`tool_list`/`tool_describe`/`tool_search`/`tool_execute`）
+- **MemoryCli / FileReaderCli**: 纯 CLI 工具，内部命令不直接暴露给 MCP
+- **渐进式发现**: LLM 先看插件摘要，需要时再拉取具体命令，降低上下文成本
 
 ## 安装
 
@@ -46,47 +45,84 @@ dotnet publish src/Plugins/MemoryCli/MemoryCli.csproj -c Release
 
 ## 配置
 
-### Trae / VS Code / Cursor
+### 方式一：全局安装（推荐）
 
-添加到 MCP 设置：
+```bash
+npm install -g @jingjingbox/mcp-cli-bridge
+```
+
+**Trae / VS Code / Cursor MCP 设置：**
 
 ```json
 {
   "mcpServers": {
     "cli-bridge": {
       "type": "stdio",
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "C:\\path\\to\\MyMemoryServer\\src\\McpHost\\McpHost.csproj"
-      ],
+      "command": "mcp-cli-bridge",
       "enabled": true
     }
   }
 }
 ```
 
-或使用已发布的可执行文件：
+### 方式二：项目本地安装
+
+```bash
+npm install @jingjingbox/mcp-cli-bridge
+```
+
+**MCP 设置（使用 node 启动）：**
 
 ```json
 {
   "mcpServers": {
     "cli-bridge": {
       "type": "stdio",
-      "command": "C:\\path\\to\\publish\\McpHost.exe",
+      "command": "node",
+      "args": ["./node_modules/@jingjingbox/mcp-cli-bridge/index.js"],
       "enabled": true
     }
   }
 }
 ```
 
-## 工作原理
+**Windows 也可直接用 exe：**
 
-1. **工具发现**: LLM 调用 `tool_search` 查询可用的 CLI 工具
-2. **工具执行**: LLM 调用 `tool_execute` 执行指定的 CLI 工具
-3. **参数传递**: 参数通过 Base64 编码的 JSON 传递给 CLI
-4. **结果返回**: CLI 输出 JSON 结果，通过 MCP 返回给 LLM
+```json
+{
+  "mcpServers": {
+    "cli-bridge": {
+      "type": "stdio",
+      "command": "./node_modules/@jingjingbox/mcp-cli-bridge/McpHost.exe",
+      "enabled": true
+    }
+  }
+}
+```
+
+### 方式三：npx（无需安装）
+
+```json
+{
+  "mcpServers": {
+    "cli-bridge": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@jingjingbox/mcp-cli-bridge"],
+      "enabled": true
+    }
+  }
+}
+```
+
+## 工作原理 (v3.0 渐进式发现)
+
+1. **插件发现**: LLM 调用 `tool_list` 获取已注册插件摘要（名称/描述/命令数）
+2. **按需详情**: LLM 调用 `tool_describe(pluginName)` 按需获取某插件的完整命令列表
+3. **工具搜索**: LLM 调用 `tool_search(query)` 按关键词搜索可用插件
+4. **工具执行**: LLM 调用 `tool_execute(tool, parameters)` 间接执行 CLI 内部工具
+5. **参数传递**: 参数通过 JSON 对象传递，内部 Base64 编码给 CLI
+6. **结果返回**: CLI 输出 JSON 结果，通过 MCP 返回给 LLM
 
 ## 参数传递说明
 
@@ -175,19 +211,25 @@ dotnet publish src/Plugins/MemoryCli/MemoryCli.csproj -c Release
 
 ## 可用工具
 
-### MCP 层工具 (McpHost)
+### MCP 层工具 (Host 层 - 仅暴露这些)
 
 | 工具 | 描述 | 参数 |
 |------|------|------|
-| `tool_search` | 搜索可用的 CLI 工具 | `query`(string,必填), `limit`(int,可选) |
-| `tool_get` | 获取指定工具的详细信息 | `name`(string,必填) |
-| `tool_execute` | 执行指定的 CLI 工具 | `tool`(string,必填), `parameters`(object,必填), `async`(bool,可选), `stream`(bool,可选) |
-| `package_status` | 检查 CLI 包安装状态 | 无参数 |
-| `package_install` | 安装/更新 CLI 工具包 | `packageName`(string,必填), `version`(string,可选) |
+| `tool_list` | 列出所有已注册插件（只显示摘要） | 无参数 |
+| `tool_describe` | 按需获取某插件的完整命令列表 | `pluginName`(string,必填) |
+| `tool_search` | 按关键词搜索可用插件 | `query`(string,必填), `limit`(int,可选) |
+| `tool_execute` | 执行 CLI 内部工具（唯一调用入口） | `tool`(string,必填), `parameters`(object,必填) |
+| `provider_list` | 列出所有已注册的提供者 | 无参数 |
+| `package_status` | 检查包安装状态 | `packageName`(string,可选) |
+| `package_install` | 安装/更新 CLI 工具包 | `packageName`(string,必填) |
 
-### CLI 层工具 (MemoryCli)
+### CLI 内部工具（不直接暴露，通过 tool_execute 间接调用）
 
-| 工具 | 描述 |
+以下命令**不会出现在 MCP tools/list 中**，LLM 需先通过 `tool_describe` 获取：
+
+#### MemoryCli 内部命令
+
+| 命令 | 描述 |
 |------|------|
 | `memory_create_entities` | 创建知识图谱实体 |
 | `memory_create_relations` | 创建实体间关系 |
@@ -197,11 +239,90 @@ dotnet publish src/Plugins/MemoryCli/MemoryCli.csproj -c Release
 | `memory_delete_entities` | 删除实体 |
 | `memory_open_nodes` | 获取指定节点 |
 
+#### FileReaderCli 内部命令
+
+| 命令 | 描述 |
+|------|------|
+| `file_reader_read_head` | 读取文件前 N 行 |
+| `file_reader_read_tail` | 读取文件后 N 行 |
+
 ## 使用示例
 
 ### MCP 层工具调用
 
-#### 1. tool_search - 搜索可用工具
+#### 1. tool_list - 列出已注册插件
+
+**调用：**
+```json
+{
+  "tool": "tool_list",
+  "parameters": {}
+}
+```
+
+**返回示例：**
+```json
+{
+  "totalPlugins": 2,
+  "plugins": [
+    {
+      "name": "memory",
+      "description": "Knowledge Graph CLI - Manage entities, relations, and observations",
+      "category": "knowledge-graph",
+      "commandCount": 7,
+      "hasDocumentation": true
+    },
+    {
+      "name": "file_reader",
+      "description": "File Reader CLI - Read file contents (head/tail)",
+      "category": "file-operations",
+      "commandCount": 2,
+      "hasDocumentation": true
+    }
+  ]
+}
+```
+
+---
+
+#### 2. tool_describe - 按需获取插件命令详情
+
+**参数：**
+| 参数 | 类型 | 必填 | 描述 |
+|------|------|------|------|
+| `pluginName` | string | 是 | 插件名称（如 `memory` 或 `file_reader`）|
+
+**调用示例：**
+```json
+{
+  "tool": "tool_describe",
+  "parameters": {
+    "pluginName": "memory"
+  }
+}
+```
+
+**返回示例（包含完整 7 个内部命令）：**
+```json
+{
+  "pluginName": "memory",
+  "description": "Knowledge Graph CLI",
+  "commands": [
+    {
+      "name": "memory_create_entities",
+      "description": "Create multiple new entities in the knowledge graph",
+      "inputSchema": { ... }
+    },
+    { "name": "memory_create_relations", ... },
+    { "name": "memory_read_graph", ... },
+    ...
+  ]
+}
+```
+
+---
+
+#### 3. tool_search - 搜索可用插件
 
 **参数：**
 | 参数 | 类型 | 必填 | 描述 |
@@ -220,39 +341,9 @@ dotnet publish src/Plugins/MemoryCli/MemoryCli.csproj -c Release
 }
 ```
 
-**返回示例：**
-```json
-[
-  {
-    "name": "memory_create_entities",
-    "description": "Create multiple new entities in the knowledge graph",
-    "requiredParams": ["command", "entities"]
-  }
-]
-```
-
 ---
 
-#### 2. tool_get - 获取工具详情
-
-**参数：**
-| 参数 | 类型 | 必填 | 描述 |
-|------|------|------|------|
-| `name` | string | 是 | 工具名称 |
-
-**调用示例：**
-```json
-{
-  "tool": "tool_get",
-  "parameters": {
-    "name": "memory_create_entities"
-  }
-}
-```
-
----
-
-#### 3. tool_execute - 执行 CLI 工具
+#### 4. tool_execute - 执行 CLI 工具
 
 **参数：**
 | 参数 | 类型 | 必填 | 描述 |
@@ -552,24 +643,35 @@ dotnet publish src/Plugins/MemoryCli/MemoryCli.csproj -c Release
 
 ---
 
-### 完整对话流程示例
+### 完整对话流程示例 (v3.0 渐进式发现)
 
 #### 场景：记录项目信息并查询
 
-**步骤1 - 搜索可用工具：**
+**步骤1 - 列出可用插件：**
 ```
-用户：有哪些可用的记忆工具？
+用户：有哪些可用的工具？
 
-AI调用：tool_search(query="memory")
+AI调用：tool_list
 
 返回：
+- memory: Knowledge Graph CLI (7 commands)
+- file_reader: File Reader CLI (2 commands)
+```
+
+**步骤2 - 按需获取 memory 插件详情：**
+```
+用户：memory 插件有哪些命令？
+
+AI调用：tool_describe({ pluginName: "memory" })
+
+返回 7 个命令：
 - memory_create_entities: 创建实体
 - memory_search_nodes: 搜索节点
 - memory_read_graph: 读取图谱
 ...
 ```
 
-**步骤2 - 创建实体：**
+**步骤3 - 创建实体（通过 tool_execute）：**
 ```
 用户：记录一个叫"张三"的开发者，他喜欢C#
 
