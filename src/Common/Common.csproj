@@ -9,4 +9,8 @@
     <ProjectReference Include="..\Service.Json\Service.Json.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="McpProtocol" Version="1.0.0" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,7 @@
 global using Service.Json.Contracts;
 global using Service.Json.Schema;
 global using Common.Contracts;
+global using McpProtocol.Contracts;
 
 namespace Service.Json;
 
@@ -46,30 +47,11 @@ namespace Service.Json;
 [JsonSerializable(typeof(ToolDefinition))]
 [JsonSerializable(typeof(List<ToolDefinition>))]
 
-// MCP 协议模型
-[JsonSerializable(typeof(JsonRpcRequest))]
-[JsonSerializable(typeof(JsonRpcResponse))]
-[JsonSerializable(typeof(JsonRpcError))]
-[JsonSerializable(typeof(JsonRpcNotification))]
-[JsonSerializable(typeof(InitializeRequestParams))]
-[JsonSerializable(typeof(InitializeResult))]
-[JsonSerializable(typeof(ClientCapabilities))]
-[JsonSerializable(typeof(ServerCapabilities))]
-[JsonSerializable(typeof(ToolsCapability))]
-[JsonSerializable(typeof(Implementation))]
-[JsonSerializable(typeof(ListToolsResult))]
-[JsonSerializable(typeof(InputSchema))]
-[JsonSerializable(typeof(PropertySchema))]
-[JsonSerializable(typeof(Dictionary<string, PropertySchema>))]
-[JsonSerializable(typeof(CallToolRequestParams))]
-[JsonSerializable(typeof(CallToolResult))]
-[JsonSerializable(typeof(ToolContent))]
-[JsonSerializable(typeof(List<ToolContent>))]
-
 // CLI 桥接模型
 [JsonSerializable(typeof(ToolSearchResult))]
 [JsonSerializable(typeof(List<ToolSearchResult>))]
 [JsonSerializable(typeof(PluginDescriptor))]
+[JsonSerializable(typeof(PluginDescriptor[]))]
 [JsonSerializable(typeof(List<PluginDescriptor>))]
 [JsonSerializable(typeof(CommandDescriptor))]
 [JsonSerializable(typeof(List<CommandDescriptor>))]

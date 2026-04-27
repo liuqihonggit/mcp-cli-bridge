@@ -8,7 +8,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\Service.Json\Service.Json.csproj" />
-    <ProjectReference Include="..\Service.Mcp\Service.Mcp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="McpProtocol" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

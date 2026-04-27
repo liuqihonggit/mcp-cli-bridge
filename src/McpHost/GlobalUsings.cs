@@ -33,6 +33,8 @@ global using Common.Security.Models;
 global using Common;
 global using Common.Tools;
 global using Common.Contracts;
+global using McpProtocol;
+global using McpProtocol.Contracts;
 global using Service.Json.Contracts;
 global using Service.Json;
 global using McpHost.Middleware;
@@ -40,6 +42,4 @@ global using McpHost.Plugins;
 global using McpHost.ProcessPool;
 global using McpHost.Services;
 global using McpHost.Tools;
-// global using Service.Mcp.Protocol; // 已迁移到 JsonContracts
-global using Service.Mcp.Server;
 global using static Common.Constants.ConstantManager;

@@ -1,0 +1,44 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodePage>65001</CodePage>
+    <UTF8Output>true</UTF8Output>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishAot>true</PublishAot>
+    <TrimMode>full</TrimMode>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <UseWindowsThreadPool>true</UseWindowsThreadPool>
+    <MetricsSupport>false</MetricsSupport>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeHostConfigurationOption Include="System.Globalization.Invariant" Value="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>TraeCN</Authors>
+    <Company>TraeCN</Company>
+    <Product>McpProtocol</Product>
+    <Copyright>Copyright © 2026 TraeCN</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/TraeCN/McpProtocol</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/TraeCN/McpProtocol</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>MCP;Protocol;AOT;NativeAOT</PackageTags>
+    <Description>MCP Protocol - Independent NuGet package for Model Context Protocol implementation with NativeAOT support</Description>
+    <PackageReleaseNotes>Initial release of McpProtocol as independent NuGet package</PackageReleaseNotes>
+  </PropertyGroup>
+</Project>

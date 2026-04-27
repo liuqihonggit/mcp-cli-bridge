@@ -229,7 +229,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
                 var metadata = new CliToolMetadata
                 {
                     Name = toolDef.Name,
-                    Description = toolDef.Description,
+                    Description = toolDef.Description ?? string.Empty,
                     Category = toolDef.Category,
                     InputSchema = toolDef.InputSchema,
                     DefaultTimeout = (int)_defaultTimeout.TotalMilliseconds,

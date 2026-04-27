@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using McpProtocol.Contracts;
 
 namespace Common.Tools;
 
@@ -164,12 +165,9 @@ public sealed class ToolMetadataInfo
     /// </summary>
     public IReadOnlyList<ToolExample> Examples { get; init; } = [];
 
-    /// <summary>
-    /// 转换为ToolDefinition
-    /// </summary>
-    public ToolDefinition ToToolDefinition()
+    public ExtendedToolDefinition ToToolDefinition()
     {
-        return new ToolDefinition
+        return new ExtendedToolDefinition
         {
             Name = Name,
             Description = Description,
@@ -177,4 +175,12 @@ public sealed class ToolMetadataInfo
             InputSchema = InputSchema
         };
     }
+}
+
+public sealed class ExtendedToolDefinition
+{
+    public string Name { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+    public string Category { get; init; } = "general";
+    public JsonElement InputSchema { get; init; }
 }

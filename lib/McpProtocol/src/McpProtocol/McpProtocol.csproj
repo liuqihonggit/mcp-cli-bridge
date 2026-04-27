@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MCP Protocol - Independent NuGet package for Model Context Protocol implementation with NativeAOT support</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <PackageId>McpProtocol</PackageId>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\McpProtocol.Contracts\McpProtocol.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -17,6 +17,7 @@ global using Common.Plugins;
 global using Common.Tools;
 global using Service.Json.Contracts;
 global using Service.Json;
+global using McpProtocol.Contracts;
 global using MemoryCli.Commands;
 global using MemoryCli.Services;
 global using MemoryCli.Validation;

@@ -4,10 +4,13 @@
     <Project Path="src/Common.Contracts/Common.Contracts.csproj" />
     <Project Path="src/Service.Json.Contracts/Service.Json.Contracts.csproj" />
     <Project Path="src/Service.Json/Service.Json.csproj" />
-    <Project Path="src/Service.Mcp/Service.Mcp.csproj" />
     <Project Path="src/McpHost/McpHost.csproj" />
     <Project Path="src/Plugins/MemoryCli/MemoryCli.csproj" />
     <Project Path="src/Plugins/FileReaderCli/FileReaderCli.csproj" />
+  </Folder>
+  <Folder Name="/lib/">
+    <Project Path="lib/McpProtocol/src/McpProtocol/McpProtocol.csproj" />
+    <Project Path="lib/McpProtocol/src/McpProtocol.Contracts/McpProtocol.Contracts.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Benchmarks/Benchmarks.csproj" />

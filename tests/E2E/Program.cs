@@ -158,7 +158,7 @@ class Program
                 var toolNames = tools.Select(t => t.GetProperty("name").GetString()).ToList();
                 AssertTrue(toolNames.Contains("tool_search"), "Should have tool_search");
                 AssertTrue(toolNames.Contains("tool_execute"), "Should have tool_execute");
-                AssertTrue(toolNames.Contains("tool_get"), "Should have tool_get");
+                AssertTrue(toolNames.Contains("tool_describe"), "Should have tool_describe");
                 AssertTrue(toolNames.Contains("package_status"), "Should have package_status");
 
                 return true;
@@ -194,13 +194,16 @@ class Program
 
                 var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
                 var text = content.GetProperty("text").GetString();
-                AssertTrue(text?.Contains("memory") ?? false, "Should find memory-related tools");
+                
+                var searchResults = JsonSerializer.Deserialize<PluginDescriptor[]>(text!, CommonJsonContext.Default.PluginDescriptorArray);
+                AssertTrue(searchResults?.Length > 0, "Should find memory-related tools");
+                AssertTrue(searchResults!.Any(p => p.Name.Contains("Memory", StringComparison.OrdinalIgnoreCase)), "Should find MemoryCli plugin");
 
                 return true;
             }));
 
-            // Test 4: tool_get
-            testResults.Add(await RunTestAsync("MCP Tool - tool_get", async () =>
+            // Test 4: tool_describe
+            testResults.Add(await RunTestAsync("MCP Tool - tool_describe", async () =>
             {
                 var request = new JsonRpcRequest
                 {
@@ -208,8 +211,8 @@ class Program
                     Method = "tools/call",
                     Params = new CallToolRequestParams
                     {
-                        Name = "tool_get",
-                        Arguments = new { name = "memory_create_entities" }
+                        Name = "tool_describe",
+                        Arguments = new { pluginName = "MemoryCli" }
                     }
                 };
 
@@ -703,7 +706,7 @@ class Program
                     Params = new CallToolRequestParams
                     {
                         Name = "tool_search",
-                        Arguments = new { query = "file_reader" }
+                        Arguments = new { query = "file" }
                     }
                 };
 
@@ -719,8 +722,10 @@ class Program
 
                 var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
                 var text = content.GetProperty("text").GetString();
-                AssertTrue(text?.Contains("file_reader_read_head") ?? false, "Should find file_reader_read_head tool");
-                AssertTrue(text?.Contains("file_reader_read_tail") ?? false, "Should find file_reader_read_tail tool");
+                
+                var searchResults = JsonSerializer.Deserialize<PluginDescriptor[]>(text!, CommonJsonContext.Default.PluginDescriptorArray);
+                AssertTrue(searchResults?.Length > 0, "Should find file-related tools");
+                AssertTrue(searchResults!.Any(p => p.Name.Contains("FileReader", StringComparison.OrdinalIgnoreCase)), "Should find FileReaderCli plugin");
 
                 return true;
             }));
@@ -892,11 +897,11 @@ class Program
 
                 var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
                 var text = content.GetProperty("text").GetString();
-
-                // 验证两个 CLI 的工具都存在
-                AssertTrue(text?.Contains("memory_create_entities") ?? false, "Should have memory_create_entities");
-                AssertTrue(text?.Contains("file_reader_read_head") ?? false, "Should have file_reader_read_head");
-                AssertTrue(text?.Contains("file_reader_read_tail") ?? false, "Should have file_reader_read_tail");
+                
+                var listResult = JsonSerializer.Deserialize(text!, CommonJsonContext.Default.ToolListResult);
+                AssertTrue(listResult?.TotalPlugins >= 2, "Should have at least 2 plugins");
+                AssertTrue(listResult!.Plugins.Any(p => p.Name == "MemoryCli"), "Should have MemoryCli plugin");
+                AssertTrue(listResult.Plugins.Any(p => p.Name == "FileReaderCli"), "Should have FileReaderCli plugin");
 
                 return true;
             }));
