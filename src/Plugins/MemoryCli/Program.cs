@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Service.Json.Contracts;
+using Common.Contracts.Models;
 using Service.Json;
 using Common.Results;
 

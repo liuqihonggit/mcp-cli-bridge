@@ -1,4 +1,4 @@
-namespace Service.Json.Contracts;
+namespace Common.Contracts.Models;
 
 /// <summary>
 /// 工具搜索结果

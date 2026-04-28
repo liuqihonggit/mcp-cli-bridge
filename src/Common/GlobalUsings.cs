@@ -18,7 +18,7 @@ global using System.Text.RegularExpressions;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using static Common.Constants.ConstantManager;
-global using Service.Json.Contracts;
+global using Common.Contracts.Models;
 global using Service.Json.Schema;
 global using Service.Json;
 global using Common.Caching;

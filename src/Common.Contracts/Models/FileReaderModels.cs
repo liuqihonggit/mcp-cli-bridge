@@ -1,4 +1,4 @@
-namespace Service.Json.Contracts;
+namespace Common.Contracts.Models;
 
 /// <summary>
 /// 文件读取请求

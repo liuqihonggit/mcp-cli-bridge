@@ -12,4 +12,5 @@ global using Common.Contracts.Caching;
 global using Common.Logging;
 global using Common.Reflection;
 global using Common.Tools;
+global using Common.Contracts;
 global using Moq;

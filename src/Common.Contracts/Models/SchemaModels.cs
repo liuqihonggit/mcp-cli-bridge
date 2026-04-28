@@ -1,4 +1,4 @@
-namespace Service.Json.Contracts;
+namespace Common.Contracts.Models;
 
 /// <summary>
 /// JSON Schema 属性定义

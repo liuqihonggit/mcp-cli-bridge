@@ -1,4 +1,4 @@
-using Service.Json.Contracts;
+using Common.Contracts.Models;
 
 namespace FileReaderCli.Services;
 

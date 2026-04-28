@@ -1,5 +1,7 @@
 namespace MyMemoryServer.SecurityTests;
 
+using Common.Contracts.Security;
+
 /// <summary>
 /// 输入验证安全测试 - 测试各种恶意输入
 /// </summary>
@@ -11,8 +13,8 @@ public sealed class InputValidationTests
     {
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
         var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(
-            new Service.Json.Contracts.WhitelistConfiguration { IsEnabled = false },
-            new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+            new WhitelistConfiguration { IsEnabled = false },
+            new RbacConfiguration { IsEnabled = false });
         _validator = new SecurityValidator(inputValidator, permissionChecker);
     }
 

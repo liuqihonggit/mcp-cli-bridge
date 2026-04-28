@@ -3,7 +3,7 @@ using System.Text.Json.Serialization.Metadata;
 using Common.CliProtocol;
 using Common.Results;
 using Common.Tools;
-using Service.Json.Contracts;
+using Common.Contracts.Models;
 using static Common.CliProtocol.MemoryToolSchemaTemplates;
 
 namespace MemoryCli.Commands;

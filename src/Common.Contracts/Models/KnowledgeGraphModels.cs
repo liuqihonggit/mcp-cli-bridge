@@ -1,4 +1,4 @@
-namespace Service.Json.Contracts;
+namespace Common.Contracts.Models;
 
 /// <summary>
 /// 知识图谱实体

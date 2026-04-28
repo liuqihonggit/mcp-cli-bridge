@@ -37,7 +37,7 @@ global using Common.Contracts.Plugins;
 global using Common.Contracts.Security;
 global using McpProtocol;
 global using McpProtocol.Contracts;
-global using Service.Json.Contracts;
+global using Common.Contracts.Models;
 global using Service.Json;
 global using McpHost.Middleware;
 global using McpHost.Plugins;

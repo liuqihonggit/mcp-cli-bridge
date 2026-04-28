@@ -1,7 +1,6 @@
 using Common.Security;
-using Common.Security.Abstractions;
-using Common.Security.Models;
-using Service.Json.Contracts;
+using Common.Contracts.Security;
+using Common.Contracts.Models;
 
 namespace MyMemoryServer.SecurityTests;
 
@@ -23,7 +22,7 @@ public sealed class PermissionControlTests
         };
 
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
-        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new RbacConfiguration { IsEnabled = false });
         var validator = new SecurityValidator(inputValidator, permissionChecker, whitelist);
 
         // Act & Assert
@@ -43,7 +42,7 @@ public sealed class PermissionControlTests
         };
 
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
-        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new RbacConfiguration { IsEnabled = false });
         var validator = new SecurityValidator(inputValidator, permissionChecker, whitelist);
 
         // Act & Assert
@@ -62,7 +61,7 @@ public sealed class PermissionControlTests
         };
 
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
-        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new RbacConfiguration { IsEnabled = false });
         var validator = new SecurityValidator(inputValidator, permissionChecker, whitelist);
 
         // Act & Assert
@@ -81,7 +80,7 @@ public sealed class PermissionControlTests
         };
 
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
-        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(whitelist, new RbacConfiguration { IsEnabled = false });
         var validator = new SecurityValidator(inputValidator, permissionChecker, whitelist);
 
         var context = new SecurityContext { UserId = "user1" };
@@ -184,8 +183,8 @@ public sealed class PermissionControlTests
         // Arrange - 无用户信息时默认允许
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
         var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(
-            new Service.Json.Contracts.WhitelistConfiguration { IsEnabled = false },
-            new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+            new WhitelistConfiguration { IsEnabled = false },
+            new RbacConfiguration { IsEnabled = false });
         var validator = new SecurityValidator(inputValidator, permissionChecker);
 
         var context = new SecurityContext

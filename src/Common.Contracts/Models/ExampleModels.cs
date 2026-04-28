@@ -1,4 +1,4 @@
-namespace Service.Json.Contracts;
+namespace Common.Contracts.Models;
 
 /// <summary>
 /// 创建实体请求示例模型

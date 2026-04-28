@@ -15,7 +15,7 @@ global using Common.Logging;
 global using Common.CliProtocol;
 global using Common.Plugins;
 global using Common.Tools;
-global using Service.Json.Contracts;
+global using Common.Contracts.Models;
 global using Service.Json;
 global using McpProtocol.Contracts;
 global using MemoryCli.Commands;

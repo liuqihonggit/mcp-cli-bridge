@@ -1,5 +1,7 @@
 namespace MyMemoryServer.SecurityTests;
 
+using Common.Contracts.Security;
+
 /// <summary>
 /// 命令注入防护测试 - 测试命令注入攻击
 /// </summary>
@@ -11,8 +13,8 @@ public sealed class CommandInjectionTests
     {
         var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
         var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(
-            new Service.Json.Contracts.WhitelistConfiguration { IsEnabled = false },
-            new Service.Json.Contracts.RbacConfiguration { IsEnabled = false });
+            new WhitelistConfiguration { IsEnabled = false },
+            new RbacConfiguration { IsEnabled = false });
         _validator = new SecurityValidator(inputValidator, permissionChecker);
     }
 

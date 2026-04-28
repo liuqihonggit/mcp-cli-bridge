@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.csproj" />
-    <ProjectReference Include="..\..\Service.Json.Contracts\Service.Json.Contracts.csproj" />
+    <ProjectReference Include="..\..\Common.Contracts\Common.Contracts.csproj" />
     <ProjectReference Include="..\..\Service.Json\Service.Json.csproj" />
   </ItemGroup>
 

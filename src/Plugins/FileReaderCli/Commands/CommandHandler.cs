@@ -4,7 +4,7 @@ using FileReaderCli.Services;
 using Common.CliProtocol;
 using Common.Results;
 using Common.Tools;
-using Service.Json.Contracts;
+using Common.Contracts.Models;
 using static Common.CliProtocol.FileReaderToolSchemaTemplates;
 
 namespace FileReaderCli.Commands;

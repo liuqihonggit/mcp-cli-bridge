@@ -1,4 +1,4 @@
-using Common.Security.Models;
+using Common.Contracts.Security;
 
 namespace MyMemoryServer.UnitTests.Security;
 

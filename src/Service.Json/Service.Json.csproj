@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common.Contracts\Common.Contracts.csproj" />
-    <ProjectReference Include="..\Service.Json.Contracts\Service.Json.Contracts.csproj" />
+    <ProjectReference Include="..\..\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
