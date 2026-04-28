@@ -1,6 +1,0 @@
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"LLM-Client","version":"1.0"}}}
-{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"tool_search","arguments":{"query":"memory"}}}
-{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"tool_get","arguments":{"name":"memory_create_entities"}}}
-{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"tool_execute","arguments":{"tool":"memory_create_entities","parameters":{"command":"create_entities","entities":[{"name":"LLMTestEntity","entityType":"test","observations":["Created by LLM simulation"]}]}}}}
-{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"tool_execute","arguments":{"tool":"memory_read_graph","parameters":{"command":"read_graph"}}}}
