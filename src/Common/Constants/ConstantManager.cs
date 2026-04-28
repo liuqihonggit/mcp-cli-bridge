@@ -67,6 +67,7 @@ public static class ConstantManager
         Register(nameof(DirectoryNames.Tools), Categories.Directory, null, "tools");
         Register(nameof(DirectoryNames.Cli), Categories.Directory, null, "cli");
         Register(nameof(DirectoryNames.Logs), Categories.Directory, null, "logs");
+        Register(nameof(DirectoryNames.Plugins), Categories.Directory, null, "Plugins");
 
         // 超时设置
         RegisterTimeSpan(nameof(Timeouts.DefaultCommand), Categories.Timeout, null, TimeSpan.FromSeconds(30));
@@ -477,6 +478,7 @@ public static class ConstantManager
         public static string Tools => GetString(nameof(Tools));
         public static string Cli => GetString(nameof(Cli));
         public static string Logs => GetString(nameof(Logs));
+        public static string Plugins => GetString(nameof(Plugins));
     }
 
     /// <summary>

@@ -502,6 +502,20 @@ npm view @jingjingbox/mcp-cli-bridge
 3. 执行 `.\build.ps1` 重新构建
 4. 执行 `npm publish` 发布新版本
 
+**⚠️ 重要发布规则**:
+
+1. **发布失败处理**:
+   - 如果 `npm publish` 失败并提示版本已存在
+   - 必须修改 `package.json` 中的版本号（递增）
+   - 重新执行 `.\build.ps1` 构建
+   - 再次尝试 `npm publish`
+
+2. **Git 提交顺序**:
+   - ❌ **禁止**在 `npm publish` 成功前提交 git commit
+   - ✅ **必须**等待 `npm publish` 成功后
+   - ✅ **然后**提交 git commit（包含版本号更新）
+   - ✅ **最后**执行 `git push`
+
 **发布平台**: Windows x64
 
 **注意事项**:
@@ -509,6 +523,7 @@ npm view @jingjingbox/mcp-cli-bridge
 - 检查版本号是否正确更新
 - 确认 `publish/` 目录包含所有必需文件
 - 首次发布后无法删除包，只能发布新版本
+- **严格遵循发布顺序**：npm 发布成功 → git commit → git push
 
 ***
 

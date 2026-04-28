@@ -10,24 +10,7 @@ npm install -g @jingjingbox/mcp-cli-bridge
 
 ## 配置
 
-### 全局安装
-
-```json
-{
-  "mcpServers": {
-    "cli-bridge": {
-      "type": "stdio",
-      "command": "mcp-cli-bridge",
-      "enabled": true,
-      "env": {
-        "MCP_MEMORY_PATH": "D:\\MCP\\Memory"
-      }
-    }
-  }
-}
-```
-
-### npx（无需安装）
+### npx
 
 ```json
 {
