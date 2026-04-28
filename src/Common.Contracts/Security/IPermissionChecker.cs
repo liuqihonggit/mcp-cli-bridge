@@ -1,6 +1,4 @@
-using SecurityConstants = Common.Constants.ConstantManager.Security;
-
-namespace Common.Security.Abstractions;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 权限检查器接口，负责检查用户权限
@@ -13,7 +11,7 @@ public interface IPermissionChecker
     /// <param name="request">权限检查请求</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>权限检查结果</returns>
-    Task<Models.PermissionResult> CheckPermissionAsync(
+    Task<PermissionResult> CheckPermissionAsync(
         PermissionCheckRequest request,
         CancellationToken cancellationToken = default);
 

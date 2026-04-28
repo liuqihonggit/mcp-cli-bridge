@@ -1,5 +1,3 @@
-using Service.Json.Contracts;
-
 namespace Service.Json.Schema;
 
 /// <summary>

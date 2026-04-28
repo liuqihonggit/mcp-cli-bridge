@@ -1,8 +1,3 @@
-global using Service.Json.Contracts;
-global using Service.Json.Schema;
-global using Common.Contracts;
-global using McpProtocol.Contracts;
-
 namespace Service.Json;
 
 // 基础集合类型

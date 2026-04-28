@@ -1,4 +1,4 @@
-namespace Common.Middleware;
+namespace Common.Contracts.Middleware;
 
 /// <summary>
 /// 工具中间件接口，用于在工具执行管道中插入自定义逻辑

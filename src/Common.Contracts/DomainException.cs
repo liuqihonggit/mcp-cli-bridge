@@ -1,4 +1,4 @@
-namespace Common.Models;
+namespace Common.Contracts;
 
 public abstract class DomainException : Exception
 {

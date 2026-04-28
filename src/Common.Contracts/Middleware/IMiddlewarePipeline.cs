@@ -1,4 +1,4 @@
-namespace Common.Middleware;
+namespace Common.Contracts.Middleware;
 
 /// <summary>
 /// 中间件管道接口，用于构建和执行中间件链

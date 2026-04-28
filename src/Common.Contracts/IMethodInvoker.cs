@@ -1,4 +1,4 @@
-namespace Common.Reflection;
+namespace Common.Contracts;
 
 /// <summary>
 /// 方法调用器接口，用于高性能方法调用

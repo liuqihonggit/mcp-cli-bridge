@@ -1,6 +1,4 @@
-using SecurityConstants = Common.Constants.ConstantManager.Security;
-
-namespace Common.Security.Models;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 输入验证请求

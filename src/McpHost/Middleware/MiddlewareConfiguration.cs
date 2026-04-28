@@ -1,5 +1,8 @@
 namespace McpHost.Middleware;
 
+using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
+using IMiddlewarePipeline = Common.Contracts.Middleware.IMiddlewarePipeline;
+
 /// <summary>
 /// 中间件配置
 /// </summary>
@@ -62,17 +65,17 @@ public sealed class MiddlewarePipelineConfiguration
 /// </summary>
 public sealed class MiddlewarePipelineBuilder
 {
-    private readonly Common.IoC.IServiceProvider _serviceProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly MiddlewarePipelineConfiguration _configuration;
     private readonly List<(string Name, int Order, bool Enabled)> _middlewares = [];
 
-    public MiddlewarePipelineBuilder(Common.IoC.IServiceProvider serviceProvider)
+    public MiddlewarePipelineBuilder(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _configuration = MiddlewarePipelineConfiguration.Default;
     }
 
-    public MiddlewarePipelineBuilder(Common.IoC.IServiceProvider serviceProvider, MiddlewarePipelineConfiguration configuration)
+    public MiddlewarePipelineBuilder(IServiceProvider serviceProvider, MiddlewarePipelineConfiguration configuration)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -102,7 +105,7 @@ public sealed class MiddlewarePipelineBuilder
     /// <summary>
     /// 构建中间件管道
     /// </summary>
-    public Common.Middleware.IMiddlewarePipeline Build()
+    public IMiddlewarePipeline Build()
     {
         var pipeline = new Common.Middleware.MiddlewarePipeline(_serviceProvider);
 
@@ -120,7 +123,7 @@ public sealed class MiddlewarePipelineBuilder
         return pipeline;
     }
 
-    private void AddMiddlewareByName(Common.Middleware.IMiddlewarePipeline pipeline, string name)
+    private void AddMiddlewareByName(IMiddlewarePipeline pipeline, string name)
     {
         switch (name)
         {

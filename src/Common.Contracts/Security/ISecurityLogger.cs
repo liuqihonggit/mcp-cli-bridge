@@ -1,6 +1,4 @@
-using SecurityConstants = Common.Constants.ConstantManager.Security;
-
-namespace Common.Security.Abstractions;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 安全日志记录器接口，负责记录安全相关事件

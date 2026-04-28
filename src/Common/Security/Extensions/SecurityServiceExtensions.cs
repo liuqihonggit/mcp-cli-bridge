@@ -2,6 +2,8 @@ using SecurityConstants = Common.Constants.ConstantManager.Security;
 
 namespace Common.Security.Extensions;
 
+using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
+
 /// <summary>
 /// 服务容器扩展方法，用于注册安全服务
 /// </summary>
@@ -70,7 +72,7 @@ public static class SecurityServiceExtensions
     /// <returns>中间件管道</returns>
     public static IMiddlewarePipeline UseSecurityValidation(
         this IMiddlewarePipeline pipeline,
-        Common.IoC.IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider)
     {
         ArgumentNullException.ThrowIfNull(pipeline);
         ArgumentNullException.ThrowIfNull(serviceProvider);

@@ -1,4 +1,4 @@
-namespace Common.Plugins;
+namespace Common.Contracts.Plugins;
 
 /// <summary>
 /// 工具注册中心接口，管理工具提供者的注册和工具发现

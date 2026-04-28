@@ -1,8 +1,4 @@
-using Common.Contracts;
-
-using SecurityConstants = Common.Constants.ConstantManager.Security;
-
-namespace Common.Security.Models;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 权限检查结果
@@ -55,24 +51,5 @@ public sealed class PermissionResult : IValidationResult
         return Denied(
             result.Errors.FirstOrDefault() ?? "验证失败",
             result.DetectedAttacks.ToArray());
-    }
-
-    /// <summary>
-    /// 转换为 ValidationResult
-    /// </summary>
-    public ValidationResult ToValidationResult()
-    {
-        if (IsAllowed)
-        {
-            return ValidationResultFactory.Success();
-        }
-
-        var builder = ValidationResultFactory.Builder().WithErrors(Errors);
-        if (MissingPermissions.Count > 0)
-        {
-            builder.WithAttacks(MissingPermissions);
-        }
-
-        return builder.Build();
     }
 }

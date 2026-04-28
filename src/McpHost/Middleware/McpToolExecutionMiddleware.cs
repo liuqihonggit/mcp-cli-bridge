@@ -2,6 +2,8 @@ using Common.Middleware;
 
 namespace McpHost.Middleware;
 
+using IMethodInvoker = Common.Contracts.IMethodInvoker;
+
 /// <summary>
 /// MCP工具执行中间件 - 使用 JsonParameterHelper 和 ErrorResponseFactory 重构
 /// </summary>
@@ -83,7 +85,7 @@ public sealed class ToolHandlerInfo
 {
     public string Name { get; init; } = string.Empty;
     public object Instance { get; init; } = null!;
-    public Common.Reflection.IMethodInvoker Invoker { get; init; } = null!;
+    public IMethodInvoker Invoker { get; init; } = null!;
     public IReadOnlyList<ParameterInfo> Parameters { get; init; } = [];
 }
 

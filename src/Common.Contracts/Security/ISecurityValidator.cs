@@ -1,6 +1,4 @@
-using SecurityConstants = Common.Constants.ConstantManager.Security;
-
-namespace Common.Security;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 安全验证服务接口
@@ -22,7 +20,7 @@ public interface ISecurityValidator
     /// <param name="toolName">工具名称</param>
     /// <param name="context">执行上下文</param>
     /// <returns>权限检查结果</returns>
-    Task<Models.PermissionResult> CheckPermissionAsync(string toolName, SecurityContext context);
+    Task<PermissionResult> CheckPermissionAsync(string toolName, SecurityContext context);
 
     /// <summary>
     /// 检查工具是否在白名单中

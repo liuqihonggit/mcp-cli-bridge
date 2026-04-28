@@ -1,4 +1,6 @@
-namespace Common.Middleware;
+namespace Common.Contracts.Middleware;
+
+using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
 
 /// <summary>
 /// 工具执行上下文，包含工具调用的完整信息
@@ -33,5 +35,5 @@ public sealed class ToolContext
     /// <summary>
     /// 服务提供器，用于解析依赖服务
     /// </summary>
-    public Common.IoC.IServiceProvider ServiceProvider { get; set; } = null!;
+    public IServiceProvider ServiceProvider { get; set; } = null!;
 }

@@ -1,8 +1,4 @@
-using Common.Contracts;
-
-using SecurityConstants = Common.Constants.ConstantManager.Security;
-
-namespace Common.Security.Abstractions;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 输入验证器接口，负责验证工具输入参数

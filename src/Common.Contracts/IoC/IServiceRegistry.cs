@@ -1,4 +1,4 @@
-namespace Common.IoC;
+namespace Common.Contracts.IoC;
 
 public interface IServiceRegistry
 {

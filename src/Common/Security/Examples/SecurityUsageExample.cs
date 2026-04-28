@@ -2,6 +2,8 @@ using SecurityConstants = Common.Constants.ConstantManager.Security;
 
 namespace Common.Security.Examples;
 
+using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
+
 public static class SecurityUsageExample
 {
     public static void Example1_RegisterSecurityServices()
@@ -33,7 +35,7 @@ public static class SecurityUsageExample
         services.AddSecurityServices(whitelistConfig, rbacConfig);
     }
 
-    public static void Example2_ConfigureMiddlewarePipeline(Common.IoC.IServiceProvider serviceProvider)
+    public static void Example2_ConfigureMiddlewarePipeline(IServiceProvider serviceProvider)
     {
         var pipeline = new MiddlewarePipeline(serviceProvider);
 

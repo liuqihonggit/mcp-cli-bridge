@@ -1,4 +1,4 @@
-namespace Common.Logging;
+namespace Common.Contracts;
 
 public interface ILogger
 {

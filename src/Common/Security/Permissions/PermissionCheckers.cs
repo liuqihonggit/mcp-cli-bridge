@@ -1,5 +1,3 @@
-using Common.Security.Models;
-
 using SecurityConstants = Common.Constants.ConstantManager.Security;
 
 namespace Common.Security.Permissions;

@@ -1,4 +1,4 @@
-namespace Common.Plugins;
+namespace Common.Contracts.Plugins;
 
 /// <summary>
 /// 工具元数据接口，定义工具的静态描述信息

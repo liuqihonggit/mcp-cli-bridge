@@ -1,4 +1,4 @@
-namespace Service.Json.Contracts;
+namespace Common.Contracts.Security;
 
 /// <summary>
 /// 验证错误详情

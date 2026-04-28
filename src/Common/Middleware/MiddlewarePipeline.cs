@@ -1,11 +1,13 @@
 namespace Common.Middleware;
 
+using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
+
 /// <summary>
 /// 中间件管道实现，管理中间件链的构建和执行
 /// </summary>
 public sealed class MiddlewarePipeline : IMiddlewarePipeline
 {
-    private readonly Common.IoC.IServiceProvider _serviceProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly List<MiddlewareRegistration> _middlewares = [];
 
     /// <summary>
@@ -19,7 +21,7 @@ public sealed class MiddlewarePipeline : IMiddlewarePipeline
     /// 初始化中间件管道
     /// </summary>
     /// <param name="serviceProvider">服务提供器</param>
-    public MiddlewarePipeline(Common.IoC.IServiceProvider serviceProvider)
+    public MiddlewarePipeline(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }

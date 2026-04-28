@@ -1,5 +1,7 @@
 namespace Common.IoC;
 
+using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
+
 public sealed class ServiceContainer : IServiceRegistry, IServiceProvider, IDisposable
 {
     private readonly struct ServiceRegistration
