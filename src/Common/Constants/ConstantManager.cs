@@ -137,6 +137,7 @@ public static class ConstantManager
         Register(nameof(Commands.Memory.AddObservations), Categories.Command, SubCategories.MemoryCommand, "add_observations");
         Register(nameof(Commands.Memory.DeleteEntities), Categories.Command, SubCategories.MemoryCommand, "delete_entities");
         Register(nameof(Commands.Memory.OpenNodes), Categories.Command, SubCategories.MemoryCommand, "open_nodes");
+        Register(nameof(Commands.Memory.GetStorageInfo), Categories.Command, SubCategories.MemoryCommand, "get_storage_info");
         Register(nameof(Commands.Memory.ListTools), Categories.Command, SubCategories.MemoryCommand, "list_tools");
 
         // 命令名称 - MCP
@@ -615,6 +616,7 @@ public static class ConstantManager
             public static string AddObservations => GetString(nameof(AddObservations));
             public static string DeleteEntities => GetString(nameof(DeleteEntities));
             public static string OpenNodes => GetString(nameof(OpenNodes));
+            public static string GetStorageInfo => GetString(nameof(GetStorageInfo));
             public static string ListTools => GetString(nameof(ListTools));
         }
 

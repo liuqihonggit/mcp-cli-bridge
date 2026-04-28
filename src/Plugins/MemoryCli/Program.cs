@@ -30,7 +30,8 @@ var commandOption = new Option<string>(
         Commands.Memory.SearchNodes,
         Commands.Memory.AddObservations,
         Commands.Memory.DeleteEntities,
-        Commands.Memory.OpenNodes
+        Commands.Memory.OpenNodes,
+        Commands.Memory.GetStorageInfo
     }))
 {
     IsRequired = false
@@ -64,8 +65,9 @@ rootCommand.SetHandler(async (string jsonInput) =>
 
         logger.Debug($"Executing command: {request.Command}");
 
-        using var ioService = new MemoryIoService();
-        var handler = new CommandHandler(ioService);
+        var options = new MemoryOptions();
+        using var ioService = new MemoryIoService(options);
+        var handler = new CommandHandler(ioService, options);
         var result = await handler.ExecuteAsync(request);
 
         // 使用 Source Generator 序列化 OperationResult<JsonElement>

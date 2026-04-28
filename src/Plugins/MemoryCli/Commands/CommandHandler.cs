@@ -11,10 +11,12 @@ namespace MemoryCli.Commands;
 internal sealed class CommandHandler
 {
     private readonly MemoryIoService _ioService;
+    private readonly MemoryOptions _options;
 
-    public CommandHandler(MemoryIoService ioService)
+    public CommandHandler(MemoryIoService ioService, MemoryOptions options)
     {
         _ioService = ioService ?? throw new ArgumentNullException(nameof(ioService));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     public async Task<OperationResult<JsonElement>> ExecuteAsync(CliRequest request)
@@ -28,6 +30,7 @@ internal sealed class CommandHandler
             "add_observations" => await AddObservationsAsync(request),
             "delete_entities" => await DeleteEntitiesAsync(request),
             "open_nodes" => await OpenNodesAsync(request),
+            "get_storage_info" => GetStorageInfo(),
             "list_tools" => ListTools(),
             "list_commands" => ListCommands(),
             _ => Fail($"Unknown command: {request.Command}")
@@ -286,6 +289,19 @@ internal sealed class CommandHandler
         return Ok(data, message, CommonJsonContext.Default.KnowledgeGraphData);
     }
 
+    private OperationResult<JsonElement> GetStorageInfo()
+    {
+        var info = new StorageInfo
+        {
+            BaseDirectory = _options.BaseDirectory,
+            MemoryFilePath = _options.GetMemoryPath(),
+            RelationsFilePath = _options.GetRelationsPath(),
+            EnvironmentVariable = "MCP_MEMORY_PATH"
+        };
+
+        return Ok(info, "", CommonJsonContext.Default.StorageInfo);
+    }
+
     private static OperationResult<JsonElement> ListTools()
     {
         var pluginDescriptor = new PluginDescriptor
@@ -293,7 +309,7 @@ internal sealed class CommandHandler
             Name = "memory",
             Description = "Knowledge Graph CLI - Manage entities, relations, and observations in a persistent knowledge graph",
             Category = "knowledge-graph",
-            CommandCount = 7,
+            CommandCount = 8,
             HasDocumentation = true
         };
 
@@ -352,6 +368,13 @@ internal sealed class CommandHandler
                 Description = "Get specific nodes by name",
                 Category = "knowledge-graph",
                 InputSchema = OpenNodesSchema()
+            },
+            new()
+            {
+                Name = "memory_get_storage_info",
+                Description = "Get the storage location information for the knowledge graph",
+                Category = "knowledge-graph",
+                InputSchema = GetStorageInfoSchema()
             }
         };
 

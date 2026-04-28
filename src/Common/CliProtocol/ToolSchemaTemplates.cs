@@ -175,6 +175,22 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaSerializer.SerializeToJsonElement(schema);
     }
 
+    /// <summary>
+    /// 获取存储信息工具Schema
+    /// </summary>
+    public static JsonElement GetStorageInfoSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("get_storage_info")
+                .Build())
+            .WithRequired("command")
+            .Build();
+
+        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+    }
+
     private static JsonSchemaProperty CreateEntitySchemaProperty()
     {
         return new JsonSchemaPropertyBuilder()

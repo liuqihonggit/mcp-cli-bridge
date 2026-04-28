@@ -39,6 +39,7 @@ namespace Common.Json;
 [JsonSerializable(typeof(KnowledgeGraphData))]
 [JsonSerializable(typeof(List<KnowledgeGraphEntity>))]
 [JsonSerializable(typeof(List<KnowledgeGraphRelation>))]
+[JsonSerializable(typeof(StorageInfo))]
 
 // 工具定义模型
 [JsonSerializable(typeof(ToolDefinition))]

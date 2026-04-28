@@ -41,3 +41,21 @@ public sealed class KnowledgeGraphData
     [JsonPropertyName("relations")]
     public List<KnowledgeGraphRelation> Relations { get; set; } = [];
 }
+
+/// <summary>
+/// 记忆存储信息
+/// </summary>
+public sealed class StorageInfo
+{
+    [JsonPropertyName("baseDirectory")]
+    public string BaseDirectory { get; set; } = string.Empty;
+
+    [JsonPropertyName("memoryFilePath")]
+    public string MemoryFilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("relationsFilePath")]
+    public string RelationsFilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("environmentVariable")]
+    public string EnvironmentVariable { get; set; } = string.Empty;
+}
