@@ -394,9 +394,7 @@ public sealed class ProcessPool : IProcessPool
 
     public void Dispose()
     {
-        // 同步 Dispose 使用 Wait 等待异步操作完成
-        // 这是 Dispose 模式的标准做法
-        DisposeAsync().AsTask().Wait();
+        DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     #endregion
