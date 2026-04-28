@@ -330,16 +330,85 @@ MyCli/
 
 **文件**: `build.ps1`
 
-**功能**:
+**脚本职责**:
+- 清理发布目录
+- AOT 编译所有组件
+- 复制 npm 包文件
+- 验证输出完整性
+- 显示构建结果
 
-1. 清理 publish 目录
-2. AOT 编译 McpHost
-3. AOT 编译 MemoryCli
-4. AOT 编译 FileReaderCli
-5. 复制 npm 包文件
-6. 复制 CLI 说明文档
+**执行步骤**:
 
-**运行**:
+```powershell
+# 步骤 1: 清理 publish 目录
+if (Test-Path "publish") {
+    Get-ChildItem "publish\*" -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# 步骤 2: 创建 publish 目录
+New-Item -ItemType Directory -Path "publish" -Force | Out-Null
+
+# 步骤 3: AOT 编译 McpHost
+dotnet publish src\McpHost\McpHost.csproj `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -p:PublishAot=true `
+    -p:PublishDir="$PSScriptRoot\publish"
+
+# 步骤 4: AOT 编译 MemoryCli
+dotnet publish src\Plugins\MemoryCli\MemoryCli.csproj `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -p:PublishAot=true `
+    -p:PublishDir="$PSScriptRoot\publish"
+
+# 步骤 5: AOT 编译 FileReaderCli
+dotnet publish src\Plugins\FileReaderCli\FileReaderCli.csproj `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -p:PublishAot=true `
+    -p:PublishDir="$PSScriptRoot\publish"
+
+# 步骤 6: 复制 npm 包文件
+Copy-Item "package.json" "publish\" -Force
+Copy-Item "index.js" "publish\" -Force
+Copy-Item "README.md" "publish\" -Force
+
+# 步骤 7: 复制 CLI 说明文档
+Copy-Item "src\Plugins\MemoryCli\CLI说明.md" "publish\MemoryCli说明.md" -Force
+Copy-Item "src\Plugins\FileReaderCli\CLI说明.md" "publish\FileReaderCli说明.md" -Force
+```
+
+**错误处理**:
+- 每个编译步骤后检查 `$LASTEXITCODE`
+- 失败时立即终止并输出错误信息
+- 验证必需文件是否存在
+
+**输出验证**:
+
+```powershell
+# 验证必需文件
+$requiredFiles = @(
+    "publish\McpHost.exe",
+    "publish\MemoryCli.exe",
+    "publish\FileReaderCli.exe"
+)
+
+foreach ($file in $requiredFiles) {
+    if (-not (Test-Path $file)) {
+        Write-Error "Missing required file: $file"
+        exit 1
+    }
+}
+```
+
+**运行方式**:
 
 ```powershell
 .\build.ps1
@@ -349,22 +418,76 @@ MyCli/
 
 **目录**: `publish/`
 
-**文件**:
+**必需文件**:
 
-- McpHost.exe
-- MemoryCli.exe
-- FileReaderCli.exe
-- index.js
-- package.json
-- README.md
-- MemoryCli说明.md
-- FileReaderCli说明.md
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| McpHost.exe | EXE | MCP 主机服务 |
+| MemoryCli.exe | EXE | 知识图谱 CLI 插件 |
+| FileReaderCli.exe | EXE | 文件读取 CLI 插件 |
+| index.js | JS | npm 入口文件 |
+| package.json | JSON | npm 包配置 |
+| README.md | MD | 包说明文档 |
+| MemoryCli说明.md | MD | MemoryCli 使用说明 |
+| FileReaderCli说明.md | MD | FileReaderCli 使用说明 |
 
-### npm 发布
+**构建结果示例**:
 
-**命令**: `npm publish`
+```
+Build completed successfully!
 
-**平台**: Windows x64
+Published files:
+  McpHost.exe (X,XXX,XXX bytes)
+  MemoryCli.exe (X,XXX,XXX bytes)
+  FileReaderCli.exe (X,XXX,XXX bytes)
+  index.js (XXX bytes)
+  package.json (XXX bytes)
+  README.md (X,XXX bytes)
+  MemoryCli说明.md (X,XXX bytes)
+  FileReaderCli说明.md (XXX bytes)
+
+Package size:
+  Total: XX.XX MB
+```
+
+### npm 发布流程
+
+**前置条件**:
+1. 已安装 Node.js 和 npm
+2. 已注册 npm 账号
+3. 已登录 npm (`npm login`)
+4. 构建脚本执行成功
+
+**发布步骤**:
+
+```powershell
+# 步骤 1: 进入发布目录
+cd publish
+
+# 步骤 2: 验证包内容
+npm pack --dry-run
+
+# 步骤 3: 发布到 npm
+npm publish
+
+# 步骤 4: 验证发布成功
+npm view @jingjingbox/mcp-cli-bridge
+```
+
+**版本更新流程**:
+
+1. 更新 `package.json` 中的 `version` 字段
+2. 更新 `AGENTS.md` 中的版本号
+3. 执行 `.\build.ps1` 重新构建
+4. 执行 `npm publish` 发布新版本
+
+**发布平台**: Windows x64
+
+**注意事项**:
+- 发布前确保所有测试通过
+- 检查版本号是否正确更新
+- 确认 `publish/` 目录包含所有必需文件
+- 首次发布后无法删除包，只能发布新版本
 
 ***
 
