@@ -7,6 +7,6 @@ global using System.Text.Json;
 global using System.Text.Json.Serialization;
 global using System.Threading;
 global using System.Threading.Tasks;
-global using Service.Json;
+global using Common.Json;
 global using Common.Contracts.Models;
 global using McpProtocol.Contracts;
