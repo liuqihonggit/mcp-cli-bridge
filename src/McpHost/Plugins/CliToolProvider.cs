@@ -64,7 +64,13 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
                 return false;
             }
 
-            return ParsePluginDescriptor(result.Message);
+            if (!ParsePluginDescriptor(result.Message))
+            {
+                return false;
+            }
+
+            await LoadCommandsAsync();
+            return true;
         }
         catch (Exception ex)
         {
@@ -75,7 +81,6 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
 
     public IReadOnlyList<IToolMetadata> GetAvailableTools()
     {
-        EnsureCommandsLoaded();
         return _tools.Values.Cast<IToolMetadata>().ToList().AsReadOnly();
     }
 
@@ -88,8 +93,6 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         {
             return CreateErrorResult("Tool name cannot be empty");
         }
-
-        EnsureCommandsLoaded();
 
         var executablePath = ResolveExecutablePath();
         if (string.IsNullOrEmpty(executablePath))
@@ -141,14 +144,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         }
     }
 
-    private void EnsureCommandsLoaded()
-    {
-        if (_commandsLoaded) return;
-        LoadCommandsSync();
-        _commandsLoaded = true;
-    }
-
-    private void LoadCommandsSync()
+    private async Task LoadCommandsAsync()
     {
         var executablePath = ResolveExecutablePath();
         if (string.IsNullOrEmpty(executablePath)) return;
@@ -156,11 +152,12 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         try
         {
             var args = BuildListCommandsArguments();
-            var result = ExecuteCliRawSync(executablePath, args, _defaultTimeout);
+            var result = await ExecuteCliRawAsync(executablePath, args, _defaultTimeout);
 
             if (result.Success)
             {
                 ParseCommandList(result.Message);
+                _commandsLoaded = true;
             }
             else
             {
@@ -170,49 +167,6 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         catch (Exception ex)
         {
             _logger.Log(LogLevel.Error, ex, $"Error loading commands from {_cliCommand}");
-        }
-    }
-
-    private OperationResult ExecuteCliRawSync(string executablePath, string arguments, TimeSpan timeout)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = executablePath,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8
-        };
-
-        using var cts = new CancellationTokenSource(timeout);
-        using var process = new Process { StartInfo = startInfo };
-
-        try
-        {
-            process.Start();
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
-            var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);
-            process.WaitForExitAsync(cts.Token).GetAwaiter().GetResult();
-            stopwatch.Stop();
-
-            var stdout = stdoutTask.Result ?? string.Empty;
-            return new OperationResult
-            {
-                Success = process.ExitCode == 0,
-                ExitCode = process.ExitCode,
-                ExecutionTimeMs = stopwatch.Elapsed.TotalMilliseconds,
-                Message = stdout
-            };
-        }
-        catch (OperationCanceledException)
-        {
-            stopwatch.Stop();
-            try { process.Kill(entireProcessTree: true); } catch { }
-            return OperationResultFactoryNonGeneric.Timeout(timeout, stopwatch.Elapsed.TotalMilliseconds);
         }
     }
 
