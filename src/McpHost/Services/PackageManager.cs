@@ -33,19 +33,27 @@ public sealed class PackageManager : IPackageManager
     {
         var platform = GetPlatformIdentifier();
 
-        // 查找当前进程所在目录（统一输出到 publish 目录）
         var processDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
         if (!string.IsNullOrEmpty(processDir))
         {
+            var pluginSubDirPath = Path.Combine(processDir, DirectoryNames.Plugins, toolName, $"{toolName}{FileExtensions.Exe}");
+            if (File.Exists(pluginSubDirPath))
+                return pluginSubDirPath;
+
+            var pluginsDirPath = Path.Combine(processDir, DirectoryNames.Plugins, $"{toolName}{FileExtensions.Exe}");
+            if (File.Exists(pluginsDirPath))
+                return pluginsDirPath;
+
             var processDirPath = Path.Combine(processDir, $"{toolName}{FileExtensions.Exe}");
             if (File.Exists(processDirPath))
                 return processDirPath;
         }
 
-        // 按平台查找缓存目录
         var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         var searchPaths = new[]
         {
+            Path.Combine(ToolsDirectory, DirectoryNames.Plugins, toolName, toolName),
+            Path.Combine(ToolsDirectory, DirectoryNames.Plugins, toolName),
             Path.Combine(ToolsDirectory, DirectoryNames.Cli, $"{platform}-{arch}", toolName),
             Path.Combine(ToolsDirectory, DirectoryNames.Cli, platform, toolName),
             Path.Combine(ToolsDirectory, DirectoryNames.Cli, toolName),
@@ -69,19 +77,50 @@ public sealed class PackageManager : IPackageManager
     {
         var plugins = new List<string>();
 
-        // 查找当前进程所在目录下的所有 .exe 文件（统一输出到 publish 目录）
         var processDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
         if (!string.IsNullOrEmpty(processDir))
         {
-            var exeFiles = Directory.GetFiles(processDir, "*.exe");
-            foreach (var exeFile in exeFiles)
+            var pluginsDir = Path.Combine(processDir, DirectoryNames.Plugins);
+            if (Directory.Exists(pluginsDir))
+            {
+                foreach (var subDir in Directory.GetDirectories(pluginsDir))
+                {
+                    var exeFiles = Directory.GetFiles(subDir, "*.exe");
+                    foreach (var exeFile in exeFiles)
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension(exeFile);
+                        if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
+                        {
+                            plugins.Add(fileName);
+                            _logger.Info($"Discovered CLI plugin: {fileName}");
+                        }
+                    }
+                }
+
+                var rootExeFiles = Directory.GetFiles(pluginsDir, "*.exe");
+                foreach (var exeFile in rootExeFiles)
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(exeFile);
+                    if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
+                    {
+                        plugins.Add(fileName);
+                        _logger.Info($"Discovered CLI plugin: {fileName}");
+                    }
+                }
+            }
+
+            var exeFilesInRoot = Directory.GetFiles(processDir, "*.exe");
+            foreach (var exeFile in exeFilesInRoot)
             {
                 var fileName = Path.GetFileNameWithoutExtension(exeFile);
                 if (fileName.Equals("McpHost", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                plugins.Add(fileName);
-                _logger.Info($"Discovered CLI plugin: {fileName}");
+                if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
+                {
+                    plugins.Add(fileName);
+                    _logger.Info($"Discovered CLI plugin: {fileName}");
+                }
             }
         }
 
