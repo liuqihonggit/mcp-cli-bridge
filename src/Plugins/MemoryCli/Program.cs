@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Common.Contracts.Models;
-using Service.Json;
+using Common.Json;
 using Common.Results;
 
 using var logger = new Logger(

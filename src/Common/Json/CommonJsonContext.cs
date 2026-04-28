@@ -1,4 +1,6 @@
-namespace Service.Json;
+using McpProtocol.Contracts;
+
+namespace Common.Json;
 
 // 基础集合类型
 [JsonSerializable(typeof(Dictionary<string, JsonElement>))]
@@ -25,7 +27,7 @@ namespace Service.Json;
 
 // 安全模型
 [JsonSerializable(typeof(SecurityAuditEntry))]
-[JsonSerializable(typeof(ValidationError))]
+[JsonSerializable(typeof(Common.Contracts.Security.ValidationError))]
 [JsonSerializable(typeof(WhitelistConfiguration))]
 [JsonSerializable(typeof(RbacConfiguration))]
 [JsonSerializable(typeof(WhitelistConfigurationJsonModel))]

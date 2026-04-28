@@ -1,4 +1,7 @@
-namespace Service.Json;
+using System.Text.Json.Serialization.Metadata;
+using McpProtocol.Contracts;
+
+namespace Common.Json;
 
 public static class McpJsonSerializer
 {

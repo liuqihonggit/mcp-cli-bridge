@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
-    <ProjectReference Include="..\Service.Json\Service.Json.csproj" />
   </ItemGroup>
 
   <ItemGroup>

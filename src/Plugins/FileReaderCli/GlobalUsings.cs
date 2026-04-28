@@ -15,7 +15,7 @@ global using Common.CliProtocol;
 global using FileReaderCli.Commands;
 global using FileReaderCli.Services;
 global using Common.Contracts.Models;
-global using Service.Json;
+global using Common.Json;
 global using Common.Contracts;
 global using McpProtocol.Contracts;
 global using static Common.Constants.ConstantManager;

@@ -1,4 +1,4 @@
-namespace Service.Json;
+namespace Common.Json;
 
 public static class JsonConstants
 {

@@ -1,4 +1,4 @@
-namespace Service.Json;
+namespace Common.Json;
 
 /// <summary>
 /// JSON Schema 序列化器

@@ -1,4 +1,4 @@
-namespace Service.Json.Schema;
+namespace Common.Json.Schema;
 
 /// <summary>
 /// JSON Schema 构建器
