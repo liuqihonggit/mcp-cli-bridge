@@ -7,6 +7,7 @@ global using System.Text.Json;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using Common.Caching;
+global using Common.Contracts.Caching;
 global using Common.Logging;
 global using Common.Plugins;
 global using Common.Security;

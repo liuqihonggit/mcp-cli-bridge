@@ -73,29 +73,3 @@ public sealed class CacheEntry<T>
         AccessCount = Interlocked.Increment(ref _accessCountField);
     }
 }
-
-/// <summary>
-/// 缓存优先级
-/// </summary>
-public enum CachePriority
-{
-    /// <summary>
-    /// 低优先级，优先淘汰
-    /// </summary>
-    Low = 0,
-
-    /// <summary>
-    /// 普通优先级
-    /// </summary>
-    Normal = 1,
-
-    /// <summary>
-    /// 高优先级，延迟淘汰
-    /// </summary>
-    High = 2,
-
-    /// <summary>
-    /// 永不淘汰
-    /// </summary>
-    NeverRemove = 3
-}

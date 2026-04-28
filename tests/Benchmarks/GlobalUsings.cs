@@ -8,6 +8,7 @@ global using System.Threading.Tasks;
 global using BenchmarkDotNet.Attributes;
 global using BenchmarkDotNet.Running;
 global using Common.Caching;
+global using Common.Contracts.Caching;
 global using Common.Logging;
 global using Common.Reflection;
 global using Common.Tools;

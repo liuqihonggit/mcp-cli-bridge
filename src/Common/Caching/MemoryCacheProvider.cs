@@ -109,7 +109,7 @@ public sealed class MemoryCacheProvider : ICacheProvider
                 }
                 : null;
 
-            return new(CacheResult<T>.Hit(value!, entry));
+            return new(CacheResult<T>.Hit(value!));
         }
 
         return new(CacheResult<T>.Miss);

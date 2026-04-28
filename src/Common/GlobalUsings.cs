@@ -24,6 +24,7 @@ global using Service.Json;
 global using Common.Caching;
 global using Common.Configuration;
 global using Common.Contracts;
+global using Common.Contracts.Caching;
 global using Common.Constants;
 global using Common.IoC;
 global using Common.Logging;

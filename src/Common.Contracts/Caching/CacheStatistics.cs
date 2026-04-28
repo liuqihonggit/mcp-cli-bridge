@@ -1,4 +1,4 @@
-namespace Common.Caching;
+namespace Common.Contracts.Caching;
 
 /// <summary>
 /// 缓存统计信息

@@ -1,4 +1,4 @@
-namespace Common.Caching;
+namespace Common.Contracts.Caching;
 
 /// <summary>
 /// 缓存提供者接口，定义缓存操作的抽象

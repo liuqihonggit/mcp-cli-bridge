@@ -33,6 +33,7 @@ global using Common.Security.Models;
 global using Common;
 global using Common.Tools;
 global using Common.Contracts;
+global using Common.Contracts.Caching;
 global using McpProtocol;
 global using McpProtocol.Contracts;
 global using Service.Json.Contracts;
