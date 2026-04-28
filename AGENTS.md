@@ -12,6 +12,27 @@
 
 为 TraeCN 提供 MCP 接口支持，通过少量 MCP 工具查找和管理 CLI.exe 工具，降低上下文成本。
 
+1, 这个项目是为了TraeCN而创建的.
+它只支持MCP接口,在McpHost中通过少量的MCP来查找CLI.exe工具.
+每个CLI.exe内部有多个工具,它们内部就不是MCP了,而是通过说明文档来调用,降低上下文成本.
+
+每个CLI.exe的工具都不要缓存,
+未来一个CLI内部可能有上万个命令,上万个描述.
+工具内部可以有帮助,可以有`CLI说明.md`文档,
+LLM可以动态获取,渐进式获取,但不能直接一股脑塞到缓存,一下子全部暴露给上下文. 
+
+2, 通过 build.ps1 脚本来发布插件,插件会被发布到 publish/ 文件夹下面.
+包括 npm包相关内容,以及 readme.md 文件.
+不需要 配置文件,因为查找是同目录下面的CLI.exe文件.
+发布时候,不能手动复制文件,只能去修改对应的生成逻辑.
+
+3, src/Plugins/ 文件夹下面的都是外部插件,
+不能在 src/ 等等内部项目中出现任何提及,只能通过协议进行获取调用函数的内容.
+
+- MCP Server 应该只暴露 Host 层面的管理工具 （tool_search, tool_execute, tool_list 等）
+- CLI 内部的工具 （memory_create_entities, file_reader_read_head） 不应该直接暴露
+- 而是通过 tool_execute 来间接调用
+
 ***
 
 ## 架构设计
