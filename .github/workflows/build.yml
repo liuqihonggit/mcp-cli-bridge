@@ -29,21 +29,44 @@ jobs:
 
       - name: Build local NuGet packages (McpProtocol)
         run: |
-          Write-Host "=== Building McpProtocol packages ===" -ForegroundColor Cyan
-          dotnet pack lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
+          Write-Host "=== Creating clean nuget config for McpProtocol ===" -ForegroundColor Cyan
+          $ciConfig = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          "@
+          $ciConfig | Out-File -FilePath "nuget.config.ci" -Encoding utf8
+          
+          Write-Host "=== Building McpProtocol.Contracts ===" -ForegroundColor Cyan
+          dotnet restore lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
+            --configfile nuget.config.ci `
+            -c Release
+          dotnet build lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
+            --configfile nuget.config.ci `
             -c Release `
-            -p:IncludeSymbols=true
+            --no-restore
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "McpProtocol pack failed"
+            Write-Error "McpProtocol.Contracts build failed"
             exit 1
           }
-          dotnet pack lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
+          
+          Write-Host "=== Building McpProtocol ===" -ForegroundColor Cyan
+          dotnet restore lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
+            --configfile nuget.config.ci `
+            -c Release
+          dotnet build lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
+            --configfile nuget.config.ci `
             -c Release `
-            -p:IncludeSymbols=true
+            --no-restore
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "McpProtocol.Contracts pack failed"
+            Write-Error "McpProtocol build failed"
             exit 1
           }
+          
           Write-Host "=== Packages built successfully ===" -ForegroundColor Green
 
       - name: Restore dependencies
