@@ -212,8 +212,17 @@ McpHost/
 
 ### 源码仓库
 
+本项目同时在 Gitee 和 GitHub 上维护：
+
+- **Gitee**: https://gitee.com/JJbox/memory (国内访问更快)
+- **GitHub**: https://github.com/JJbox-io/McpHost (国际访问)
+
 ```bash
+# 从 Gitee 克隆
 git clone https://gitee.com/JJbox/memory.git
+
+# 或从 GitHub 克隆
+git clone https://github.com/JJbox-io/McpHost.git
 ```
 
 ### 构建
@@ -246,5 +255,6 @@ dotnet run --project tests\E2E\MyMemoryServer.E2E.csproj -c Release
 
 **JJbox**
 
-- 仓库: https://gitee.com/JJbox/memory
-- 问题反馈: https://gitee.com/JJbox/memory/issues
+- Gitee: https://gitee.com/JJbox/memory
+- GitHub: https://github.com/JJbox-io/McpHost
+- 问题反馈: https://github.com/JJbox-io/McpHost/issues
