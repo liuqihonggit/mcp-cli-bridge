@@ -1,6 +1,6 @@
 {
   "name": "@jingjingbox/mcp-cli-bridge",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "MCP-CLI Bridge - Call CLI tools through MCP protocol",
   "main": "index.js",
   "bin": {
