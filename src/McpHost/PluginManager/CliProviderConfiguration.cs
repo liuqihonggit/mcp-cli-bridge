@@ -1,4 +1,4 @@
-namespace McpHost.Plugins;
+namespace McpHost.PluginManager;
 
 /// <summary>
 /// 插件配置文件根对象

@@ -1,6 +1,6 @@
 using Common.Tools;
 
-namespace McpHost.Plugins;
+namespace McpHost.PluginManager;
 
 /// <summary>
 /// 插件配置验证结果

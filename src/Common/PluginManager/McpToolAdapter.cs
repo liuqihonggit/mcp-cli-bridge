@@ -1,4 +1,4 @@
-namespace Common.Plugins;
+namespace Common.PluginManager;
 
 using McpProtocol;
 

@@ -8,9 +8,6 @@ using var logger = new Logger(
     LogLevel.Info,
     nameof(MemoryCli));
 
-var rulesInstaller = new RulesInstallerService();
-await rulesInstaller.InstallDefaultRulesAsync();
-
 var rootCommand = new RootCommand("Knowledge Graph CLI Tool - Manage entities and relations");
 
 var jsonInputOption = new Option<string>(

@@ -8,12 +8,12 @@
   },
   "files": [
     "McpHost.exe",
-    "MemoryCli.exe",
-    "FileReaderCli.exe",
     "index.js",
     "README.md",
-    "MemoryCli说明.md",
-    "FileReaderCli说明.md"
+    "Plugins/MemoryCli/MemoryCli.exe",
+    "Plugins/MemoryCli/CLI说明.md",
+    "Plugins/FileReaderCli/FileReaderCli.exe",
+    "Plugins/FileReaderCli/CLI说明.md"
   ],
   "keywords": [
     "mcp",

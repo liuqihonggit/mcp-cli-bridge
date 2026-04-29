@@ -1,6 +1,6 @@
 using Common.Results;
 
-namespace McpHost.Plugins;
+namespace McpHost.PluginManager;
 
 public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposable
 {

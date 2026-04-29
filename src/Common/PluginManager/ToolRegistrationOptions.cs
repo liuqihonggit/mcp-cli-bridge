@@ -1,4 +1,4 @@
-namespace Common.Plugins;
+namespace Common.PluginManager;
 
 /// <summary>
 /// 工具注册选项，封装工具注册的参数配置

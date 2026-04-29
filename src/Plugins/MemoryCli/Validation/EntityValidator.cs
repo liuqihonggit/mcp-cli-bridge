@@ -1,4 +1,3 @@
-using Common.Plugins;
 using Common.Results;
 
 namespace MemoryCli.Validation;

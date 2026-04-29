@@ -1,4 +1,4 @@
-namespace McpHost.Plugins;
+namespace McpHost.PluginManager;
 
 /// <summary>
 /// CLI工具元数据实现

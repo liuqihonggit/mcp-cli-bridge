@@ -3,20 +3,72 @@
 
 $ErrorActionPreference = "Stop"
 
-# Clean publish directory first
-if (Test-Path "publish") {
-    Get-ChildItem "publish\*" -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-}
-
 Write-Host "Building MCP-CLI Bridge..." -ForegroundColor Green
 
-New-Item -ItemType Directory -Path "publish" -Force | Out-Null
-New-Item -ItemType Directory -Path "publish\Plugins\MemoryCli" -Force | Out-Null
-New-Item -ItemType Directory -Path "publish\Plugins\FileReaderCli" -Force | Out-Null
+# Step 1: Pack local NuGet packages
+Write-Host "`n[Packing] Local NuGet packages..." -ForegroundColor Cyan
 
-# Build McpHost
-Write-Host "Building McpHost (AOT)..." -ForegroundColor Cyan
-dotnet publish src\McpHost\McpHost.csproj `
+$localNugetPath = "$PSScriptRoot\nuget"
+if (-not (Test-Path $localNugetPath)) {
+    New-Item -ItemType Directory -Path $localNugetPath -Force | Out-Null
+}
+
+# Pack McpProtocol.Contracts
+Write-Host "  Packing McpProtocol.Contracts..." -ForegroundColor Gray
+dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" `
+    -c Release `
+    -o $localNugetPath `
+    --no-build
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  Building McpProtocol.Contracts first..." -ForegroundColor Yellow
+    dotnet build "$PSScriptRoot\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" -c Release
+    dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" `
+        -c Release `
+        -o $localNugetPath
+}
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "McpProtocol.Contracts pack failed!"
+    exit 1
+}
+
+# Pack McpProtocol
+Write-Host "  Packing McpProtocol..." -ForegroundColor Gray
+dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" `
+    -c Release `
+    -o $localNugetPath `
+    --no-build
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  Building McpProtocol first..." -ForegroundColor Yellow
+    dotnet build "$PSScriptRoot\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" -c Release
+    dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" `
+        -c Release `
+        -o $localNugetPath
+}
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "McpProtocol pack failed!"
+    exit 1
+}
+
+# Step 2: Clear NuGet cache for local packages
+Write-Host "`n[Cache] Clearing NuGet cache..." -ForegroundColor Cyan
+& "$PSScriptRoot\scripts\clear-nuget-cache.ps1"
+
+# Step 3: Clean publish directory
+if (Test-Path "$PSScriptRoot\publish") {
+    Get-ChildItem "$PSScriptRoot\publish\*" -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+New-Item -ItemType Directory -Path "$PSScriptRoot\publish" -Force | Out-Null
+New-Item -ItemType Directory -Path "$PSScriptRoot\publish\Plugins\MemoryCli" -Force | Out-Null
+New-Item -ItemType Directory -Path "$PSScriptRoot\publish\Plugins\FileReaderCli" -Force | Out-Null
+
+# Step 4: Build McpHost
+Write-Host "`n[Build] McpHost (AOT)..." -ForegroundColor Cyan
+dotnet publish "$PSScriptRoot\src\McpHost\McpHost.csproj" `
     -c Release `
     -r win-x64 `
     --self-contained true `
@@ -29,9 +81,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Build MemoryCli
-Write-Host "Building MemoryCli (AOT)..." -ForegroundColor Cyan
-dotnet publish src\Plugins\MemoryCli\MemoryCli.csproj `
+# Step 5: Build MemoryCli
+Write-Host "`n[Build] MemoryCli (AOT)..." -ForegroundColor Cyan
+dotnet publish "$PSScriptRoot\src\Plugins\MemoryCli\MemoryCli.csproj" `
     -c Release `
     -r win-x64 `
     --self-contained true `
@@ -44,9 +96,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Build FileReaderCli
-Write-Host "Building FileReaderCli (AOT)..." -ForegroundColor Cyan
-dotnet publish src\Plugins\FileReaderCli\FileReaderCli.csproj `
+# Step 6: Build FileReaderCli
+Write-Host "`n[Build] FileReaderCli (AOT)..." -ForegroundColor Cyan
+dotnet publish "$PSScriptRoot\src\Plugins\FileReaderCli\FileReaderCli.csproj" `
     -c Release `
     -r win-x64 `
     --self-contained true `
@@ -59,17 +111,21 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Copy npm package files to publish
-Write-Host "Copying npm package files..." -ForegroundColor Cyan
-Copy-Item "package.json" "publish\" -Force
-Copy-Item "index.js" "publish\" -Force
-Copy-Item "README.md" "publish\" -Force
+# Step 7: Copy npm package files
+Write-Host "`n[Copy] npm package files..." -ForegroundColor Cyan
+Copy-Item "$PSScriptRoot\package.json" "$PSScriptRoot\publish\" -Force
+Copy-Item "$PSScriptRoot\index.js" "$PSScriptRoot\publish\" -Force
+Copy-Item "$PSScriptRoot\README.md" "$PSScriptRoot\publish\" -Force
+
+# Copy CLI documentation files to Plugins subdirectories
+Copy-Item "$PSScriptRoot\src\Plugins\MemoryCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\MemoryCli\CLI说明.md" -Force
+Copy-Item "$PSScriptRoot\src\Plugins\FileReaderCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\FileReaderCli\CLI说明.md" -Force
 
 # Verify outputs
 $requiredFiles = @(
-    "publish\McpHost.exe",
-    "publish\Plugins\MemoryCli\MemoryCli.exe",
-    "publish\Plugins\FileReaderCli\FileReaderCli.exe"
+    "$PSScriptRoot\publish\McpHost.exe",
+    "$PSScriptRoot\publish\Plugins\MemoryCli\MemoryCli.exe",
+    "$PSScriptRoot\publish\Plugins\FileReaderCli\FileReaderCli.exe"
 )
 
 foreach ($file in $requiredFiles) {
@@ -80,15 +136,18 @@ foreach ($file in $requiredFiles) {
 }
 
 # Show results
-Write-Host "`nBuild completed successfully!" -ForegroundColor Green
+Write-Host "`n========================================" -ForegroundColor Green
+Write-Host "Build completed successfully!" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+
 Write-Host "`nPublished files:" -ForegroundColor Cyan
-Get-ChildItem "publish\*" -File | ForEach-Object {
+Get-ChildItem "$PSScriptRoot\publish\*" -File | ForEach-Object {
     $size = "{0:N0}" -f $_.Length
     Write-Host "  $($_.Name) ($size bytes)"
 }
 
 Write-Host "`nPlugins:" -ForegroundColor Cyan
-Get-ChildItem "publish\Plugins" -Directory | ForEach-Object {
+Get-ChildItem "$PSScriptRoot\publish\Plugins" -Directory | ForEach-Object {
     $pluginName = $_.Name
     Write-Host "  [$pluginName]" -ForegroundColor Yellow
     Get-ChildItem $_.FullName -File | ForEach-Object {
@@ -98,8 +157,8 @@ Get-ChildItem "publish\Plugins" -Directory | ForEach-Object {
 }
 
 Write-Host "`nPackage size:" -ForegroundColor Cyan
-$hostSize = (Get-ChildItem "publish\*" -File | Measure-Object -Property Length -Sum).Sum
-$pluginsSize = (Get-ChildItem "publish\Plugins" -Recurse -File | Measure-Object -Property Length -Sum).Sum
+$hostSize = (Get-ChildItem "$PSScriptRoot\publish\*" -File | Measure-Object -Property Length -Sum).Sum
+$pluginsSize = (Get-ChildItem "$PSScriptRoot\publish\Plugins" -Recurse -File | Measure-Object -Property Length -Sum).Sum
 $totalSize = $hostSize + $pluginsSize
 $sizeMB = "{0:N2}" -f ($totalSize / 1MB)
 Write-Host "  Total: $sizeMB MB"

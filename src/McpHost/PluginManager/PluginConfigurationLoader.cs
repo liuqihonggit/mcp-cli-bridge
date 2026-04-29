@@ -1,6 +1,6 @@
 using Common.Tools;
 
-namespace McpHost.Plugins;
+namespace McpHost.PluginManager;
 
 public sealed class PluginConfigurationLoader
 {

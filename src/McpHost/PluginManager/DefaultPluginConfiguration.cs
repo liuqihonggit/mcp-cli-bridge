@@ -1,4 +1,4 @@
-namespace McpHost.Plugins;
+namespace McpHost.PluginManager;
 
 /// <summary>
 /// 默认插件配置 - 替代 plugins.json 的代码配置

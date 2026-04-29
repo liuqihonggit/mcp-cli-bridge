@@ -6,6 +6,11 @@ public static class JsonRpc
     public const string ContentLengthPrefix = "Content-Length: ";
 }
 
+public static class McpProtocolVersion
+{
+    public const string Current = "2024-11-05";
+}
+
 public static class ErrorCodes
 {
     public const int ParseError = -32700;

@@ -1,4 +1,4 @@
-namespace Common.Contracts.Plugins;
+namespace Common.Contracts.PluginManager;
 
 /// <summary>
 /// 工具提供者接口，定义CLI工具提供者的核心能力

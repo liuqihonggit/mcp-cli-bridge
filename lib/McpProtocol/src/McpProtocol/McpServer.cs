@@ -178,7 +178,7 @@ public class McpServer : IMcpServer
     {
         return new InitializeResult
         {
-            ProtocolVersion = JsonRpc.ProtocolVersion,
+            ProtocolVersion = McpProtocolVersion.Current,
             Capabilities = new ServerCapabilities
             {
                 Tools = new ToolsCapability { ListChanged = false }
@@ -196,10 +196,18 @@ public class McpServer : IMcpServer
         var tools = _tools.Values.Select(h => new ToolDefinition
         {
             Name = h.Name,
-            Description = h.Description
+            Description = h.Description,
+            InputSchema = CreateEmptyInputSchema()
         }).ToList();
 
         return new ListToolsResult { Tools = tools };
+    }
+
+    private static JsonElement CreateEmptyInputSchema()
+    {
+        var json = @"{""type"":""object"",""properties"":{},""required"":[]}";
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.Clone();
     }
 
     private async Task<CallToolResult> HandleCallToolAsync(object? paramsObj, CancellationToken cancellationToken)

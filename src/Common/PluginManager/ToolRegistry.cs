@@ -1,4 +1,4 @@
-namespace Common.Plugins;
+namespace Common.PluginManager;
 
 /// <summary>
 /// 工具注册中心实现 — 渐进式发现架构

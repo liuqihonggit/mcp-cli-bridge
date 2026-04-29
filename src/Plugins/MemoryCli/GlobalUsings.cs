@@ -13,7 +13,7 @@ global using Common.Constants;
 global using Common.Contracts;
 global using Common.Logging;
 global using Common.CliProtocol;
-global using Common.Plugins;
+global using Common.PluginManager;
 global using Common.Tools;
 global using Common.Contracts.Models;
 global using Common.Json;
