@@ -4,7 +4,7 @@
 
 ## 📁 项目结构
 
-### 目录树
+### 目录树(关键部分)
 
 ```
 McpHost/
@@ -29,6 +29,7 @@ McpHost/
 │   ├── SecurityTests/              # 安全测试
 │   └── UnitTests/                  # 单元测试
 │
+├── nuget.config                    # NuGet 配置
 ├── .github/workflows/              # CI/CD
 └── AI交互文档/                      # AI 开发规范
 ```
@@ -49,7 +50,7 @@ McpHost/
 
 ```
 Plugins (EXE) ──→ Common (DLL) ──→ Common.Contracts (DLL)
-                        ↑
+                         ↑
 McpHost (EXE) ───────────┘     McpProtocol (DLL/NuGet)
 ```
 
