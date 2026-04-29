@@ -3,7 +3,7 @@
 ## 项目概述
 
 **项目名称**: @jingjingbox/mcp-cli-bridge\
-**版本**: 3.0.5\
+**版本**: 3.0.6\
 **定位**: MCP-CLI 桥接服务器 - 通过 MCP 协议调用 CLI 工具\
 **目标平台**: Windows x64\
 **技术栈**: .NET 10.0, NativeAOT, C# 13
