@@ -64,6 +64,33 @@ function Update-PackageJson {
     Set-Content $packageJsonPath $content -NoNewline
 }
 
+function Invoke-GitPush {
+    param([string]$remote, [string]$ref, [int]$timeoutSeconds = 60)
+    
+    $job = Start-Job -ScriptBlock {
+        param($remote, $ref)
+        git push $remote $ref 2>&1
+    } -ArgumentList $remote, $ref
+    
+    $result = Wait-Job $job -Timeout $timeoutSeconds
+    if (-not $result) {
+        Remove-Job $job -Force
+        Write-Host "  [TIMEOUT] git push $remote $ref" -ForegroundColor Yellow
+        return $false
+    }
+    
+    $output = Receive-Job $job
+    Remove-Job $job -Force -ErrorAction SilentlyContinue
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  [FAILED] git push $remote $ref" -ForegroundColor Yellow
+        return $false
+    }
+    
+    Write-Host "  [OK] git push $remote $ref" -ForegroundColor Green
+    return $true
+}
+
 $gitStatus = git status --porcelain 2>$null
 if ($gitStatus) {
     Write-Error "Git working directory is not clean! Please commit or stash changes first."
@@ -105,29 +132,31 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "`n[Push] Pushing to GitHub..." -ForegroundColor Cyan
+Write-Host "`n[Push] Pushing to remotes (timeout: 60s each)..." -ForegroundColor Cyan
 
-git push github main
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Push main to github failed!"
-    exit 1
+$pushSuccess = $false
+
+if (Invoke-GitPush "origin" "main" 60) {
+    $pushSuccess = $true
 }
 
-git push github "v$newVersion"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Push tag to github failed!"
-    exit 1
+if (Invoke-GitPush "origin" "v$newVersion" 60) {
+    $pushSuccess = $true
 }
 
-Write-Host "`n[Push] Pushing to Gitee..." -ForegroundColor Cyan
-git push origin main 2>$null
-git push origin "v$newVersion" 2>$null
+if (-not $pushSuccess) {
+    Write-Host "`n[WARNING] All push attempts failed, but tag is created locally" -ForegroundColor Yellow
+    Write-Host "  You can manually push with: git push origin main && git push origin v$newVersion" -ForegroundColor Gray
+}
 
 Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "Release v$newVersion triggered!" -ForegroundColor Green
+Write-Host "Release v$newVersion completed!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "`nCI/CD will now:" -ForegroundColor Cyan
-Write-Host "  1. Build and test" -ForegroundColor Gray
-Write-Host "  2. Publish to npm" -ForegroundColor Gray
-Write-Host "  3. Create GitHub Release" -ForegroundColor Gray
-Write-Host "`nMonitor: https://github.com/liuqihonggit/mcp-cli-bridge/actions" -ForegroundColor Yellow
+
+if ($pushSuccess) {
+    Write-Host "`nCI/CD will now:" -ForegroundColor Cyan
+    Write-Host "  1. Build and test" -ForegroundColor Gray
+    Write-Host "  2. Publish to npm" -ForegroundColor Gray
+    Write-Host "  3. Create GitHub Release" -ForegroundColor Gray
+    Write-Host "`nMonitor: https://github.com/liuqihonggit/mcp-cli-bridge/actions" -ForegroundColor Yellow
+}
