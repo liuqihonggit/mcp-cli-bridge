@@ -27,6 +27,25 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Build local NuGet packages (McpProtocol)
+        run: |
+          Write-Host "=== Building McpProtocol packages ===" -ForegroundColor Cyan
+          dotnet pack lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
+            -c Release `
+            -p:IncludeSymbols=true
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "McpProtocol pack failed"
+            exit 1
+          }
+          dotnet pack lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
+            -c Release `
+            -p:IncludeSymbols=true
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "McpProtocol.Contracts pack failed"
+            exit 1
+          }
+          Write-Host "=== Packages built successfully ===" -ForegroundColor Green
+
       - name: Restore dependencies
         run: |
           Write-Host "=== Starting dotnet restore ===" -ForegroundColor Cyan
