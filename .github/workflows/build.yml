@@ -43,8 +43,7 @@ jobs:
           
           Write-Host "=== Building McpProtocol.Contracts ===" -ForegroundColor Cyan
           dotnet restore lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
-            --configfile nuget.config.ci `
-            -c Release
+            --configfile nuget.config.ci
           dotnet build lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
             --configfile nuget.config.ci `
             -c Release `
@@ -56,8 +55,7 @@ jobs:
           
           Write-Host "=== Building McpProtocol ===" -ForegroundColor Cyan
           dotnet restore lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
-            --configfile nuget.config.ci `
-            -c Release
+            --configfile nuget.config.ci
           dotnet build lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
             --configfile nuget.config.ci `
             -c Release `
