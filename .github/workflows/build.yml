@@ -28,10 +28,27 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore McpHost.slnx
+        run: |
+          Write-Host "=== Starting dotnet restore ===" -ForegroundColor Cyan
+          dotnet --version
+          dotnet --list-sdks
+          Write-Host "=== Restoring packages ===" -ForegroundColor Cyan
+          dotnet restore McpHost.slnx --verbosity detailed
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "dotnet restore failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+          Write-Host "=== Restore completed ===" -ForegroundColor Green
 
       - name: Build
-        run: dotnet build McpHost.slnx -c Release --no-restore
+        run: |
+          Write-Host "=== Starting build ===" -ForegroundColor Cyan
+          dotnet build McpHost.slnx -c Release --no-restore --verbosity detailed
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "dotnet build failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+          Write-Host "=== Build completed ===" -ForegroundColor Green
 
       - name: Test
         run: dotnet test McpHost.slnx -c Release --no-build --verbosity normal
