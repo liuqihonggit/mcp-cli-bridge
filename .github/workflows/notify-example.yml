@@ -1,0 +1,35 @@
+# 这是一个通知示例，需要配置 webhook
+name: Notify Example
+
+on:
+  workflow_run:
+    workflows: ["Publish to npm"]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification to WeChat Work
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          curl -X POST "${{ secrets.WECHAT_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msgtype": "text",
+              "text": {
+                "content": "❌ McpHost 发布失败！\n版本: ${{ github.event.workflow_run.head_branch }}\n查看: ${{ github.event.workflow_run.html_url }}"
+              }
+            }'
+
+      - name: Send notification to DingTalk
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          curl -X POST "${{ secrets.DINGTALK_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msgtype": "text",
+              "text": {
+                "content": "❌ McpHost 发布失败！\n版本: ${{ github.event.workflow_run.head_branch }}\n查看: ${{ github.event.workflow_run.html_url }}"
+              }
+            }'

@@ -13,6 +13,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate version match
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $tagVersion = $tag -replace '^v', ''
+          $package = Get-Content "package.json" | ConvertFrom-Json
+          $packageVersion = $package.version
+          
+          Write-Host "Tag version: $tagVersion"
+          Write-Host "Package version: $packageVersion"
+          
+          if ($tagVersion -ne $packageVersion) {
+            Write-Error "Version mismatch! Tag is '$tagVersion' but package.json is '$packageVersion'"
+            Write-Error "Please update package.json version to match the tag before pushing."
+            exit 1
+          }
+          
+          Write-Host "Version match confirmed: $tagVersion" -ForegroundColor Green
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -110,3 +128,18 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify success
+        if: success()
+        run: |
+          Write-Host "✅ Publish successful! Version ${{ github.ref_name }} has been published to npm."
+          Write-Host "📦 Package: @jingjingbox/mcp-cli-bridge"
+          Write-Host "🏷️  Version: ${{ github.ref_name }}"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          Write-Host "❌ Publish failed!"
+          Write-Host "🔍 Please check the logs above for details."
+          Write-Host "🔗 Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          exit 1

@@ -1,0 +1,56 @@
+name: Auto Create Issue on Failure
+
+on:
+  workflow_run:
+    workflows: ["Build and Test", "Publish to npm"]
+    types: [completed]
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: Create Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflowName = context.payload.workflow_run.name;
+            const runId = context.payload.workflow_run.id;
+            const runUrl = context.payload.workflow_run.html_url;
+            const branch = context.payload.workflow_run.head_branch;
+            const commit = context.payload.workflow_run.head_commit.message;
+            
+            const title = `❌ ${workflowName} failed on ${branch}`;
+            const body = `
+            ## Workflow Failure Report
+            
+            | Item | Value |
+            |------|-------|
+            | Workflow | ${workflowName} |
+            | Branch | ${branch} |
+            | Commit | ${commit} |
+            | Run ID | ${runId} |
+            
+            ### Details
+            - **Workflow Run**: [View logs](${runUrl})
+            - **Failed at**: ${new Date().toISOString()}
+            
+            ### Next Steps
+            1. Click the workflow run link above
+            2. Check the failed step logs
+            3. Fix the issue
+            4. Re-run the workflow if needed
+            
+            ---
+            *This issue was automatically created by GitHub Actions.*
+            `;
+            
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['bug', 'ci-failure', 'automated']
+            });
+            
+            console.log(`Created issue #${issue.number}: ${issue.html_url}`);
