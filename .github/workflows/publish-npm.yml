@@ -36,6 +36,46 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Build local NuGet packages (McpProtocol)
+        run: |
+          Write-Host "=== Creating clean nuget config for McpProtocol ===" -ForegroundColor Cyan
+          $ciConfig = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          "@
+          $ciConfig | Out-File -FilePath "nuget.config.ci" -Encoding utf8
+          
+          Write-Host "=== Building McpProtocol.Contracts ===" -ForegroundColor Cyan
+          dotnet restore lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
+            --configfile nuget.config.ci
+          dotnet build lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj `
+            --configfile nuget.config.ci `
+            -c Release `
+            --no-restore
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "McpProtocol.Contracts build failed"
+            exit 1
+          }
+          
+          Write-Host "=== Building McpProtocol ===" -ForegroundColor Cyan
+          dotnet restore lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
+            --configfile nuget.config.ci
+          dotnet build lib\McpProtocol\src\McpProtocol\McpProtocol.csproj `
+            --configfile nuget.config.ci `
+            -c Release `
+            --no-restore
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "McpProtocol build failed"
+            exit 1
+          }
+          
+          Write-Host "=== Packages built successfully ===" -ForegroundColor Green
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
