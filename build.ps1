@@ -65,11 +65,6 @@ Copy-Item "package.json" "publish\" -Force
 Copy-Item "index.js" "publish\" -Force
 Copy-Item "README.md" "publish\" -Force
 
-# Copy CLI documentation
-Write-Host "Copying CLI documentation..." -ForegroundColor Cyan
-Copy-Item "src\Plugins\MemoryCli\CLI说明.md" "publish\Plugins\MemoryCli\CLI说明.md" -Force
-Copy-Item "src\Plugins\FileReaderCli\CLI说明.md" "publish\Plugins\FileReaderCli\CLI说明.md" -Force
-
 # Verify outputs
 $requiredFiles = @(
     "publish\McpHost.exe",
