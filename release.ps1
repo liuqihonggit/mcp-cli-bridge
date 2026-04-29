@@ -22,8 +22,15 @@ function Get-NpmLatestVersion {
     param([string]$packageName)
     
     try {
-        $result = npm view $packageName version 2>$null
-        if ($LASTEXITCODE -eq 0 -and $result) {
+        $job = Start-Job -ScriptBlock {
+            param($pkg)
+            npm view $pkg version 2>$null
+        } -ArgumentList $packageName
+        
+        $result = Wait-Job $job -Timeout 10 | Receive-Job $job
+        Remove-Job $job -Force -ErrorAction SilentlyContinue
+        
+        if ($result) {
             return $result.Trim()
         }
     } catch {}
@@ -67,11 +74,12 @@ if ($gitStatus) {
 
 $localVersion = Get-LocalVersion
 $packageName = "@jingjingbox/mcp-cli-bridge"
-$npmLatestVersion = Get-NpmLatestVersion $packageName
 
 Write-Host "`n[Version Check]" -ForegroundColor Cyan
 Write-Host "  Local package.json: v$localVersion" -ForegroundColor Gray
-Write-Host "  npm registry latest: $(if($npmLatestVersion){'v'+$npmLatestVersion}else{'(not published)'})" -ForegroundColor Gray
+
+$npmLatestVersion = Get-NpmLatestVersion $packageName
+Write-Host "  npm registry latest: $(if($npmLatestVersion){'v'+$npmLatestVersion}else{'(timeout or not published)'})" -ForegroundColor Gray
 
 $baseVersion = if ($npmLatestVersion) { $npmLatestVersion } else { $localVersion }
 $newVersion = Update-Version $baseVersion $VersionBump
@@ -97,9 +105,23 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "`n[Push] Pushing to remote..." -ForegroundColor Cyan
-git push origin main
-git push origin "v$newVersion"
+Write-Host "`n[Push] Pushing to GitHub..." -ForegroundColor Cyan
+
+git push github main
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Push main to github failed!"
+    exit 1
+}
+
+git push github "v$newVersion"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Push tag to github failed!"
+    exit 1
+}
+
+Write-Host "`n[Push] Pushing to Gitee..." -ForegroundColor Cyan
+git push origin main 2>$null
+git push origin "v$newVersion" 2>$null
 
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "Release v$newVersion triggered!" -ForegroundColor Green
@@ -108,4 +130,4 @@ Write-Host "`nCI/CD will now:" -ForegroundColor Cyan
 Write-Host "  1. Build and test" -ForegroundColor Gray
 Write-Host "  2. Publish to npm" -ForegroundColor Gray
 Write-Host "  3. Create GitHub Release" -ForegroundColor Gray
-Write-Host "`nMonitor: https://github.com/JJbox/memory/actions" -ForegroundColor Yellow
+Write-Host "`nMonitor: https://github.com/liuqihonggit/mcp-cli-bridge/actions" -ForegroundColor Yellow
