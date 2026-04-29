@@ -1,8 +1,4 @@
 # @jingjingbox/mcp-cli-bridge
-
-[![npm version](https://img.shields.io/npm/v/@jingjingbox/mcp-cli-bridge.svg)](https://www.npmjs.com/package/@jingjingbox/mcp-cli-bridge)
-[![license](https://img.shields.io/npm/l/@jingjingbox/mcp-cli-bridge.svg)](https://github.com/JJbox/memory/blob/main/LICENSE)
-
 MCP-CLI 桥接服务器 - 通过 MCP 协议调用 CLI 工具，为 AI 助手提供强大的知识图谱和文件读取能力。
 
 ## 简介

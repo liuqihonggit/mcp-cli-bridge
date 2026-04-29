@@ -1,0 +1,112 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Restore dependencies
+        run: dotnet restore McpHost.slnx
+
+      - name: Build
+        run: dotnet build McpHost.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test McpHost.slnx -c Release --no-build --verbosity normal
+
+      - name: Build AOT (McpHost)
+        run: |
+          dotnet publish src\McpHost\McpHost.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishAot=true `
+            -p:PublishDir="$env:GITHUB_WORKSPACE\publish"
+
+      - name: Build AOT (MemoryCli)
+        run: |
+          dotnet publish src\Plugins\MemoryCli\MemoryCli.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishAot=true `
+            -p:PublishDir="$env:GITHUB_WORKSPACE\publish\Plugins\MemoryCli"
+
+      - name: Build AOT (FileReaderCli)
+        run: |
+          dotnet publish src\Plugins\FileReaderCli\FileReaderCli.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishAot=true `
+            -p:PublishDir="$env:GITHUB_WORKSPACE\publish\Plugins\FileReaderCli"
+
+      - name: Copy npm package files
+        run: |
+          Copy-Item "package.json" "publish\" -Force
+          Copy-Item "index.js" "publish\" -Force
+          Copy-Item "README.md" "publish\" -Force
+          Copy-Item "src\Plugins\MemoryCli\CLI说明.md" "publish\Plugins\MemoryCli\CLI说明.md" -Force
+          Copy-Item "src\Plugins\FileReaderCli\CLI说明.md" "publish\Plugins\FileReaderCli\CLI说明.md" -Force
+
+      - name: Verify outputs
+        run: |
+          $requiredFiles = @(
+            "publish\McpHost.exe",
+            "publish\Plugins\MemoryCli\MemoryCli.exe",
+            "publish\Plugins\FileReaderCli\FileReaderCli.exe",
+            "publish\package.json",
+            "publish\index.js"
+          )
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              Write-Error "Missing required file: $file"
+              exit 1
+            }
+            Write-Host "Verified: $file"
+          }
+
+      - name: Show package info
+        run: |
+          $package = Get-Content "publish\package.json" | ConvertFrom-Json
+          Write-Host "Package: $($package.name)"
+          Write-Host "Version: $($package.version)"
+
+      - name: Publish to npm
+        working-directory: ./publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            publish/McpHost.exe
+            publish/Plugins/MemoryCli/MemoryCli.exe
+            publish/Plugins/FileReaderCli/FileReaderCli.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

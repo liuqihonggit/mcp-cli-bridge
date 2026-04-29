@@ -1,0 +1,93 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - '.gitattributes'
+  pull_request:
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - '.gitattributes'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore McpHost.slnx
+
+      - name: Build
+        run: dotnet build McpHost.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test McpHost.slnx -c Release --no-build --verbosity normal
+
+      - name: Build AOT (McpHost)
+        run: |
+          dotnet publish src\McpHost\McpHost.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishAot=true `
+            -p:PublishDir="$env:GITHUB_WORKSPACE\publish"
+
+      - name: Build AOT (MemoryCli)
+        run: |
+          dotnet publish src\Plugins\MemoryCli\MemoryCli.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishAot=true `
+            -p:PublishDir="$env:GITHUB_WORKSPACE\publish\Plugins\MemoryCli"
+
+      - name: Build AOT (FileReaderCli)
+        run: |
+          dotnet publish src\Plugins\FileReaderCli\FileReaderCli.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishAot=true `
+            -p:PublishDir="$env:GITHUB_WORKSPACE\publish\Plugins\FileReaderCli"
+
+      - name: Verify AOT outputs
+        run: |
+          $requiredFiles = @(
+            "publish\McpHost.exe",
+            "publish\Plugins\MemoryCli\MemoryCli.exe",
+            "publish\Plugins\FileReaderCli\FileReaderCli.exe"
+          )
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              Write-Error "Missing required file: $file"
+              exit 1
+            }
+            Write-Host "Verified: $file"
+          }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-cli-bridge-build
+          path: |
+            publish/
+            package.json
+            index.js
+            README.md
+          retention-days: 7
