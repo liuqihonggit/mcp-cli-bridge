@@ -9,12 +9,22 @@ permissions:
   contents: write
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
   publish:
+    needs: build
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: mcp-cli-bridge-build
+          path: .
 
       - name: Validate version match
         run: |
@@ -34,22 +44,11 @@ jobs:
           
           Write-Host "Version match confirmed: $tagVersion" -ForegroundColor Green
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Build
-        run: .\build.ps1
-
-      - name: Test
-        run: dotnet test McpHost.slnx -c Release --verbosity normal
 
       - name: Publish to npm
         working-directory: ./publish

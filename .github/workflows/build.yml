@@ -13,6 +13,11 @@ on:
       - '**.md'
       - '.gitignore'
       - '.gitattributes'
+  workflow_call:
+    outputs:
+      artifact-name:
+        description: 'Build artifact name'
+        value: 'mcp-cli-bridge-build'
 
 jobs:
   build:
@@ -27,11 +32,24 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build
+      - name: Clean NuGet packages and publish directory
+        run: |
+          Write-Host "[Clean] Removing nuget/ directory..." -ForegroundColor Cyan
+          if (Test-Path "nuget") { Remove-Item -Path "nuget" -Recurse -Force }
+          
+          Write-Host "[Clean] Removing publish/ directory..." -ForegroundColor Cyan
+          if (Test-Path "publish") { Remove-Item -Path "publish" -Recurse -Force }
+          
+          Write-Host "[Clean] Completed" -ForegroundColor Green
+
+      - name: AOT Build
         run: .\build.ps1
 
-      - name: Test
+      - name: Unit Tests
         run: dotnet test McpHost.slnx -c Release --verbosity normal
+
+      - name: E2E Tests
+        run: dotnet run --project tests\E2E\MyMemoryServer.E2E.csproj -c Release
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
