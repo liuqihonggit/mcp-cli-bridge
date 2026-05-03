@@ -1,4 +1,5 @@
 using Common.Contracts.Models;
+using FileLock;
 
 namespace FileReaderCli.Services;
 
@@ -24,6 +25,7 @@ internal sealed class FileReaderService
         var lines = new List<string>();
         var totalLines = 0;
 
+        using var lockScope = FileLockContext.EnterLock(filePath);
         using var reader = new StreamReader(filePath, Encoding.UTF8);
         string? line;
 
@@ -67,7 +69,12 @@ internal sealed class FileReaderService
             throw new FileNotFoundException($"File not found: {filePath}");
         }
 
-        var allLines = await File.ReadAllLinesAsync(filePath);
+        string[] allLines;
+        using (var lockScope = FileLockContext.EnterLock(filePath))
+        {
+            allLines = await File.ReadAllLinesAsync(filePath);
+        }
+
         var totalLines = allLines.Length;
         var lines = allLines
             .Skip(Math.Max(0, totalLines - lineCount))

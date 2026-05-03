@@ -29,6 +29,8 @@ global using Common.Reflection;
 global using Common.Security;
 global using Common;
 global using Common.Tools;
+global using FileLock;
+global using FileLock.Contracts;
 global using Common.Contracts;
 global using Common.Contracts.Caching;
 global using Common.Contracts.IoC;

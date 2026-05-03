@@ -12,7 +12,6 @@
 .trae/agents/
 .trae/specs/
 
-claude-code/
 .x/
 */.x/
 

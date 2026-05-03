@@ -40,4 +40,18 @@
     <OutputPath>$(PublishDir)</OutputPath>
     <BaseOutputPath>$(PublishDir)</BaseOutputPath>
   </PropertyGroup>
+
+  <!-- 文件锁分析器引用 - 仅对需要强制锁的项目启用 -->
+  <!-- 排除: Common, Common.Contracts, 分析器项目自身, 测试项目 -->
+  <ItemGroup Condition="
+    '$(MSBuildProjectName)' != 'Common' AND
+    '$(MSBuildProjectName)' != 'Common.Contracts' AND
+    '$(MSBuildProjectName)' != 'FileLockAnalyzer' AND
+    !$(MSBuildProjectName.EndsWith('Tests')) AND
+    !$(MSBuildProjectName.EndsWith('E2E'))">
+    <ProjectReference 
+      Include="$(MSBuildThisFileDirectory)Analyzers\FileLockAnalyzer\FileLockAnalyzer.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

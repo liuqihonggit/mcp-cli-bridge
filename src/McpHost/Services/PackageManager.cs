@@ -1,4 +1,5 @@
 global using static Common.Constants.ConstantManager;
+using FileLock;
 
 namespace McpHost.Services;
 
@@ -232,6 +233,7 @@ public sealed class PackageManager : IPackageManager
 
     private static void ExtractTarball(string tarballPath, string destinationPath)
     {
+        using var lockScope = FileLockContext.EnterLock(tarballPath);
         using var stream = File.OpenRead(tarballPath);
         using var gzip = new GZipStream(stream, CompressionMode.Decompress);
         using var tar = new TarReader(gzip);

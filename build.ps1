@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Building MCP-CLI Bridge..." -ForegroundColor Green
 
-# Step 1: Pack local NuGet packages
+# Step 1: Auto-discover and pack all local NuGet packages in lib/
 Write-Host "`n[Packing] Local NuGet packages..." -ForegroundColor Cyan
 
 $localNugetPath = "$PSScriptRoot\nuget"
@@ -13,45 +13,32 @@ if (-not (Test-Path $localNugetPath)) {
     New-Item -ItemType Directory -Path $localNugetPath -Force | Out-Null
 }
 
-# Pack McpProtocol.Contracts
-Write-Host "  Packing McpProtocol.Contracts..." -ForegroundColor Gray
-dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" `
-    -c Release `
-    -o $localNugetPath `
-    --no-build
+function Pack-NugetProject {
+    param([string]$ProjectPath, [string]$ProjectName)
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "  Building McpProtocol.Contracts first..." -ForegroundColor Yellow
-    dotnet build "$PSScriptRoot\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" -c Release
-    dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol.Contracts\McpProtocol.Contracts.csproj" `
-        -c Release `
-        -o $localNugetPath
+    Write-Host "  Packing $ProjectName..." -ForegroundColor Gray
+    dotnet pack $ProjectPath -c Release -o $localNugetPath --no-build
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Building $ProjectName first..." -ForegroundColor Yellow
+        dotnet build $ProjectPath -c Release
+        if ($LASTEXITCODE -ne 0) { throw "$ProjectName build failed!" }
+        dotnet pack $ProjectPath -c Release -o $localNugetPath
+    }
+
+    if ($LASTEXITCODE -ne 0) { throw "$ProjectName pack failed!" }
 }
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "McpProtocol.Contracts pack failed!"
-    exit 1
+# 自动发现 lib/ 下所有 .csproj，按名称排序（Contracts 自然排在主项目前面）
+$libProjects = @(Get-ChildItem -Path "$PSScriptRoot\lib" -Recurse -Filter "*.csproj" -File |
+    Sort-Object FullName)
+
+foreach ($project in $libProjects) {
+    $projectName = $project.BaseName
+    Pack-NugetProject -ProjectPath $project.FullName -ProjectName $projectName
 }
 
-# Pack McpProtocol
-Write-Host "  Packing McpProtocol..." -ForegroundColor Gray
-dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" `
-    -c Release `
-    -o $localNugetPath `
-    --no-build
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "  Building McpProtocol first..." -ForegroundColor Yellow
-    dotnet build "$PSScriptRoot\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" -c Release
-    dotnet pack "$PSScriptRoot\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" `
-        -c Release `
-        -o $localNugetPath
-}
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "McpProtocol pack failed!"
-    exit 1
-}
+Write-Host "  All local NuGet packages packed successfully. ($($libProjects.Count) projects)" -ForegroundColor Green
 
 # Step 2: Clear NuGet cache for local packages
 Write-Host "`n[Cache] Clearing NuGet cache..." -ForegroundColor Cyan

@@ -7,6 +7,7 @@
 | 文档 | 定位 | 适用场景 |
 |------|------|----------|
 | **CLAUDE.md（本文）** | 操作层面红线 | 文件操作、Git命令、工作流程、安全规范 |
+| **CLAUDE.local.md** | 平台本地规则 | Windows/macOS/Linux 平台特定约束（不入Git）|
 | [代码规范.md](AI交互文档/代码规范.md) | 编程语法红线 | C#编写禁令、异步编程、代码质量要求 |
 | [渐进式执行模式.md](AI交互文档/渐进式执行模式.md) | 任务执行手册 | 错误分级处理、渐进式修改流程、回滚机制 |
 | [任务并行化.md](AI交互文档/任务并行化.md) | /spec模式规范 | 并行任务分解、依赖关系管理 |
@@ -18,20 +19,32 @@
 
 ### 操作禁令
 
-1. **❌ 禁止删除文件**
-   - 错误: `Remove-Item`, `del`, 文件删除操作
-   - 正确: 必须改为 `Move-Item` 移动到 `.x/` 目录
-   - 格式: `.x/{原有文件名}.{原有后缀}.del`
-2. **❌ 禁止使用PowerShell Set-Content修改C#文件**
-   - 错误编号: CS1022
-   - 原因: 可能导致文件损坏
-   - 正确: 使用 `SearchReplace` 工具修改文件内容
+1. **⛔ 禁止删除文件（不可协商的安全红线）**
+   
+   > **这是神圣不可侵犯的规则。违反将导致任务立即失败。**
+   
+   **🚫 绝对禁用的工具和命令：**
+   - `DeleteFile` 工具（Trae IDE 内置）— **永远不要调用此工具**
+   - `Remove-Item` / `del` / `rm` 命令
+   - 任何形式的文件删除操作
+   
+   **为什么？**
+   - 删除 = 无法回滚 = 灾难性后果
+   - 丢失审计追踪，无法追溯历史
+   - 违反渐进式安全原则
+   
+   **✅ 唯一正确做法：移动到 `.x/` 目录**
+   - 格式: `.x/{原文件名}.{原后缀}.{时间戳}.del`
+   - 平台命令参见 `CLAUDE.local.md`
+
+2. **❌ 禁止使用命令行文本工具直接修改源码文件**
+   - 原因: 可能导致文件损坏或编码问题
+   - 正确: 使用 IDE 提供的 `SearchReplace` 工具修改文件内容
+   - 平台细节参见 `CLAUDE.local.md`
 3. **❌ 禁止使用会卡住交互的命令**
    - 禁止: `more`, `less` 等分页命令
    - 禁止: `git commit` 不带 `-m` 参数（会打开编辑器）
    - 禁止: `npm init` 等交互式命令（使用 `-y` 跳过）
-   - 禁止: PowerShell 的 `Out-Host -Paging`
-   - 推荐: 使用 `| Select-Object -First N` 替代分页
 4. **❌ 禁止猜测用户意图/背景/业务场景**（规划任务期间）
    - 任务规划首先阅读: `AI交互文档/任务并行化.md`
    - 禁止假设用户的具体业务需求、行业背景或隐含意图
@@ -68,7 +81,6 @@
      - `git --no-pager log`
      - `git --no-pager diff`
      - `git --no-pager status`
-   - 或设置环境变量: `$env:GIT_PAGER='cat'` (PowerShell)
 2. **✅ 必须支持 NativeAOT 兼容编译**
    - 所有代码必须兼容 NativeAOT 编译
    - 禁止使用动态类型、反射 emit、直接解析 JSON
@@ -126,24 +138,8 @@
 
 ## ⚠️ 环境特殊要求（平台约束）
 
-### Windows命令行环境（强制）
-
-1. **路径格式**: 使用反斜杠 `\` 作为路径分隔符
-   - 正确: `C:\Users\Name\Documents`
-   - 错误: `/home/user/project`
-2. **命令分隔**: 禁止使用 `&&` 连接命令
-   - 首选: 分步说明，每个命令单独一行
-   - PowerShell: 使用分号 `;` 连接
-   - CMD: 可使用单个 `&`（但忽略前序失败）
-3. **原生工具优先**:
-   - 优先使用Windows原生命令（`dir`, `findstr`）
-   - 或PowerShell cmdlet（`Get-ChildItem`, `Select-String`）
-   - 避免依赖Unix工具（`grep`, `sed`, `awk`），除非明确要求WSL
-4. **UTF-8编码配置**:
-   ```powershell
-   [Console]::OutputEncoding = [System.Text.Encoding]UTF8
-   chcp 65001
-   ```
+> 📎 **平台特定规则**: 本文件仅包含跨平台通用规则。
+> Windows 环境规则请参见 [`CLAUDE.local.md`](./CLAUDE.local.md)（不入 Git，需自行创建）。
 
 ### 🤖 渐进式无人执行模式（强制）
 

@@ -45,7 +45,7 @@ internal sealed class MemoryIoService : IDisposable
         }
         finally
         {
-            if (lockAcquired) ReleaseLock();
+            ReleaseLock();
         }
     }
 
@@ -73,7 +73,7 @@ internal sealed class MemoryIoService : IDisposable
         }
         finally
         {
-            if (lockAcquired) ReleaseLock();
+            ReleaseLock();
         }
     }
 
@@ -233,7 +233,7 @@ internal sealed class MemoryIoService : IDisposable
 
     private async Task<bool> TryAcquireLockAsync()
     {
-        return await _semaphore.WaitAsync(_options.LockTimeout);
+        return await _semaphore.WaitAsync(_options.LockTimeout).ConfigureAwait(false);
     }
 
     private void ReleaseLock()
@@ -258,7 +258,7 @@ internal sealed class MemoryIoService : IDisposable
 
             var fileItems = await FileOperationHelper.ReadJsonLinesAsync<T>(
                 filePath,
-                GetTypeInfo<T>());
+                GetTypeInfo<T>()).ConfigureAwait(false);
 
             var newItems = 0;
 
