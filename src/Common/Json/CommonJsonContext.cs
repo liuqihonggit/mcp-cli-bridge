@@ -77,9 +77,7 @@ namespace Common.Json;
 
 // 示例模型
 [JsonSerializable(typeof(CreateEntitiesExampleRequest))]
-[JsonSerializable(typeof(ExampleEntity))]
 [JsonSerializable(typeof(CreateRelationsExampleRequest))]
-[JsonSerializable(typeof(ExampleRelation))]
 [JsonSerializable(typeof(ReadGraphExampleRequest))]
 [JsonSerializable(typeof(SearchNodesExampleRequest))]
 [JsonSerializable(typeof(AddObservationsExampleRequest))]
