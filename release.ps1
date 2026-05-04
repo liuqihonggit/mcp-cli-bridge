@@ -149,6 +149,26 @@ if (-not $pushSuccess) {
     Write-Host "  You can manually push with: git push origin main && git push origin v$newVersion" -ForegroundColor Gray
 }
 
+Write-Host "`n[Cache] Cleaning local npm cache..." -ForegroundColor Cyan
+
+$globalInstalled = npm list -g $packageName --depth=0 2>$null | Select-String $packageName
+if ($globalInstalled) {
+    Write-Host "  Uninstalling old global version..." -ForegroundColor Gray
+    npm uninstall -g $packageName 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  [OK] Global package removed" -ForegroundColor Green
+    } else {
+        Write-Host "  [SKIP] Global uninstall failed (may need admin)" -ForegroundColor Yellow
+    }
+}
+
+npm cache clean --force 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "  [OK] npm cache cleaned" -ForegroundColor Green
+} else {
+    Write-Host "  [SKIP] Cache clean failed" -ForegroundColor Yellow
+}
+
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "Release v$newVersion completed!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
@@ -159,4 +179,6 @@ if ($pushSuccess) {
     Write-Host "  2. Publish to npm" -ForegroundColor Gray
     Write-Host "  3. Create GitHub Release" -ForegroundColor Gray
     Write-Host "`nMonitor: https://github.com/liuqihonggit/mcp-cli-bridge/actions" -ForegroundColor Yellow
+    Write-Host "`nAfter CI/CD publishes to npm, install with:" -ForegroundColor Cyan
+    Write-Host "  npm install -g $packageName@latest" -ForegroundColor Gray
 }
