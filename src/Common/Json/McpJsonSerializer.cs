@@ -5,6 +5,17 @@ namespace Common.Json;
 
 public static class McpJsonSerializer
 {
+    /// <summary>
+    /// 空对象 JsonElement（{}）
+    /// </summary>
+    public static JsonElement EmptyObject { get; }
+
+    static McpJsonSerializer()
+    {
+        using var doc = JsonDocument.Parse("{}");
+        EmptyObject = doc.RootElement.Clone();
+    }
+
     public static string Serialize<T>(T value) where T : notnull
     {
         var typeInfo = CommonJsonContext.Default.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>;

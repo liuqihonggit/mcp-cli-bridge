@@ -121,7 +121,7 @@ public static class ToolMetadataScanner
             .WithRequired("command")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 }
 

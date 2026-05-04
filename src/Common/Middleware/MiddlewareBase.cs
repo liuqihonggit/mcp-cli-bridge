@@ -121,7 +121,7 @@ public static class MiddlewareExtensions
             return schemaElement;
         }
 
-        return JsonConstants.EmptyObject;
+        return McpJsonSerializer.EmptyObject;
     }
 
     /// <summary>

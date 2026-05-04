@@ -48,7 +48,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command", "entities")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command", "relations")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command", "query")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -130,7 +130,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command", "name", "observations")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command", "names")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -172,7 +172,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command", "names")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public static class MemoryToolSchemaTemplates
             .WithRequired("command")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     private static JsonSchemaProperty CreateEntitySchemaProperty()
@@ -249,7 +249,7 @@ public static class FileReaderToolSchemaTemplates
             .WithRequired("command", "filePath")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
     /// <summary>
@@ -273,6 +273,6 @@ public static class FileReaderToolSchemaTemplates
             .WithRequired("command", "filePath")
             .Build();
 
-        return JsonSchemaSerializer.SerializeToJsonElement(schema);
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 }

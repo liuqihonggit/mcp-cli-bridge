@@ -55,7 +55,7 @@ public static class SecurityUsageExample
         var validationResult = await securityService.ValidateInputAsync(
             "tool_execute",
             new Dictionary<string, JsonElement>(),
-            JsonConstants.EmptyObject);
+            McpJsonSerializer.EmptyObject);
 
         if (!validationResult.IsValid)
         {

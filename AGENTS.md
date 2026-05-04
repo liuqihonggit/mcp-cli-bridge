@@ -117,6 +117,8 @@ git push origin main                         # 推送
 - **❌ 禁止手动复制文件**到 `publish/` 目录，必须通过 `build.ps1`
 - **Git提交顺序**: npm publish 成功 → git commit → git push
 - **❌ 禁止在 npm publish 成功前 commit**
+- **⛔ 禁止并行子智能体期间提交 Git**: 指派子智能体时必须告知"当前处于并行期间，禁止 git commit/push"，由主智能体统一提交
+- **⚠️ Git 提交前遇到错误禁止强行提交**: 可能是并行子智能体正在操作同一仓库，应等待并行任务完成后再统一处理
 
 ## 🌐 环境变量
 

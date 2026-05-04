@@ -43,7 +43,7 @@ internal sealed class CommandHandler
         {
             Success = false,
             Message = message,
-            Data = JsonConstants.EmptyObject
+            Data = McpJsonSerializer.EmptyObject
         };
     }
 
