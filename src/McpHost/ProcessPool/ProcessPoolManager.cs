@@ -232,6 +232,8 @@ public sealed class ProcessPoolManager : IProcessPoolManager
 
     public void Dispose()
     {
+#pragma warning disable VSTHRD002
         DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
     }
 }

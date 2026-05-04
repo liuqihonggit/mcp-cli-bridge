@@ -155,6 +155,52 @@ public static class MemoryToolSchemaTemplates
     }
 
     /// <summary>
+    /// 删除观察工具Schema
+    /// </summary>
+    public static JsonElement DeleteObservationsSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("delete_observations")
+                .Build())
+            .WithProperty("name", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Entity name")
+                .Build())
+            .WithProperty("observations", new JsonSchemaPropertyBuilder()
+                .WithType("array")
+                .WithDescription("Observations to delete")
+                .WithItems(new JsonSchemaPropertyBuilder().WithType("string").Build())
+                .Build())
+            .WithRequired("command", "name", "observations")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    /// <summary>
+    /// 删除关系工具Schema
+    /// </summary>
+    public static JsonElement DeleteRelationsSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("delete_relations")
+                .Build())
+            .WithProperty("relations", new JsonSchemaPropertyBuilder()
+                .WithType("array")
+                .WithDescription("List of relations to delete")
+                .WithItems(CreateRelationSchemaProperty())
+                .Build())
+            .WithRequired("command", "relations")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    /// <summary>
     /// 打开节点工具Schema
     /// </summary>
     public static JsonElement OpenNodesSchema()

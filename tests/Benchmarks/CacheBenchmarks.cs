@@ -119,24 +119,18 @@ public class CacheConcurrencyBenchmark
     [Benchmark(Description = "Concurrent Read/Write")]
     public void ConcurrentReadWrite()
     {
-        var tasks = new Task[ConcurrentOperations];
-        for (int i = 0; i < ConcurrentOperations; i++)
+        Parallel.For(0, ConcurrentOperations, i =>
         {
-            var index = i;
-            tasks[i] = Task.Run(() =>
+            var key = $"key{i % 100}";
+            if (i % 2 == 0)
             {
-                var key = $"key{index % 100}";
-                if (index % 2 == 0)
-                {
-                    _cache.Set(key, $"value{index}");
-                }
-                else
-                {
-                    _cache.TryGet<string>(key, out _);
-                }
-            });
-        }
-        Task.WaitAll(tasks);
+                _cache.Set(key, $"value{i}");
+            }
+            else
+            {
+                _cache.TryGet<string>(key, out _);
+            }
+        });
     }
 }
 

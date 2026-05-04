@@ -136,6 +136,8 @@ public static class ConstantManager
         Register(nameof(Commands.Memory.SearchNodes), Categories.Command, SubCategories.MemoryCommand, "search_nodes");
         Register(nameof(Commands.Memory.AddObservations), Categories.Command, SubCategories.MemoryCommand, "add_observations");
         Register(nameof(Commands.Memory.DeleteEntities), Categories.Command, SubCategories.MemoryCommand, "delete_entities");
+        Register(nameof(Commands.Memory.DeleteObservations), Categories.Command, SubCategories.MemoryCommand, "delete_observations");
+        Register(nameof(Commands.Memory.DeleteRelations), Categories.Command, SubCategories.MemoryCommand, "delete_relations");
         Register(nameof(Commands.Memory.OpenNodes), Categories.Command, SubCategories.MemoryCommand, "open_nodes");
         Register(nameof(Commands.Memory.GetStorageInfo), Categories.Command, SubCategories.MemoryCommand, "get_storage_info");
         Register(nameof(Commands.Memory.ListTools), Categories.Command, SubCategories.MemoryCommand, "list_tools");
@@ -615,6 +617,8 @@ public static class ConstantManager
             public static string SearchNodes => GetString(nameof(SearchNodes));
             public static string AddObservations => GetString(nameof(AddObservations));
             public static string DeleteEntities => GetString(nameof(DeleteEntities));
+            public static string DeleteObservations => GetString(nameof(DeleteObservations));
+            public static string DeleteRelations => GetString(nameof(DeleteRelations));
             public static string OpenNodes => GetString(nameof(OpenNodes));
             public static string GetStorageInfo => GetString(nameof(GetStorageInfo));
             public static string ListTools => GetString(nameof(ListTools));

@@ -6,7 +6,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <NoWarn>NU1510</NoWarn>
     <PackageId>McpProtocol.Contracts</PackageId>
-    <Version>1.0.1</Version>
+    <!-- 版本号在 Directory.Build.props 中统一管理 -->
   </PropertyGroup>
 
   <ItemGroup>

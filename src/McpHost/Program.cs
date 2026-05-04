@@ -27,7 +27,11 @@ services.AddSingleton<ICacheProvider>(sp =>
 services.AddSingleton<IInputValidator, Common.Security.Validation.JsonSchemaValidator>();
 services.AddSingleton<IPermissionChecker, Common.Security.Permissions.RbacPermissionChecker>();
 
-services.AddSingleton<IProcessPoolManager, ProcessPoolManager>();
+services.AddSingleton<IProcessPoolManager>(sp =>
+{
+    var logger = sp.GetService<ILogger>();
+    return new ProcessPoolManager(logger, healthCheckInterval: null);
+});
 services.AddSingleton<IPackageManager, PackageManager>();
 
 services.AddSingleton<IToolRegistry>(sp =>

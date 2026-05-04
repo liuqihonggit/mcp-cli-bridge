@@ -16,7 +16,7 @@ public static class SecurityConfigurationLoader
     /// <returns>白名单配置</returns>
     public static async Task<WhitelistConfiguration> LoadWhitelistConfigurationAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        var config = await FileOperationHelper.ReadJsonAsync(
+        var config = await FileHelper.ReadJsonAsync(
             filePath,
             CommonJsonContext.Default.WhitelistConfigurationJsonModel,
             cancellationToken);
@@ -42,7 +42,7 @@ public static class SecurityConfigurationLoader
     /// <returns>RBAC配置</returns>
     public static async Task<RbacConfiguration> LoadRbacConfigurationAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        var config = await FileOperationHelper.ReadJsonAsync(
+        var config = await FileHelper.ReadJsonAsync(
             filePath,
             CommonJsonContext.Default.RbacConfigurationJsonModel,
             cancellationToken);
@@ -139,7 +139,7 @@ public static class SecurityConfigurationLoader
             IsEnabled = config.IsEnabled
         };
 
-        await FileOperationHelper.WriteJsonAsync(
+        await FileHelper.WriteJsonAsync(
             filePath,
             json,
             CommonJsonContext.Default.WhitelistConfigurationJsonModel,
@@ -165,7 +165,7 @@ public static class SecurityConfigurationLoader
             IsEnabled = config.IsEnabled
         };
 
-        await FileOperationHelper.WriteJsonAsync(
+        await FileHelper.WriteJsonAsync(
             filePath,
             json,
             CommonJsonContext.Default.RbacConfigurationJsonModel,

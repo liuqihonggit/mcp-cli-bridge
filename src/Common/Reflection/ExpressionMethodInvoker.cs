@@ -1,3 +1,5 @@
+#pragma warning disable VSTHRD002
+
 namespace Common.Reflection;
 
 /// <summary>

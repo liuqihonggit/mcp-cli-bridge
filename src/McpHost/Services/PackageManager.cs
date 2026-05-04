@@ -1,5 +1,5 @@
 global using static Common.Constants.ConstantManager;
-using FileLock;
+using AsyncFileLock;
 
 namespace McpHost.Services;
 
@@ -160,7 +160,7 @@ public sealed class PackageManager : IPackageManager
                     return false;
                 }
 
-                ExtractTarball(tarball, ToolsDirectory);
+                await ExtractTarballAsync(tarball, ToolsDirectory);
                 return true;
             }
             finally
@@ -231,28 +231,38 @@ public sealed class PackageManager : IPackageManager
         };
     }
 
-    private static void ExtractTarball(string tarballPath, string destinationPath)
+    private static async Task ExtractTarballAsync(string tarballPath, string destinationPath)
     {
-        using var lockScope = FileLockContext.EnterLock(tarballPath);
-        using var stream = File.OpenRead(tarballPath);
-        using var gzip = new GZipStream(stream, CompressionMode.Decompress);
-        using var tar = new TarReader(gzip);
-
-        while (tar.GetNextEntry() is { } entry)
+        var lockResult = await FileLockService.AcquireAsync(tarballPath, TimeSpan.FromSeconds(5));
+        if (!lockResult.Success || lockResult.Lock == null)
         {
-            if (entry.EntryType == TarEntryType.RegularFile)
+            throw new TimeoutException($"Failed to acquire lock for tarball: {tarballPath}");
+        }
+
+        await using (var batchLock = lockResult.Lock)
+        {
+#pragma warning disable MCP001
+            using var stream = File.OpenRead(tarballPath);
+#pragma warning restore MCP001
+            using var gzip = new GZipStream(stream, CompressionMode.Decompress);
+            using var tar = new TarReader(gzip);
+
+            while (tar.GetNextEntry() is { } entry)
             {
-                var relativePath = entry.Name;
-                if (relativePath.StartsWith("package/"))
-                    relativePath = relativePath[8..];
+                if (entry.EntryType == TarEntryType.RegularFile)
+                {
+                    var relativePath = entry.Name;
+                    if (relativePath.StartsWith("package/"))
+                        relativePath = relativePath[8..];
 
-                var targetPath = Path.Combine(destinationPath, relativePath);
-                var targetDir = Path.GetDirectoryName(targetPath);
+                    var targetPath = Path.Combine(destinationPath, relativePath);
+                    var targetDir = Path.GetDirectoryName(targetPath);
 
-                if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
-                    Directory.CreateDirectory(targetDir);
+                    if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
+                        Directory.CreateDirectory(targetDir);
 
-                entry.ExtractToFile(targetPath, overwrite: true);
+                    entry.ExtractToFile(targetPath, overwrite: true);
+                }
             }
         }
     }

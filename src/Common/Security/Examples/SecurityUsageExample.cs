@@ -50,7 +50,7 @@ public static class SecurityUsageExample
         context.Items["Source"] = "MCP-Client";
     }
 
-    public static async Task Example4_ManualValidation(ISecurityService securityService)
+    public static async Task Example4_ManualValidationAsync(ISecurityService securityService)
     {
         var validationResult = await securityService.ValidateInputAsync(
             "tool_execute",

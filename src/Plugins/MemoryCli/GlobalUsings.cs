@@ -15,8 +15,7 @@ global using Common.Logging;
 global using Common.CliProtocol;
 global using Common.PluginManager;
 global using Common.Tools;
-global using FileLock;
-global using FileLock.Contracts;
+
 global using Common.Contracts.Models;
 global using Common.Json;
 global using McpProtocol.Contracts;

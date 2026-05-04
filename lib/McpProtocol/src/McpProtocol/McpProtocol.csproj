@@ -5,7 +5,7 @@
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <PackageId>McpProtocol</PackageId>
-    <Version>1.0.2</Version>
+    <!-- 版本号在 Directory.Build.props 中统一管理 -->
   </PropertyGroup>
 
   <ItemGroup>

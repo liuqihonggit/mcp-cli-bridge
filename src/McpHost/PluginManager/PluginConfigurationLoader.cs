@@ -1,4 +1,4 @@
-using Common.Tools;
+using Common.IO;
 
 namespace McpHost.PluginManager;
 
@@ -30,7 +30,7 @@ public sealed class PluginConfigurationLoader
 
         try
         {
-            var configuration = await FileOperationHelper.ReadJsonAsync(
+            var configuration = await FileHelper.ReadJsonAsync(
                 configPath,
                 McpHostContext.Default.PluginConfiguration,
                 cancellationToken);
@@ -93,7 +93,7 @@ public sealed class PluginConfigurationLoader
     {
         try
         {
-            await FileOperationHelper.WriteJsonAsync(
+            await FileHelper.WriteJsonAsync(
                 configPath,
                 configuration,
                 McpHostContext.Default.PluginConfiguration,

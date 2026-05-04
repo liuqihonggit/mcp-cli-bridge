@@ -1,5 +1,5 @@
 using Common.Contracts.Models;
-using FileLock;
+using AsyncFileLock;
 
 namespace FileReaderCli.Services;
 
@@ -25,17 +25,27 @@ internal sealed class FileReaderService
         var lines = new List<string>();
         var totalLines = 0;
 
-        using var lockScope = FileLockContext.EnterLock(filePath);
-        using var reader = new StreamReader(filePath, Encoding.UTF8);
-        string? line;
-
-        while ((line = await reader.ReadLineAsync()) != null)
+        var lockResult = await FileLockService.AcquireAsync(filePath, TimeSpan.FromSeconds(5));
+        if (!lockResult.Success || lockResult.Lock == null)
         {
-            totalLines++;
-            if (lines.Count < lineCount)
+            throw new TimeoutException($"Failed to acquire lock for file: {filePath}");
+        }
+
+        await using (var batchLock = lockResult.Lock)
+        {
+#pragma warning disable MCP001
+            using var reader = new StreamReader(filePath, Encoding.UTF8);
+            string? line;
+
+            while ((line = await reader.ReadLineAsync()) != null)
             {
-                lines.Add(line);
+                totalLines++;
+                if (lines.Count < lineCount)
+                {
+                    lines.Add(line);
+                }
             }
+#pragma warning restore MCP001
         }
 
         return new FileReadResult
@@ -70,9 +80,18 @@ internal sealed class FileReaderService
         }
 
         string[] allLines;
-        using (var lockScope = FileLockContext.EnterLock(filePath))
+
+        var lockResult = await FileLockService.AcquireAsync(filePath, TimeSpan.FromSeconds(5));
+        if (!lockResult.Success || lockResult.Lock == null)
         {
+            throw new TimeoutException($"Failed to acquire lock for file: {filePath}");
+        }
+
+        await using (var batchLock = lockResult.Lock)
+        {
+#pragma warning disable MCP001
             allLines = await File.ReadAllLinesAsync(filePath);
+#pragma warning restore MCP001
         }
 
         var totalLines = allLines.Length;

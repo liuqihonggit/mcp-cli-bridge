@@ -184,6 +184,27 @@ npm list -g @jingjingbox/mcp-cli-bridge
 }
 ```
 
+#### 配置三：本地开发（无需发布）
+
+直接指向本地构建的 exe，开发调试时无需发布到 npm：
+
+```json
+{
+  "mcpServers": {
+    "cli-bridge-dev": {
+      "type": "stdio",
+      "command": "g:\\Project\\AI相关\\McpHost\\publish\\McpHost.exe",
+      "enabled": true,
+      "env": {
+        "MCP_MEMORY_PATH": "D:\\MCP\\Memory"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ 路径必须是绝对路径，且要先运行 `build.ps1` 生成 `publish/McpHost.exe`
+
 > 💡 **配置提示**
 >
 > - 请将 `MCP_MEMORY_PATH` 替换为您希望存储知识的实际路径

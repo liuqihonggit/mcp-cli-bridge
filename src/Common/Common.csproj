@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FileLock" Version="1.0.1" />
+    <PackageReference Include="AsyncFileLock" Version="1.0.0" />
     <PackageReference Include="McpProtocol" Version="1.0.2" />
   </ItemGroup>
 

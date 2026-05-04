@@ -27,6 +27,8 @@ var commandOption = new Option<string>(
         Commands.Memory.SearchNodes,
         Commands.Memory.AddObservations,
         Commands.Memory.DeleteEntities,
+        Commands.Memory.DeleteObservations,
+        Commands.Memory.DeleteRelations,
         Commands.Memory.OpenNodes,
         Commands.Memory.GetStorageInfo
     }))

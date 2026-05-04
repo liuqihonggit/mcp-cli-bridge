@@ -494,7 +494,9 @@ public sealed class ProcessPool : IProcessPool
 
     public void Dispose()
     {
+#pragma warning disable VSTHRD002
         DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
     }
 
     #endregion

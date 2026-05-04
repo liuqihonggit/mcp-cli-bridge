@@ -1,42 +1,30 @@
 using Common.Contracts.IoC;
-using FileLock;
-using FileLock.Contracts;
 
 namespace Common.FileLock;
 
 public static class FileAccessServiceExtensions
 {
-    public static void AddFileAccessServices(
-        this IServiceRegistry registry,
-        FileAccessOptions? options = null)
+    public static void AddFileAccessService(this IServiceRegistry registry)
     {
-        options ??= new FileAccessOptions();
+        registry.AddSingleton<FileLockService, FileLockService>();
+    }
+}
 
-        registry.AddInstance(options);
-        registry.AddSingleton<IFileLockProvider, HybridFileLockProvider>();
-        registry.AddSingleton<IFileAccessService, FileAccessService>();
+public sealed class FileLockService
+{
+    public Task<BatchLockResult> AcquireBatchAsync(
+        IReadOnlyList<string> filePaths,
+        TimeSpan timeout,
+        CancellationToken ct = default)
+    {
+        return AsyncFileLock.FileLockService.AcquireBatchAsync(filePaths, timeout, ct);
     }
 
-    public static void AddFileAccessServices(
-        this IServiceRegistry registry,
-        Action<FileAccessOptions> configure)
+    public Task<BatchLockResult> AcquireAsync(
+        string filePath,
+        TimeSpan timeout,
+        CancellationToken ct = default)
     {
-        var options = new FileAccessOptions();
-        configure(options);
-
-        registry.AddFileAccessServices(options);
-    }
-
-    public static void AddCustomFileLockProvider<
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TLockProvider>(
-        this IServiceRegistry registry,
-        FileAccessOptions? options = null)
-        where TLockProvider : class, IFileLockProvider
-    {
-        options ??= new FileAccessOptions();
-
-        registry.AddInstance(options);
-        registry.AddSingleton<IFileLockProvider, TLockProvider>();
-        registry.AddSingleton<IFileAccessService, FileAccessService>();
+        return AsyncFileLock.FileLockService.AcquireAsync(filePath, timeout, ct);
     }
 }

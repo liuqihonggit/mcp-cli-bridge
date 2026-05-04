@@ -1,4 +1,4 @@
-using Common.Tools;
+using Common.IO;
 
 namespace McpHost.PluginManager;
 
@@ -207,7 +207,7 @@ public sealed class PluginConfigurationValidator
 
         try
         {
-            var configuration = await FileOperationHelper.ReadJsonAsync(
+            var configuration = await FileHelper.ReadJsonAsync(
                 configPath,
                 McpHostContext.Default.PluginConfiguration,
                 cancellationToken);

@@ -29,6 +29,8 @@ internal sealed class CommandHandler
             "search_nodes" => await SearchNodesAsync(request),
             "add_observations" => await AddObservationsAsync(request),
             "delete_entities" => await DeleteEntitiesAsync(request),
+            "delete_observations" => await DeleteObservationsAsync(request),
+            "delete_relations" => await DeleteRelationsAsync(request),
             "open_nodes" => await OpenNodesAsync(request),
             "get_storage_info" => GetStorageInfo(),
             "list_tools" => ListTools(),
@@ -257,6 +259,69 @@ internal sealed class CommandHandler
         return Ok(new DeleteResult { Deleted = originalCount - entities.Count }, $"Deleted {originalCount - entities.Count} entities and related relations", CommonJsonContext.Default.DeleteResult);
     }
 
+    private async Task<OperationResult<JsonElement>> DeleteObservationsAsync(CliRequest request)
+    {
+        var name = request.Name;
+        var observations = request.Observations;
+
+        if (string.IsNullOrWhiteSpace(name) || observations == null || observations.Count == 0)
+            return Fail("Invalid parameters: name and observations are required");
+
+        var loadResult = await _ioService.LoadEntitiesAsync();
+        if (loadResult.IsFallback)
+            return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
+
+        var entity = (loadResult.Data ?? []).FirstOrDefault(e => e.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+        if (entity == null)
+            return Fail($"Entity not found: {name}");
+
+        var observationsToDelete = new HashSet<string>(observations, StringComparer.OrdinalIgnoreCase);
+        var originalCount = entity.Observations?.Count ?? 0;
+
+        entity.Observations?.RemoveAll(o => observationsToDelete.Contains(o));
+
+        var deletedCount = originalCount - (entity.Observations?.Count ?? 0);
+
+        var saveResult = await _ioService.SaveEntitiesAsync(loadResult.Data ?? []);
+        if (saveResult.IsFallback)
+            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
+
+        return Ok(new DeleteResult { Deleted = deletedCount }, $"Deleted {deletedCount} observations from {name}", CommonJsonContext.Default.DeleteResult);
+    }
+
+    private async Task<OperationResult<JsonElement>> DeleteRelationsAsync(CliRequest request)
+    {
+        var relations = request.Relations;
+        if (relations == null || relations.Count == 0)
+            return Fail("No relations provided");
+
+        var loadResult = await _ioService.LoadRelationsAsync();
+        if (loadResult.IsFallback)
+            return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
+
+        var existingRelations = loadResult.Data ?? [];
+        var originalCount = existingRelations.Count;
+
+        var relationsToDelete = relations
+            .Select(r => $"{r.From}{Separators.RelationKey}{r.To}{Separators.RelationKey}{r.RelationType}")
+            .ToHashSet(StringComparer.Ordinal);
+
+        existingRelations.RemoveAll(r =>
+        {
+            var key = $"{r.From}{Separators.RelationKey}{r.To}{Separators.RelationKey}{r.RelationType}";
+            return relationsToDelete.Contains(key);
+        });
+
+        var deletedCount = originalCount - existingRelations.Count;
+
+        var saveResult = await _ioService.SaveRelationsAsync(existingRelations);
+        if (saveResult.IsFallback)
+            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "relations", saveResult.Message));
+
+        return Ok(new DeleteResult { Deleted = deletedCount }, $"Deleted {deletedCount} relations", CommonJsonContext.Default.DeleteResult);
+    }
+
     private async Task<OperationResult<JsonElement>> OpenNodesAsync(CliRequest request)
     {
         var names = request.Names;
@@ -309,7 +374,7 @@ internal sealed class CommandHandler
             Name = "memory",
             Description = "Knowledge Graph CLI - Manage entities, relations, and observations in a persistent knowledge graph",
             Category = "knowledge-graph",
-            CommandCount = 8,
+            CommandCount = 10,
             HasDocumentation = true
         };
 
@@ -361,6 +426,20 @@ internal sealed class CommandHandler
                 Description = "Delete entities from the graph",
                 Category = "knowledge-graph",
                 InputSchema = DeleteEntitiesSchema()
+            },
+            new()
+            {
+                Name = "memory_delete_observations",
+                Description = "Delete specific observations from entities",
+                Category = "knowledge-graph",
+                InputSchema = DeleteObservationsSchema()
+            },
+            new()
+            {
+                Name = "memory_delete_relations",
+                Description = "Delete relations between entities",
+                Category = "knowledge-graph",
+                InputSchema = DeleteRelationsSchema()
             },
             new()
             {

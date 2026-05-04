@@ -22,7 +22,7 @@ public sealed class Logger : ILogger, IDisposable
         if (output.HasFlag(LogOutput.File))
         {
             _filePath = filePath ?? GetDefaultLogPath();
-            FileOperationHelper.EnsureDirectory(_filePath);
+            FileHelper.EnsureDirectory(_filePath);
             _fileWriter = new StreamWriter(_filePath, append: true, encoding: System.Text.Encoding.UTF8);
             _fileWriter.AutoFlush = true;
         }

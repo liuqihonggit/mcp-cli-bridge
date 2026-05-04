@@ -10,8 +10,7 @@
     </Folder>
   </Folder>
   <Folder Name="/lib/">
-    <Project Path="lib/FileLock/src/FileLock/FileLock.csproj" />
-    <Project Path="lib/FileLock/src/FileLock.Contracts/FileLock.Contracts.csproj" />
+    <Project Path="lib/AsyncFileLock/src/AsyncFileLock/AsyncFileLock.csproj" />
     <Project Path="lib/McpProtocol/src/McpProtocol/McpProtocol.csproj" />
     <Project Path="lib/McpProtocol/src/McpProtocol.Contracts/McpProtocol.Contracts.csproj" />
   </Folder>
@@ -20,6 +19,6 @@
     <Project Path="tests/E2E/MyMemoryServer.E2E.csproj" />
     <Project Path="tests/SecurityTests/MyMemoryServer.SecurityTests.csproj" />
     <Project Path="tests/UnitTests/MyMemoryServer.UnitTests.csproj" />
-    <Project Path="lib/FileLock/tests/FileLock.Tests/FileLock.Tests.csproj" />
+    <Project Path="lib/AsyncFileLock/tests/AsyncFileLock.Tests/AsyncFileLock.Tests.csproj" />
   </Folder>
 </Solution>

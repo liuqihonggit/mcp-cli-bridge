@@ -29,7 +29,7 @@ public class ReflectionOptimizationBenchmark
 
         _methodNoArgs = type.GetMethod(nameof(TestService.NoArgsMethod))!;
         _methodWithArgs = type.GetMethod(nameof(TestService.WithArgsMethod))!;
-        _methodAsync = type.GetMethod(nameof(TestService.AsyncMethod))!;
+        _methodAsync = type.GetMethod(nameof(TestService.AsyncMethodAsync))!;
         _methodComplex = type.GetMethod(nameof(TestService.ComplexMethod))!;
 
         _factory = new MethodInvokerFactory();
@@ -104,7 +104,7 @@ public class ReflectionOptimizationBenchmark
     [Benchmark(Description = "Direct Call - Async")]
     public async Task<string> Direct_Async()
     {
-        return await _service.AsyncMethod("value");
+        return await _service.AsyncMethodAsync("value");
     }
 
     #endregion
@@ -215,7 +215,7 @@ public class TestService
     }
 
     [Common.Tools.McpTool("test_async", "Test async method")]
-    public async Task<string> AsyncMethod(string value)
+    public async Task<string> AsyncMethodAsync(string value)
     {
         await Task.Delay(1);
         return $"async:{value}";

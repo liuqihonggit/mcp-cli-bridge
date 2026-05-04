@@ -95,7 +95,7 @@ internal sealed class CliBridgeTools : IDisposable
 - 类似 git --no-pager log，一次性展开所有结果
 - 按需加载，避免一次性暴露所有工具造成上下文膨胀
 ")]
-    public async Task<string> ToolDescribe(
+    public async Task<string> ToolDescribeAsync(
         [McpParameter("Plugin name to describe")] string pluginName)
     {
         if (string.IsNullOrWhiteSpace(pluginName))
@@ -210,7 +210,7 @@ internal sealed class CliBridgeTools : IDisposable
 2. 不要尝试直接调用 memory_xxx 等内部命令名，必须通过此接口间接调用
 3. 类似 git --no-pager，所有结果一次性返回，无需翻页
 ")]
-    public async Task<string> ToolExecute(
+    public async Task<string> ToolExecuteAsync(
         [McpParameter("Tool/Command name")] string tool,
         [McpParameter("Tool parameters as JSON object")] Dictionary<string, JsonElement> parameters)
     {
@@ -319,7 +319,7 @@ internal sealed class CliBridgeTools : IDisposable
 【返回内容】
 返回安装结果：成功/失败状态、包名、消息
 ")]
-    public async Task<string> PackageInstall(
+    public async Task<string> PackageInstallAsync(
         [McpParameter("Package name to install")] string packageName)
     {
         if (string.IsNullOrWhiteSpace(packageName))
