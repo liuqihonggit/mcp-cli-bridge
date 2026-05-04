@@ -10,17 +10,82 @@ public sealed class ProcessPoolManager : IProcessPoolManager
     private readonly ConcurrentDictionary<string, ProcessPoolOptions> _poolOptions;
     private readonly ConcurrentDictionary<string, string> _executablePaths;
     private readonly object _createLock = new();
+    private Timer? _healthCheckTimer;
+    private readonly TimeSpan _healthCheckInterval;
     private bool _disposed;
+
+    /// <summary>
+    /// 上次健康检查时间
+    /// </summary>
+    public DateTime LastHealthCheckTime { get; private set; }
+
+    /// <summary>
+    /// 上次健康检查移除的进程数
+    /// </summary>
+    public int LastHealthCheckRemovedCount { get; private set; }
 
     /// <summary>
     /// 创建进程池管理器
     /// </summary>
-    public ProcessPoolManager(ILogger logger)
+    public ProcessPoolManager(ILogger logger, TimeSpan? healthCheckInterval = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pools = new ConcurrentDictionary<string, IProcessPool>(StringComparer.OrdinalIgnoreCase);
         _poolOptions = new ConcurrentDictionary<string, ProcessPoolOptions>(StringComparer.OrdinalIgnoreCase);
         _executablePaths = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _healthCheckInterval = healthCheckInterval ?? TimeSpan.FromMinutes(1);
+    }
+
+    /// <summary>
+    /// 启动定期健康检查
+    /// </summary>
+    public void StartHealthCheck()
+    {
+        ThrowIfDisposed();
+
+        if (_healthCheckTimer != null)
+            return;
+
+        _healthCheckTimer = new Timer(
+            _ => _ = PerformHealthCheckAsync(),
+            null,
+            _healthCheckInterval,
+            _healthCheckInterval);
+
+        _logger.Log(LogLevel.Info, $"Health check started with interval {_healthCheckInterval.TotalSeconds}s");
+    }
+
+    /// <summary>
+    /// 手动触发健康检查
+    /// </summary>
+    public async Task<int> CheckNowAsync()
+    {
+        return await PerformHealthCheckAsync();
+    }
+
+    private async Task<int> PerformHealthCheckAsync()
+    {
+        if (_disposed)
+            return 0;
+
+        try
+        {
+            LastHealthCheckTime = DateTime.UtcNow;
+            var removedCount = await HealthCheckAllAsync();
+            LastHealthCheckRemovedCount = removedCount;
+
+            if (removedCount > 0)
+            {
+                _logger.Log(LogLevel.Info, $"Health check completed, removed {removedCount} unhealthy processes");
+            }
+
+            return removedCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(LogLevel.Error, ex, "Health check failed");
+            return 0;
+        }
     }
 
     /// <summary>
@@ -146,6 +211,14 @@ public sealed class ProcessPoolManager : IProcessPoolManager
             return;
 
         _disposed = true;
+
+        // 释放健康检查定时器
+        if (_healthCheckTimer != null)
+        {
+            await _healthCheckTimer.DisposeAsync();
+            _healthCheckTimer = null;
+            _logger.Log(LogLevel.Info, "Health check stopped");
+        }
 
         var disposeTasks = _pools.Values.Select(pool => pool.DisposeAsync().AsTask());
         await Task.WhenAll(disposeTasks);

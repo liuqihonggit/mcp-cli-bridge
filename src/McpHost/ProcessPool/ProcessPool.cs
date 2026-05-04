@@ -8,7 +8,6 @@ public sealed class ProcessPool : IProcessPool
     private readonly ILogger _logger;
     private readonly string _executablePath;
     private readonly ProcessPoolOptions _options;
-    private readonly ProcessPoolHealthChecker _healthChecker;
     private readonly ConcurrentBag<PooledProcess> _allProcesses;
     private readonly SemaphoreSlim _poolSemaphore;
     private readonly ConcurrentQueue<PooledProcess> _idleQueue;
@@ -58,7 +57,6 @@ public sealed class ProcessPool : IProcessPool
         _executablePath = executablePath;
         _options = options ?? ProcessPoolOptions.Default;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _healthChecker = new ProcessPoolHealthChecker(poolName, _options, logger);
 
         _allProcesses = new ConcurrentBag<PooledProcess>();
         _poolSemaphore = new SemaphoreSlim(_options.MaxPoolSize, _options.MaxPoolSize);
@@ -114,7 +112,7 @@ public sealed class ProcessPool : IProcessPool
             // 尝试从空闲队列获取
             while (_idleQueue.TryDequeue(out var idleProcess))
             {
-                if (idleProcess.IsIdle && _healthChecker.IsProcessValid(idleProcess))
+                if (idleProcess.IsIdle && IsProcessValid(idleProcess))
                 {
                     idleProcess.MarkInUse();
                     _logger.Log(LogLevel.Debug, $"Reused process PID={idleProcess.ProcessId} from pool '{PoolName}'");
@@ -164,7 +162,7 @@ public sealed class ProcessPool : IProcessPool
         }
 
         // 检查进程是否仍然有效
-        if (!_healthChecker.IsProcessValid(process))
+        if (!IsProcessValid(process))
         {
             await RemoveProcessAsync(process).ConfigureAwait(false);
             _poolSemaphore.Release();
@@ -172,9 +170,9 @@ public sealed class ProcessPool : IProcessPool
         }
 
         // 检查是否需要回收（使用次数或生命周期）
-        if (_healthChecker.ShouldRecycle(process, out var recycleReason))
+        if (ShouldRecycle(process, out var recycleReason))
         {
-            _healthChecker.LogRecycling(process.ProcessId, recycleReason);
+            LogRecycling(process.ProcessId, recycleReason);
             await RemoveProcessAsync(process).ConfigureAwait(false);
             _poolSemaphore.Release();
             return;
@@ -222,7 +220,7 @@ public sealed class ProcessPool : IProcessPool
 
         foreach (var process in _allProcesses)
         {
-            if (!_healthChecker.IsProcessValid(process))
+            if (!IsProcessValid(process))
             {
                 processesToRemove.Add(process);
             }
@@ -234,11 +232,113 @@ public sealed class ProcessPool : IProcessPool
             removedCount++;
         }
 
-        _healthChecker.LogHealthCheckResult(removedCount);
+        LogHealthCheckResult(removedCount);
         return removedCount;
     }
 
     #region Private Methods
+
+    #region Health Check Methods
+
+    /// <summary>
+    /// 验证进程是否有效（可复用）
+    /// </summary>
+    private bool IsProcessValid(PooledProcess process)
+    {
+        if (process.State == ProcessState.Disposed || process.State == ProcessState.Exited)
+            return false;
+
+        if (!process.CheckIsRunning())
+            return false;
+
+        // 检查空闲超时
+        if (_options.IdleTimeout > TimeSpan.Zero && process.IsIdle)
+        {
+            var idleTime = DateTime.UtcNow - process.LastUsedTime;
+            if (idleTime > _options.IdleTimeout)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 检查进程是否需要回收（使用次数或生命周期）
+    /// </summary>
+    /// <param name="process">要检查的进程</param>
+    /// <param name="reason">如果需要回收，返回原因</param>
+    /// <returns>是否需要回收</returns>
+    private bool ShouldRecycle(PooledProcess process, out string? reason)
+    {
+        reason = null;
+
+        // 检查是否超过最大使用次数
+        if (_options.MaxUsageCount > 0 && process.UsageCount >= _options.MaxUsageCount)
+        {
+            reason = $"reached max usage count ({_options.MaxUsageCount})";
+            return true;
+        }
+
+        // 检查是否超过最大生命周期
+        if (_options.MaxLifetime > TimeSpan.Zero)
+        {
+            var lifetime = DateTime.UtcNow - process.CreatedTime;
+            if (lifetime >= _options.MaxLifetime)
+            {
+                reason = $"exceeded max lifetime ({_options.MaxLifetime.TotalMinutes}min)";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 检查进程是否因空闲超时而需要清理
+    /// </summary>
+    private bool IsIdleTimeout(PooledProcess process)
+    {
+        if (_options.IdleTimeout <= TimeSpan.Zero)
+            return false;
+
+        if (!process.IsIdle)
+            return false;
+
+        var idleTime = DateTime.UtcNow - process.LastUsedTime;
+        return idleTime > _options.IdleTimeout;
+    }
+
+    /// <summary>
+    /// 记录进程回收日志
+    /// </summary>
+    private void LogRecycling(int processId, string? reason)
+    {
+        _logger.Log(LogLevel.Info, $"Process PID={processId} {reason}, recycling in pool '{PoolName}'");
+    }
+
+    /// <summary>
+    /// 记录健康检查结果
+    /// </summary>
+    private void LogHealthCheckResult(int removedCount)
+    {
+        if (removedCount > 0)
+        {
+            _logger.Log(LogLevel.Info, $"Health check removed {removedCount} unhealthy processes from pool '{PoolName}'");
+        }
+    }
+
+    /// <summary>
+    /// 记录清理结果
+    /// </summary>
+    private void LogCleanupResult(int removedCount)
+    {
+        if (removedCount > 0)
+        {
+            _logger.Log(LogLevel.Info, $"Cleaned up {removedCount} idle processes from pool '{PoolName}'");
+        }
+    }
+
+    #endregion
 
     private async Task<PooledProcess> CreateNewProcessAsync(CancellationToken cancellationToken)
     {
@@ -328,7 +428,7 @@ public sealed class ProcessPool : IProcessPool
 
         foreach (var process in processesToCheck)
         {
-            if (!_healthChecker.IsProcessValid(process))
+            if (!IsProcessValid(process))
             {
                 if (_idleQueue.TryDequeue(out var dequeued) && dequeued == process)
                 {
@@ -339,7 +439,7 @@ public sealed class ProcessPool : IProcessPool
             }
         }
 
-        _healthChecker.LogCleanupResult(removedCount);
+        LogCleanupResult(removedCount);
     }
 
     private void ThrowIfDisposed()
