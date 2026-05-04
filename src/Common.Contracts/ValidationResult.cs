@@ -1,20 +1,25 @@
 namespace Common.Contracts;
 
-/// <summary>
-/// 统一的验证结果类
-/// 支持错误、警告和攻击检测
-/// </summary>
+public interface IValidationResult
+{
+    bool IsValid { get; }
+    IReadOnlyList<string> Errors { get; }
+}
+
+public interface IValidationResultWithWarnings : IValidationResult
+{
+    IReadOnlyList<string> Warnings { get; }
+}
+
+public interface ISecurityValidationResult : IValidationResult
+{
+    IReadOnlyList<string> DetectedAttacks { get; }
+}
+
 public sealed class ValidationResult : ISecurityValidationResult, IValidationResultWithWarnings
 {
-    /// <inheritdoc />
     public bool IsValid { get; init; }
-
-    /// <inheritdoc />
     public IReadOnlyList<string> Errors { get; init; } = [];
-
-    /// <inheritdoc />
     public IReadOnlyList<string> Warnings { get; init; } = [];
-
-    /// <inheritdoc />
     public IReadOnlyList<string> DetectedAttacks { get; init; } = [];
 }
