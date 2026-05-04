@@ -81,6 +81,11 @@ public sealed class JsonSchemaValidator : IInputValidator
         IReadOnlyDictionary<string, JsonElement> parameters,
         JsonElement schema)
     {
+        if (schema.ValueKind != JsonValueKind.Object)
+        {
+            return ValidationResultFactory.Success();
+        }
+
         var errors = new List<string>();
 
         if (!schema.TryGetProperty("required", out var requiredProps) ||
@@ -170,6 +175,11 @@ public sealed class JsonSchemaValidator : IInputValidator
         IReadOnlyDictionary<string, JsonElement> parameters,
         JsonElement schema)
     {
+        if (schema.ValueKind != JsonValueKind.Object)
+        {
+            return ValidationResultFactory.Success();
+        }
+
         var errors = new List<string>();
 
         if (!schema.TryGetProperty("properties", out var properties) ||
