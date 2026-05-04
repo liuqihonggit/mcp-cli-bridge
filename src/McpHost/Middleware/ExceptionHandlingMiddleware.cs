@@ -12,13 +12,13 @@ public sealed class ExceptionHandlingMiddleware : LoggingMiddlewareBase
     {
     }
 
-    public override async Task InvokeAsync(ToolContext context, Func<Task> next)
+    public override async Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware)
     {
-        ValidateContext(context, next);
+        ValidateContext(context, nextMiddleware);
 
         try
         {
-            await next();
+            await nextMiddleware();
         }
         catch (Exception ex)
         {

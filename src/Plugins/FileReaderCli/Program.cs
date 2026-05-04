@@ -52,9 +52,7 @@ rootCommand.SetHandler(async (string jsonInput) =>
 
         logger.Debug($"Executing command: {request.Command}");
 
-        var fileReaderService = new FileReaderService();
-        var handler = new CommandHandler(fileReaderService);
-        var result = await handler.ExecuteAsync(request);
+        var result = await CommandHandler.ExecuteAsync(request);
 
         // 使用 Source Generator 序列化 OperationResult<JsonElement>
         Console.WriteLine(JsonSerializer.Serialize(result, CommonJsonContext.Default.OperationResultJsonElement));

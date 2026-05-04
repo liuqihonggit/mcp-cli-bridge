@@ -5,7 +5,6 @@ namespace Common.Cli;
 public abstract class CliServiceBase : IDisposable
 {
     protected ServiceContainer Container { get; }
-    protected Common.FileLock.FileLockService FileLockService { get; }
     protected ILogger Logger { get; }
 
     protected CliServiceBase(string serviceName)
@@ -15,20 +14,19 @@ public abstract class CliServiceBase : IDisposable
         Container.AddFileAccessService();
         Container.AddInstance<ILogger>(new Logger(LogOutput.StdErr, LogLevel.Info, serviceName));
 
-        FileLockService = Container.GetService<Common.FileLock.FileLockService>();
         Logger = Container.GetService<ILogger>();
     }
 
     public void Dispose()
     {
         Container.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
 
 public abstract class CliServiceBase<TOptions> : IDisposable where TOptions : class, new()
 {
     protected ServiceContainer Container { get; }
-    protected Common.FileLock.FileLockService FileLockService { get; }
     protected ILogger Logger { get; }
     protected TOptions ServiceOptions { get; }
 
@@ -41,12 +39,12 @@ public abstract class CliServiceBase<TOptions> : IDisposable where TOptions : cl
         Container.AddInstance(new Logger(LogOutput.StdErr, LogLevel.Info, serviceName));
         Container.AddInstance(ServiceOptions);
 
-        FileLockService = Container.GetService<Common.FileLock.FileLockService>();
         Logger = Container.GetService<ILogger>();
     }
 
     public void Dispose()
     {
         Container.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

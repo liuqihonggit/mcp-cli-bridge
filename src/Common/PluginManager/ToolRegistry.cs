@@ -111,7 +111,7 @@ public sealed class ToolRegistry : IToolRegistry
         if (_cache is not null)
         {
             var cacheKey = CacheKeyGenerator.ForToolList();
-            _cache.Set(cacheKey, tools, CacheOptions.LongLived);
+            _cache.SetValue(cacheKey, tools, CacheOptions.LongLived);
             _toolListCacheInvalidated = false;
         }
 
@@ -251,7 +251,7 @@ public sealed class ToolRegistry : IToolRegistry
         if (_cache is not null)
         {
             var cacheKey = CacheKeyGenerator.ForToolMetadata(toolName);
-            _cache.Set(cacheKey, metadata, CacheOptions.LongLived);
+            _cache.SetValue(cacheKey, metadata, CacheOptions.LongLived);
         }
     }
 

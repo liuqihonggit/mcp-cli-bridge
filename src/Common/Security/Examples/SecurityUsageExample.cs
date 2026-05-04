@@ -6,7 +6,7 @@ using IServiceProvider = Common.Contracts.IoC.IServiceProvider;
 
 public static class SecurityUsageExample
 {
-    public static void Example1_RegisterSecurityServices()
+    public static void Example1RegisterSecurityServices()
     {
         var services = new ServiceContainer();
 
@@ -35,14 +35,14 @@ public static class SecurityUsageExample
         services.AddSecurityServices(whitelistConfig, rbacConfig);
     }
 
-    public static void Example2_ConfigureMiddlewarePipeline(IServiceProvider serviceProvider)
+    public static void Example2ConfigureMiddlewarePipeline(IServiceProvider serviceProvider)
     {
         var pipeline = new MiddlewarePipeline(serviceProvider);
 
         pipeline.UseSecurityValidation(serviceProvider);
     }
 
-    public static void Example3_SetUserContext(ToolContext context)
+    public static void Example3SetUserContext(ToolContext context)
     {
         context.Items["UserId"] = "user@example.com";
         context.Items["UserRoles"] = new List<string> { "admin", "power_user" };
@@ -50,7 +50,7 @@ public static class SecurityUsageExample
         context.Items["Source"] = "MCP-Client";
     }
 
-    public static async Task Example4_ManualValidationAsync(ISecurityService securityService)
+    public static async Task Example4ManualValidationAsync(ISecurityService securityService)
     {
         var validationResult = await securityService.ValidateInputAsync(
             "tool_execute",

@@ -345,7 +345,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         }
     }
 
-    private async Task<OperationResult> ExecuteCliRawAsync(
+    private static async Task<OperationResult> ExecuteCliRawAsync(
         string executablePath,
         string arguments,
         TimeSpan timeout)

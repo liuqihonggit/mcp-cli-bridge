@@ -231,7 +231,7 @@ public sealed class PluginConfigurationValidator
         }
     }
 
-    private void ValidateVersion(PluginConfiguration configuration, List<PluginValidationError> errors)
+    private static void ValidateVersion(PluginConfiguration configuration, List<PluginValidationError> errors)
     {
         if (string.IsNullOrWhiteSpace(configuration.Version))
         {

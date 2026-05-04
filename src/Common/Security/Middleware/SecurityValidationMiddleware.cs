@@ -30,9 +30,9 @@ public sealed class SecurityValidationMiddleware : MiddlewareBase
     }
 
     /// <inheritdoc />
-    public override async Task InvokeAsync(ToolContext context, Func<Task> next)
+    public override async Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware)
     {
-        ValidateContext(context, next);
+        ValidateContext(context, nextMiddleware);
 
         // 获取用户信息
         var userId = context.GetUserId();
@@ -114,6 +114,6 @@ public sealed class SecurityValidationMiddleware : MiddlewareBase
         }
 
         // 4. 执行后续中间件
-        await next();
+        await nextMiddleware();
     }
 }

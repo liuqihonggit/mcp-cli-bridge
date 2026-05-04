@@ -67,7 +67,16 @@ public sealed class OperationResult<T>
     /// <summary>
     /// 隐式转换为布尔值
     /// </summary>
-    public static implicit operator bool(OperationResult<T> result) => result.Success;
+    public static implicit operator bool(OperationResult<T> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return result.Success;
+    }
+
+    /// <summary>
+    /// 转换为布尔值的显式方法（运算符备用）
+    /// </summary>
+    public bool ToBoolean() => Success;
 }
 
 /// <summary>
@@ -128,5 +137,14 @@ public sealed class OperationResult
     /// <summary>
     /// 隐式转换为布尔值
     /// </summary>
-    public static implicit operator bool(OperationResult result) => result.Success;
+    public static implicit operator bool(OperationResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return result.Success;
+    }
+
+    /// <summary>
+    /// 转换为布尔值的显式方法（运算符备用）
+    /// </summary>
+    public bool ToBoolean() => Success;
 }

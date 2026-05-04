@@ -187,8 +187,7 @@ public sealed class PooledProcess : IDisposable
     {
         lock (_lock)
         {
-            if (_state == ProcessState.Disposed)
-                throw new ObjectDisposedException(nameof(PooledProcess));
+            ObjectDisposedException.ThrowIf(_state == ProcessState.Disposed, this);
 
             if (_state == ProcessState.InUse)
                 throw new InvalidOperationException("Process is already in use");

@@ -5,7 +5,7 @@ namespace FileReaderCli.Services;
 
 internal sealed class FileReaderService
 {
-    public async Task<FileReadResult> ReadFileLinesAsync(string filePath, int lineCount)
+    public static async Task<FileReadResult> ReadFileLinesAsync(string filePath, int lineCount)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -57,12 +57,12 @@ internal sealed class FileReaderService
         };
     }
 
-    public async Task<FileReadResult> ReadFileHeadAsync(string filePath, int lineCount)
+    public static async Task<FileReadResult> ReadFileHeadAsync(string filePath, int lineCount)
     {
         return await ReadFileLinesAsync(filePath, lineCount);
     }
 
-    public async Task<FileReadResult> ReadFileTailAsync(string filePath, int lineCount)
+    public static async Task<FileReadResult> ReadFileTailAsync(string filePath, int lineCount)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {

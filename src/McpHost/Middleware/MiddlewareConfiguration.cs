@@ -123,7 +123,7 @@ public sealed class MiddlewarePipelineBuilder
         return pipeline;
     }
 
-    private void AddMiddlewareByName(IMiddlewarePipeline pipeline, string name)
+    private static void AddMiddlewareByName(Common.Middleware.MiddlewarePipeline pipeline, string name)
     {
         switch (name)
         {

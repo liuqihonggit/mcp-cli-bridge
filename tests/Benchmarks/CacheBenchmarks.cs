@@ -28,7 +28,7 @@ public class CachePerformanceBenchmark
         for (int i = 0; i < EntryCount; i++)
         {
             _keys[i] = $"key{i}";
-            _cache.Set(_keys[i], $"value{i}");
+            _cache.SetValue(_keys[i], $"value{i}");
         }
     }
 
@@ -55,14 +55,14 @@ public class CachePerformanceBenchmark
     public void CacheSet()
     {
         var key = _keys[Random.Shared.Next(EntryCount)];
-        _cache.Set(key, "updated_value");
+        _cache.SetValue(key, "updated_value");
     }
 
     [Benchmark(Description = "Cache Set - Add new key")]
     public void CacheSetNew()
     {
         var key = $"new_key_{Guid.NewGuid()}";
-        _cache.Set(key, "new_value");
+        _cache.SetValue(key, "new_value");
     }
 
     [Benchmark(Description = "Cache GetOrCreate - Existing key")]
@@ -83,7 +83,7 @@ public class CachePerformanceBenchmark
     public bool CacheRemove()
     {
         var key = $"remove_key_{Random.Shared.Next(1000)}";
-        _cache.Set(key, "temp");
+        _cache.SetValue(key, "temp");
         return _cache.Remove(key);
     }
 }
@@ -124,7 +124,7 @@ public class CacheConcurrencyBenchmark
             var key = $"key{i % 100}";
             if (i % 2 == 0)
             {
-                _cache.Set(key, $"value{i}");
+                _cache.SetValue(key, $"value{i}");
             }
             else
             {
@@ -167,7 +167,7 @@ public class CacheEvictionBenchmark
     {
         for (int i = 0; i < MaxEntries * 2; i++)
         {
-            _cache.Set($"key{i}", $"value{i}");
+            _cache.SetValue($"key{i}", $"value{i}");
         }
     }
 
@@ -181,7 +181,7 @@ public class CacheEvictionBenchmark
             {
                 Expiration = TimeSpan.FromMilliseconds(-1)
             };
-            _cache.Set($"expired_key{i}", $"value{i}", options);
+            _cache.SetValue($"expired_key{i}", $"value{i}", options);
         }
 
         _cache.Compact();

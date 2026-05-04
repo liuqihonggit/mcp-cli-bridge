@@ -8,10 +8,10 @@ public abstract class MiddlewareBase : IToolMiddleware
     /// <summary>
     /// 验证上下文和下一个委托不为null
     /// </summary>
-    protected static void ValidateContext(ToolContext context, Func<Task> next)
+    protected static void ValidateContext(ToolContext context, Func<Task> nextMiddleware)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(next);
+        ArgumentNullException.ThrowIfNull(nextMiddleware);
     }
 
     /// <summary>
@@ -25,7 +25,7 @@ public abstract class MiddlewareBase : IToolMiddleware
     /// <summary>
     /// 执行中间件逻辑（子类必须实现）
     /// </summary>
-    public abstract Task InvokeAsync(ToolContext context, Func<Task> next);
+    public abstract Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware);
 }
 
 /// <summary>
@@ -33,7 +33,7 @@ public abstract class MiddlewareBase : IToolMiddleware
 /// </summary>
 public abstract class LoggingMiddlewareBase : MiddlewareBase
 {
-    protected readonly ILogger Logger;
+    protected ILogger Logger { get; }
 
     protected LoggingMiddlewareBase(ILogger logger)
     {

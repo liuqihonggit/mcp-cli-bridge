@@ -109,14 +109,14 @@ public sealed class MemoryCacheProvider : ICacheProvider
                 }
                 : null;
 
-            return new(CacheResult<T>.Hit(value!));
+            return new(CacheResult.Hit(value!));
         }
 
-        return new(CacheResult<T>.Miss);
+        return new(CacheResult.Miss<T>());
     }
 
     /// <inheritdoc />
-    public void Set<T>(string key, T value, CacheOptions? options = null)
+    public void SetValue<T>(string key, T value, CacheOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -150,10 +150,10 @@ public sealed class MemoryCacheProvider : ICacheProvider
     }
 
     /// <inheritdoc />
-    public ValueTask SetAsync<T>(string key, T value, CacheOptions? options = null, CancellationToken cancellationToken = default)
+    public ValueTask SetValueAsync<T>(string key, T value, CacheOptions? options = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        Set(key, value, options);
+        SetValue(key, value, options);
         return ValueTask.CompletedTask;
     }
 
@@ -169,7 +169,7 @@ public sealed class MemoryCacheProvider : ICacheProvider
         }
 
         var newValue = factory();
-        Set(key, newValue, options);
+        SetValue(key, newValue, options);
         return newValue;
     }
 
@@ -185,7 +185,7 @@ public sealed class MemoryCacheProvider : ICacheProvider
         }
 
         var newValue = await factory(cancellationToken).ConfigureAwait(false);
-        Set(key, newValue, options);
+        SetValue(key, newValue, options);
         return newValue;
     }
 

@@ -28,7 +28,7 @@ public sealed class MemoryCacheProviderTests : IDisposable
         var value = "test_value";
 
         // Act
-        _cache.Set(key, value);
+        _cache.SetValue(key, value);
         var result = _cache.TryGet<string>(key, out var retrievedValue);
 
         // Assert
@@ -52,7 +52,7 @@ public sealed class MemoryCacheProviderTests : IDisposable
     {
         // Arrange
         var key = "removable_key";
-        _cache.Set(key, "value");
+        _cache.SetValue(key, "value");
 
         // Act
         var removed = _cache.Remove(key);
@@ -86,7 +86,7 @@ public sealed class MemoryCacheProviderTests : IDisposable
         var key = "existing_factory_key";
         var originalValue = "original_value";
         var newValue = "new_value";
-        _cache.Set(key, originalValue);
+        _cache.SetValue(key, originalValue);
 
         // Act
         var result = _cache.GetOrCreate(key, () => newValue);

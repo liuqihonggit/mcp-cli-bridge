@@ -43,13 +43,15 @@ public sealed class PermissionResult : IValidationResult
     /// </summary>
     public static PermissionResult FromValidationResult(ValidationResult result)
     {
+        ArgumentNullException.ThrowIfNull(result);
+
         if (result.IsValid)
         {
             return Allowed();
         }
 
         return Denied(
-            result.Errors.FirstOrDefault() ?? "验证失败",
+            result.Errors.Count > 0 ? result.Errors[0] : "验证失败",
             result.DetectedAttacks.ToArray());
     }
 }

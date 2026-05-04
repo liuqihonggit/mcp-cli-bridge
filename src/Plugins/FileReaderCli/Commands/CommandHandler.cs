@@ -11,14 +11,11 @@ namespace FileReaderCli.Commands;
 
 internal sealed class CommandHandler
 {
-    private readonly FileReaderService _fileReaderService;
-
-    public CommandHandler(FileReaderService fileReaderService)
+    public CommandHandler()
     {
-        _fileReaderService = fileReaderService ?? throw new ArgumentNullException(nameof(fileReaderService));
     }
 
-    public async Task<OperationResult<JsonElement>> ExecuteAsync(FileReaderRequest request)
+    public static async Task<OperationResult<JsonElement>> ExecuteAsync(FileReaderRequest request)
     {
         return request.Command?.ToLowerInvariant() switch
         {
@@ -50,14 +47,14 @@ internal sealed class CommandHandler
         };
     }
 
-    private async Task<OperationResult<JsonElement>> ReadHeadAsync(FileReaderRequest request)
+    private static async Task<OperationResult<JsonElement>> ReadHeadAsync(FileReaderRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FilePath))
             return Fail("File path is required");
 
         try
         {
-            var result = await _fileReaderService.ReadFileHeadAsync(request.FilePath, request.LineCount);
+            var result = await FileReaderService.ReadFileHeadAsync(request.FilePath, request.LineCount);
             return Ok(result, $"Read {result.Lines.Count} lines from {result.FilePath} (total: {result.TotalLines} lines)", CommonJsonContext.Default.FileReadResult);
         }
         catch (FileNotFoundException ex)
@@ -70,14 +67,14 @@ internal sealed class CommandHandler
         }
     }
 
-    private async Task<OperationResult<JsonElement>> ReadTailAsync(FileReaderRequest request)
+    private static async Task<OperationResult<JsonElement>> ReadTailAsync(FileReaderRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FilePath))
             return Fail("File path is required");
 
         try
         {
-            var result = await _fileReaderService.ReadFileTailAsync(request.FilePath, request.LineCount);
+            var result = await FileReaderService.ReadFileTailAsync(request.FilePath, request.LineCount);
             return Ok(result, $"Read last {result.Lines.Count} lines from {result.FilePath} (total: {result.TotalLines} lines)", CommonJsonContext.Default.FileReadResult);
         }
         catch (FileNotFoundException ex)

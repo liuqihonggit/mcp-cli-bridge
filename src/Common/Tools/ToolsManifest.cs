@@ -50,7 +50,7 @@ public sealed class ToolManifestDefinition
 public sealed class InputSchemaDefinition
 {
     [JsonPropertyName("type")]
-    public string Type { get; set; } = JsonValueTypes.Object;
+    public string Type { get; set; } = JsonValueTypes.ObjectType;
 
     [JsonPropertyName("properties")]
     public Dictionary<string, PropertyDefinition> Properties { get; set; } = [];
@@ -62,7 +62,7 @@ public sealed class InputSchemaDefinition
 public sealed class PropertyDefinition
 {
     [JsonPropertyName("type")]
-    public string Type { get; set; } = JsonValueTypes.String;
+    public string Type { get; set; } = JsonValueTypes.StringType;
 
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
@@ -83,7 +83,7 @@ public sealed class PropertyDefinition
 public sealed class ItemsDefinition
 {
     [JsonPropertyName("type")]
-    public string Type { get; set; } = JsonValueTypes.String;
+    public string Type { get; set; } = JsonValueTypes.StringType;
 
     [JsonPropertyName("properties")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

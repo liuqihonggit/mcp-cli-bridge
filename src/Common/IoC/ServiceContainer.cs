@@ -144,9 +144,9 @@ public sealed class ServiceContainer : IServiceRegistry, IServiceProvider, IDisp
         return (T)GetService(typeof(T));
     }
 
-    public object GetService(Type serviceType)
+    public object GetService(Type type)
     {
-        return ResolveService(serviceType, null);
+        return ResolveService(type, null);
     }
 
     private object ResolveService(Type serviceType, HashSet<Type>? resolutionChain)

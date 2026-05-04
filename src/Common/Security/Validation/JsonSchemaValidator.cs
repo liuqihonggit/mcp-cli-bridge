@@ -1,5 +1,6 @@
 using Common.Contracts;
 using Common.Constants;
+using System.Buffers;
 
 using SecurityConstants = Common.Constants.ConstantManager.Security;
 
@@ -15,6 +16,10 @@ public sealed class JsonSchemaValidator : IInputValidator
         PropertyNameCaseInsensitive = true,
         WriteIndented = false
     };
+
+    // 缓存 CompositeFormat 实例以避免重复解析
+    private static readonly CompositeFormat MissingRequiredParameterFormat = CompositeFormat.Parse(ConstantManager.ValidationMessages.MissingRequiredParameter);
+    private static readonly CompositeFormat ParameterTypeMismatchFormat = CompositeFormat.Parse(ConstantManager.ValidationMessages.ParameterTypeMismatch);
 
     /// <inheritdoc />
     public Task<ValidationResult> ValidateAsync(
@@ -105,7 +110,7 @@ public sealed class JsonSchemaValidator : IInputValidator
             .ToList();
 
         errors.AddRange(missingRequired.Select(missing =>
-            string.Format(ConstantManager.ValidationMessages.MissingRequiredParameter, missing)));
+            string.Format(null, MissingRequiredParameterFormat, missing)));
 
         return errors.Count == 0
             ? ValidationResultFactory.Success()
@@ -229,9 +234,9 @@ public sealed class JsonSchemaValidator : IInputValidator
         var actualKind = value.ValueKind;
 
         bool isValid;
-        if (expectedType == JsonValueTypes.String)
+        if (expectedType == JsonValueTypes.StringType)
             isValid = actualKind == JsonValueKind.String;
-        else if (expectedType == JsonValueTypes.Integer)
+        else if (expectedType == JsonValueTypes.IntegerType)
             isValid = actualKind == JsonValueKind.Number;
         else if (expectedType == JsonValueTypes.Number)
             isValid = actualKind == JsonValueKind.Number;
@@ -239,13 +244,13 @@ public sealed class JsonSchemaValidator : IInputValidator
             isValid = actualKind == JsonValueKind.True || actualKind == JsonValueKind.False;
         else if (expectedType == JsonValueTypes.Array)
             isValid = actualKind == JsonValueKind.Array;
-        else if (expectedType == JsonValueTypes.Object)
+        else if (expectedType == JsonValueTypes.ObjectType)
             isValid = actualKind == JsonValueKind.Object;
         else
             isValid = true;
 
         return !isValid
-            ? string.Format(ConstantManager.ValidationMessages.ParameterTypeMismatch, expectedType, actualKind)
+            ? string.Format(null, ParameterTypeMismatchFormat, expectedType, actualKind)
             : null;
     }
 

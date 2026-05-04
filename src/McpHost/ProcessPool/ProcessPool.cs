@@ -147,8 +147,7 @@ public sealed class ProcessPool : IProcessPool
     /// </summary>
     public async Task ReleaseAsync(PooledProcess process)
     {
-        if (process is null)
-            throw new ArgumentNullException(nameof(process));
+        ArgumentNullException.ThrowIfNull(process);
 
         ThrowIfDisposed();
 
@@ -444,8 +443,7 @@ public sealed class ProcessPool : IProcessPool
 
     private void ThrowIfDisposed()
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(ProcessPool));
+        ObjectDisposedException.ThrowIf(_disposed, this);
     }
 
     #endregion

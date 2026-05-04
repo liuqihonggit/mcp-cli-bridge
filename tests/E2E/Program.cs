@@ -1070,10 +1070,10 @@ class Program
     static async Task<string> WaitForResponseAsync(TaskCompletionSource<string> tcs, TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
-        await using (cts.Token.Register(() => tcs.TrySetCanceled()))
-        {
-            return await tcs.Task;
-        }
+        using var registration = cts.Token.Register(() => tcs.TrySetCanceled());
+
+        await Task.Yield();
+        return await tcs.Task.WaitAsync(timeout);
     }
 
     static async Task<TestResult> RunTestAsync(string name, Func<Task<bool>> test)

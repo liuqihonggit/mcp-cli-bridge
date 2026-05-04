@@ -9,9 +9,9 @@ public interface IToolMiddleware
     /// 执行中间件逻辑
     /// </summary>
     /// <param name="context">工具执行上下文</param>
-    /// <param name="next">下一个中间件的委托</param>
+    /// <param name="nextMiddleware">下一个中间件的委托</param>
     /// <returns>异步任务</returns>
-    Task InvokeAsync(ToolContext context, Func<Task> next);
+    Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware);
 }
 
 /// <summary>

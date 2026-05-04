@@ -26,14 +26,14 @@ public sealed class CacheMiddleware : MiddlewareBase
     }
 
     /// <inheritdoc />
-    public override async Task InvokeAsync(ToolContext context, Func<Task> next)
+    public override async Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware)
     {
-        ValidateContext(context, next);
+        ValidateContext(context, nextMiddleware);
 
         // 检查是否应该缓存此工具
         if (!ShouldCache(context.ToolName))
         {
-            await next().ConfigureAwait(false);
+            await nextMiddleware().ConfigureAwait(false);
             return;
         }
 
@@ -50,14 +50,14 @@ public sealed class CacheMiddleware : MiddlewareBase
         _logger.Log(LogLevel.Debug, $"Cache miss for tool '{context.ToolName}'");
 
         // 执行工具
-        await next().ConfigureAwait(false);
+        await nextMiddleware().ConfigureAwait(false);
 
         // 缓存结果
-        if (!string.IsNullOrEmpty(context.Result) && 
+        if (!string.IsNullOrEmpty(context.Result) &&
             (!_options.CacheSuccessfulResultsOnly || IsSuccessResult(context.Result)))
         {
             var cacheOptions = GetCacheOptions(context.ToolName);
-            _cache.Set(cacheKey, context.Result, cacheOptions);
+            _cache.SetValue(cacheKey, context.Result, cacheOptions);
             _logger.Log(LogLevel.Debug, $"Cached result for tool '{context.ToolName}'");
         }
     }

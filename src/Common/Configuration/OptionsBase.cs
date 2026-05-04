@@ -5,15 +5,14 @@ using System.Text.Json.Serialization;
 namespace Common.Configuration;
 
 /// <summary>
-/// 配置选项基类，提供通用的工厂方法和配置模式
+/// 选项工具类，提供非泛型的静态辅助方法
 /// </summary>
-/// <typeparam name="T">选项类型</typeparam>
-public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
+public static class OptionsHelper
 {
     /// <summary>
     /// JSON序列化选项（AOT兼容）
     /// </summary>
-    protected static readonly JsonSerializerOptions JsonOptions = new()
+    internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -21,16 +20,9 @@ public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
     };
 
     /// <summary>
-    /// 默认选项实例
-    /// </summary>
-    public static T Default => new();
-
-    /// <summary>
     /// 使用配置器创建选项
     /// </summary>
-    /// <param name="configure">配置操作</param>
-    /// <returns>配置后的选项</returns>
-    public static T Create(Action<T> configure)
+    internal static T Create<T>(Action<T> configure) where T : new()
     {
         ArgumentNullException.ThrowIfNull(configure);
 
@@ -42,12 +34,9 @@ public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
     /// <summary>
     /// 从JSON字符串反序列化选项
     /// </summary>
-    /// <param name="json">JSON字符串</param>
-    /// <returns>反序列化的选项</returns>
-    /// <exception cref="ArgumentException">JSON为空或无效时抛出</exception>
     [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Options types are AOT-compatible with source generation")]
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Options types are trimming-safe with source generation")]
-    public static T FromJson(string json)
+    internal static T FromJson<T>(string json) where T : new()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
@@ -58,28 +47,101 @@ public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
     /// <summary>
     /// 从JSON字符串反序列化选项，失败时返回默认值
     /// </summary>
-    /// <param name="json">JSON字符串</param>
-    /// <param name="defaultValue">默认值</param>
-    /// <returns>反序列化的选项或默认值</returns>
     [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Options types are AOT-compatible with source generation")]
     [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Options types are trimming-safe with source generation")]
-    public static T FromJsonOrDefault(string json, T? defaultValue = null)
+    internal static T FromJsonOrDefault<T>(string json, T defaultValue) where T : new()
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            return defaultValue ?? new T();
+            return defaultValue;
         }
 
         try
         {
             var result = JsonSerializer.Deserialize<T>(json, JsonOptions);
-            return result ?? defaultValue ?? new T();
+            return result ?? defaultValue;
         }
         catch (JsonException)
         {
-            return defaultValue ?? new T();
+            return defaultValue;
         }
     }
+
+    /// <summary>
+    /// 克隆选项（使用JSON序列化实现深拷贝）
+    /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Options types are AOT-compatible")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Options types are trimming-safe")]
+    internal static T Clone<T>(T instance) where T : new()
+    {
+        var json = JsonSerializer.Serialize(instance, JsonOptions);
+        return JsonSerializer.Deserialize<T>(json, JsonOptions) ?? new T();
+    }
+
+    /// <summary>
+    /// 将选项序列化为JSON字符串
+    /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Options types are AOT-compatible")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Options types are trimming-safe")]
+    internal static string ToJson<T>(T instance)
+    {
+        return JsonSerializer.Serialize(instance, JsonOptions);
+    }
+}
+
+/// <summary>
+/// 选项创建器，提供非泛型的静态工厂方法
+/// </summary>
+public static class Options
+{
+    /// <summary>
+    /// 创建默认选项实例
+    /// </summary>
+    public static T Default<T>() where T : new() => new();
+
+    /// <summary>
+    /// 使用配置器创建选项
+    /// </summary>
+    public static T Create<T>(Action<T> configure) where T : new()
+    {
+        return OptionsHelper.Create(configure);
+    }
+
+    /// <summary>
+    /// 从JSON字符串反序列化选项
+    /// </summary>
+    public static T FromJson<T>(string json) where T : new()
+    {
+        return OptionsHelper.FromJson<T>(json);
+    }
+
+    /// <summary>
+    /// 从JSON字符串反序列化选项，失败时返回默认值
+    /// </summary>
+    public static T FromJsonOrDefault<T>(string json) where T : new()
+    {
+        return OptionsHelper.FromJsonOrDefault(json, new T());
+    }
+
+    /// <summary>
+    /// 从JSON字符串反序列化选项，失败时返回默认值
+    /// </summary>
+    public static T FromJsonOrDefault<T>(string json, T defaultValue) where T : new()
+    {
+        return OptionsHelper.FromJsonOrDefault(json, defaultValue);
+    }
+}
+
+/// <summary>
+/// 配置选项基类，提供通用的工厂方法和配置模式
+/// </summary>
+/// <typeparam name="T">选项类型</typeparam>
+public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
+{
+    /// <summary>
+    /// JSON序列化选项（AOT兼容）
+    /// </summary>
+    protected static JsonSerializerOptions JsonOptions => OptionsHelper.JsonOptions;
 
     /// <summary>
     /// 从现有选项创建副本并配置
@@ -99,25 +161,36 @@ public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
     /// 克隆当前选项（使用JSON序列化实现深拷贝）
     /// </summary>
     /// <returns>选项副本</returns>
-    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Options types are AOT-compatible")]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Options types are trimming-safe")]
     protected virtual T Clone()
     {
-        // 使用JSON序列化实现深拷贝，确保引用类型属性也被复制
-        var json = JsonSerializer.Serialize((T)this, JsonOptions);
-        return JsonSerializer.Deserialize<T>(json, JsonOptions) ?? new T();
+        return OptionsHelper.Clone((T)this);
     }
 
     /// <summary>
     /// 将选项序列化为JSON字符串
     /// </summary>
     /// <returns>JSON字符串</returns>
-    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Options types are AOT-compatible")]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Options types are trimming-safe")]
     public string ToJson()
     {
-        return JsonSerializer.Serialize((T)this, JsonOptions);
+        return OptionsHelper.ToJson((T)this);
     }
+}
+
+/// <summary>
+/// 预设工厂接口
+/// </summary>
+/// <typeparam name="T">选项类型</typeparam>
+public interface IOptionsPresetFactory<T> where T : OptionsBase<T>, new()
+{
+    /// <summary>
+    /// 创建小型配置预设
+    /// </summary>
+    T CreateSmall();
+
+    /// <summary>
+    /// 创建大型配置预设
+    /// </summary>
+    T CreateLarge();
 }
 
 /// <summary>
@@ -126,40 +199,54 @@ public abstract class OptionsBase<T> where T : OptionsBase<T>, new()
 /// <typeparam name="T">选项类型</typeparam>
 public abstract class OptionsBaseWithPresets<T> : OptionsBase<T> where T : OptionsBaseWithPresets<T>, new()
 {
-    private static readonly Lazy<T> _smallLazy = new(CreateSmallInternal);
-    private static readonly Lazy<T> _largeLazy = new(CreateLargeInternal);
-
     /// <summary>
-    /// 小型配置预设
+    /// 获取预设工厂
     /// </summary>
-    public static T Small => _smallLazy.Value;
+    public abstract IOptionsPresetFactory<T> GetPresetFactory();
+}
 
+/// <summary>
+/// 预设选项访问器
+/// </summary>
+public static class OptionsPresetsAccessor
+{
     /// <summary>
-    /// 大型配置预设
+    /// 获取小型配置预设
     /// </summary>
-    public static T Large => _largeLazy.Value;
-
-    /// <summary>
-    /// 创建小型配置预设（子类重写）
-    /// </summary>
-    protected abstract T CreateSmallCore();
-
-    /// <summary>
-    /// 创建大型配置预设（子类重写）
-    /// </summary>
-    protected abstract T CreateLargeCore();
-
-    private static T CreateSmallInternal()
+    public static T Small<T>() where T : OptionsBaseWithPresets<T>, new()
     {
-        var instance = new T();
-        return instance.CreateSmallCore();
+        return OptionsPresetHelper<T>.GetSmall();
     }
 
-    private static T CreateLargeInternal()
+    /// <summary>
+    /// 获取大型配置预设
+    /// </summary>
+    public static T Large<T>() where T : OptionsBaseWithPresets<T>, new()
+    {
+        return OptionsPresetHelper<T>.GetLarge();
+    }
+}
+
+/// <summary>
+/// 预设帮助类，用于存储泛型类型的静态实例
+/// </summary>
+/// <typeparam name="T">选项类型</typeparam>
+internal static class OptionsPresetHelper<T> where T : OptionsBaseWithPresets<T>, new()
+{
+    private static readonly Lazy<T> SmallLazy = new(() =>
     {
         var instance = new T();
-        return instance.CreateLargeCore();
-    }
+        return instance.GetPresetFactory().CreateSmall();
+    });
+
+    private static readonly Lazy<T> LargeLazy = new(() =>
+    {
+        var instance = new T();
+        return instance.GetPresetFactory().CreateLarge();
+    });
+
+    internal static T GetSmall() => SmallLazy.Value;
+    internal static T GetLarge() => LargeLazy.Value;
 }
 
 /// <summary>
@@ -186,16 +273,23 @@ public abstract class ValidatableOptionsBase<T> : OptionsBase<T> where T : Valid
             throw new OptionsValidationException(result.Errors);
         }
     }
+}
 
+/// <summary>
+/// 可验证选项帮助类，提供非泛型的静态工厂方法
+/// </summary>
+public static class ValidatableOptions
+{
     /// <summary>
     /// 创建并验证选项
     /// </summary>
+    /// <typeparam name="T">选项类型</typeparam>
     /// <param name="configure">配置操作</param>
     /// <returns>验证后的选项</returns>
     /// <exception cref="OptionsValidationException">验证失败时抛出</exception>
-    public static T CreateValidated(Action<T> configure)
+    public static T CreateValidated<T>(Action<T> configure) where T : ValidatableOptionsBase<T>, new()
     {
-        var options = Create(configure);
+        var options = OptionsHelper.Create(configure);
         options.ValidateAndThrow();
         return options;
     }

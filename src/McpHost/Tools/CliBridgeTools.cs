@@ -365,7 +365,7 @@ internal sealed class CliBridgeTools : IDisposable
         };
     }
 
-    private int GetPluginCommandCount(string providerName)
+    private static int GetPluginCommandCount(string providerName)
     {
         return providerName.ToLowerInvariant() switch
         {

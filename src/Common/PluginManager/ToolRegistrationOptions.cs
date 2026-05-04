@@ -28,5 +28,5 @@ public sealed class ToolRegistrationOptions
     /// <summary>
     /// 是否允许覆盖已存在的工具注册
     /// </summary>
-    public bool AllowOverride { get; init; } = false;
+    public bool AllowOverride { get; init; }
 }

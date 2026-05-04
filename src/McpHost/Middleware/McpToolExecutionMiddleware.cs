@@ -13,9 +13,9 @@ public sealed class McpToolExecutionMiddleware : LoggingMiddlewareBase
     {
     }
 
-    public override async Task InvokeAsync(ToolContext context, Func<Task> next)
+    public override async Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware)
     {
-        ValidateContext(context, next);
+        ValidateContext(context, nextMiddleware);
 
         // 检查是否已取消
         if (context.IsCancelled)
@@ -28,7 +28,7 @@ public sealed class McpToolExecutionMiddleware : LoggingMiddlewareBase
         if (!string.IsNullOrEmpty(context.Result))
         {
             Logger.Debug($"[{nameof(McpToolExecutionMiddleware)}] 已有结果，跳过执行: {context.ToolName}");
-            await next();
+            await nextMiddleware();
             return;
         }
 
@@ -58,7 +58,7 @@ public sealed class McpToolExecutionMiddleware : LoggingMiddlewareBase
             ErrorResponseFactory.SetExecutionErrorResult(context, context.ToolName, ex);
         }
 
-        await next();
+        await nextMiddleware();
     }
 
     private static async Task<string> ExecuteToolAsync(ToolHandlerInfo handler, Dictionary<string, JsonElement> parameters)

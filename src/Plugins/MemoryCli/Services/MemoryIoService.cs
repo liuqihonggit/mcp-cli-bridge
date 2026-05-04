@@ -2,6 +2,10 @@ namespace MemoryCli.Services;
 
 internal sealed class MemoryIoService : IDisposable
 {
+    private static readonly System.Text.CompositeFormat s_lockTimeoutWriteFormat = System.Text.CompositeFormat.Parse(MessageTemplates.LockTimeoutWrite);
+    private static readonly System.Text.CompositeFormat s_lockTimeoutSaveFormat = System.Text.CompositeFormat.Parse(MessageTemplates.LockTimeoutSave);
+    private static readonly System.Text.CompositeFormat s_lockTimeoutFormat = System.Text.CompositeFormat.Parse(MessageTemplates.LockTimeout);
+
     private readonly MemoryOptions _options;
     private readonly string _memoryPattern;
     private readonly string _relationPattern;
@@ -96,7 +100,7 @@ internal sealed class MemoryIoService : IDisposable
             {
                 Success = true,
                 Data = null!,
-                Message = lockAcquired ? string.Empty : string.Format(MessageTemplates.LockTimeoutWrite, MessageTemplates.BusyPrefix, _currentMemoryPath),
+                Message = lockAcquired ? string.Empty : string.Format(null, s_lockTimeoutWriteFormat, MessageTemplates.BusyPrefix, _currentMemoryPath),
                 Metadata = new Dictionary<string, object>
                 {
                     ["isFallback"] = !lockAcquired,
@@ -129,7 +133,7 @@ internal sealed class MemoryIoService : IDisposable
             {
                 Success = true,
                 Data = null!,
-                Message = lockAcquired ? string.Empty : string.Format(MessageTemplates.LockTimeoutWrite, MessageTemplates.BusyPrefix, _currentRelationPath),
+                Message = lockAcquired ? string.Empty : string.Format(null, s_lockTimeoutWriteFormat, MessageTemplates.BusyPrefix, _currentRelationPath),
                 Metadata = new Dictionary<string, object>
                 {
                     ["isFallback"] = !lockAcquired,
@@ -162,7 +166,7 @@ internal sealed class MemoryIoService : IDisposable
             {
                 Success = true,
                 Data = null!,
-                Message = lockAcquired ? string.Empty : string.Format(MessageTemplates.LockTimeoutSave, MessageTemplates.BusyPrefix, _currentMemoryPath),
+                Message = lockAcquired ? string.Empty : string.Format(null, s_lockTimeoutSaveFormat, MessageTemplates.BusyPrefix, _currentMemoryPath),
                 Metadata = new Dictionary<string, object>
                 {
                     ["isFallback"] = !lockAcquired,
@@ -195,7 +199,7 @@ internal sealed class MemoryIoService : IDisposable
             {
                 Success = true,
                 Data = null!,
-                Message = lockAcquired ? string.Empty : string.Format(MessageTemplates.LockTimeoutSave, MessageTemplates.BusyPrefix, _currentRelationPath),
+                Message = lockAcquired ? string.Empty : string.Format(null, s_lockTimeoutSaveFormat, MessageTemplates.BusyPrefix, _currentRelationPath),
                 Metadata = new Dictionary<string, object>
                 {
                     ["isFallback"] = !lockAcquired,
@@ -222,7 +226,7 @@ internal sealed class MemoryIoService : IDisposable
         {
             Success = true,
             Data = data,
-            Message = string.Format(MessageTemplates.LockTimeout, MessageTemplates.BusyPrefix, _options.LockTimeout.TotalSeconds),
+            Message = string.Format(null, s_lockTimeoutFormat, MessageTemplates.BusyPrefix, _options.LockTimeout.TotalSeconds),
             Metadata = new Dictionary<string, object>
             {
                 ["isFallback"] = true,

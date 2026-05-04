@@ -31,7 +31,7 @@ public interface ICacheProvider : IDisposable
     /// <param name="key">缓存键</param>
     /// <param name="value">缓存值</param>
     /// <param name="options">缓存选项（可选）</param>
-    void Set<T>(string key, T value, CacheOptions? options = null);
+    void SetValue<T>(string key, T value, CacheOptions? options = null);
 
     /// <summary>
     /// 异步设置缓存值
@@ -41,7 +41,7 @@ public interface ICacheProvider : IDisposable
     /// <param name="value">缓存值</param>
     /// <param name="options">缓存选项（可选）</param>
     /// <param name="cancellationToken">取消令牌</param>
-    ValueTask SetAsync<T>(string key, T value, CacheOptions? options = null, CancellationToken cancellationToken = default);
+    ValueTask SetValueAsync<T>(string key, T value, CacheOptions? options = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 获取或创建缓存值

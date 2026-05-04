@@ -12,6 +12,11 @@
     <DebugSymbols>false</DebugSymbols>
     <!-- 禁用卫星资源程序集（多语言资源） -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- 严格编译检查 -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
   </PropertyGroup>
 
   <!-- Release 配置 -->

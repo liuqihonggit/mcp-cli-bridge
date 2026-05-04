@@ -10,6 +10,9 @@ namespace MemoryCli.Commands;
 
 internal sealed class CommandHandler
 {
+    private static readonly System.Text.CompositeFormat s_partialBusyFormat = System.Text.CompositeFormat.Parse(MessageTemplates.PartialBusy);
+    private static readonly System.Text.CompositeFormat s_deletedButBusyFormat = System.Text.CompositeFormat.Parse(MessageTemplates.DeletedButBusy);
+
     private readonly MemoryIoService _ioService;
     private readonly MemoryOptions _options;
 
@@ -89,7 +92,7 @@ internal sealed class CommandHandler
 
             var appendResult = await _ioService.AppendEntityAsync(entity);
             if (appendResult.IsFallback)
-                return Fail(string.Format(MessageTemplates.PartialBusy, MessageTemplates.BusyPrefix, added, "entities", appendResult.Message));
+                return Fail(string.Format(null, s_partialBusyFormat, MessageTemplates.BusyPrefix, added, "entities", appendResult.Message));
 
             existingNames[entity.Name] = entity;
             added++;
@@ -136,7 +139,7 @@ internal sealed class CommandHandler
 
             var appendResult = await _ioService.AppendRelationAsync(relation);
             if (appendResult.IsFallback)
-                return Fail(string.Format(MessageTemplates.PartialBusy, MessageTemplates.BusyPrefix, added, "relations", appendResult.Message));
+                return Fail(string.Format(null, s_partialBusyFormat, MessageTemplates.BusyPrefix, added, "relations", appendResult.Message));
 
             existingKeys.Add(key);
             added++;
@@ -220,7 +223,7 @@ internal sealed class CommandHandler
 
         var saveResult = await _ioService.SaveEntitiesAsync(loadResult.Data ?? []);
         if (saveResult.IsFallback)
-            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
+            return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
 
         return Ok(new CountResult { Count = observations.Count }, $"Added {observations.Count} observations to {name}", CommonJsonContext.Default.CountResult);
     }
@@ -250,11 +253,11 @@ internal sealed class CommandHandler
 
         var saveEntitiesResult = await _ioService.SaveEntitiesAsync(entities);
         if (saveEntitiesResult.IsFallback)
-            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "entities", saveEntitiesResult.Message));
+            return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "entities", saveEntitiesResult.Message));
 
         var saveRelationsResult = await _ioService.SaveRelationsAsync(relations);
         if (saveRelationsResult.IsFallback)
-            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "entities", saveRelationsResult.Message));
+            return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "entities", saveRelationsResult.Message));
 
         return Ok(new DeleteResult { Deleted = originalCount - entities.Count }, $"Deleted {originalCount - entities.Count} entities and related relations", CommonJsonContext.Default.DeleteResult);
     }
@@ -285,7 +288,7 @@ internal sealed class CommandHandler
 
         var saveResult = await _ioService.SaveEntitiesAsync(loadResult.Data ?? []);
         if (saveResult.IsFallback)
-            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
+            return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
 
         return Ok(new DeleteResult { Deleted = deletedCount }, $"Deleted {deletedCount} observations from {name}", CommonJsonContext.Default.DeleteResult);
     }
@@ -317,7 +320,7 @@ internal sealed class CommandHandler
 
         var saveResult = await _ioService.SaveRelationsAsync(existingRelations);
         if (saveResult.IsFallback)
-            return Fail(string.Format(MessageTemplates.DeletedButBusy, MessageTemplates.BusyPrefix, "relations", saveResult.Message));
+            return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "relations", saveResult.Message));
 
         return Ok(new DeleteResult { Deleted = deletedCount }, $"Deleted {deletedCount} relations", CommonJsonContext.Default.DeleteResult);
     }

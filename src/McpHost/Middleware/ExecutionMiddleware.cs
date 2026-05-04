@@ -14,9 +14,9 @@ public sealed class ExecutionMiddleware : LoggingMiddlewareBase
         _toolRegistry = ValidateService(toolRegistry, nameof(toolRegistry));
     }
 
-    public override async Task InvokeAsync(ToolContext context, Func<Task> next)
+    public override async Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware)
     {
-        ValidateContext(context, next);
+        ValidateContext(context, nextMiddleware);
 
         var toolName = context.ToolName;
 
@@ -31,7 +31,7 @@ public sealed class ExecutionMiddleware : LoggingMiddlewareBase
         if (!string.IsNullOrEmpty(context.Result))
         {
             Logger.Debug($"[{nameof(ExecutionMiddleware)}] 已有结果，跳过执行: {toolName}");
-            await next();
+            await nextMiddleware();
             return;
         }
 
@@ -63,6 +63,6 @@ public sealed class ExecutionMiddleware : LoggingMiddlewareBase
             ErrorResponseFactory.SetExecutionErrorResult(context, toolName, ex);
         }
 
-        await next();
+        await nextMiddleware();
     }
 }

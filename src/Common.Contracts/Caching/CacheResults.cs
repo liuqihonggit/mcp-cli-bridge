@@ -1,17 +1,33 @@
 namespace Common.Contracts.Caching;
 
-public readonly struct CacheResult<T>
+/// <summary>
+/// 缓存结果工厂类 - 避免在泛型结构中使用静态成员 (CA1000)
+/// </summary>
+public static class CacheResult
 {
-    public bool IsHit { get; init; }
-    public T? Value { get; init; }
-
-    public static CacheResult<T> Hit(T value) => new()
+    public static CacheResult<T> Hit<T>(T value) => new()
     {
         IsHit = true,
         Value = value
     };
 
-    public static CacheResult<T> Miss => new() { IsHit = false };
+    public static CacheResult<T> Miss<T>() => new() { IsHit = false };
+}
+
+public readonly struct CacheResult<T> : IEquatable<CacheResult<T>>
+{
+    public bool IsHit { get; init; }
+    public T? Value { get; init; }
+
+    public bool Equals(CacheResult<T> other) => IsHit == other.IsHit && EqualityComparer<T>.Default.Equals(Value, other.Value);
+
+    public override bool Equals(object? obj) => obj is CacheResult<T> other && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(IsHit, Value);
+
+    public static bool operator ==(CacheResult<T> left, CacheResult<T> right) => left.Equals(right);
+
+    public static bool operator !=(CacheResult<T> left, CacheResult<T> right) => !left.Equals(right);
 }
 
 /// <summary>

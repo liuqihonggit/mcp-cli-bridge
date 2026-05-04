@@ -12,7 +12,7 @@ public static class FileAccessServiceExtensions
 
 public sealed class FileLockService
 {
-    public Task<BatchLockResult> AcquireBatchAsync(
+    public static Task<BatchLockResult> AcquireBatchAsync(
         IReadOnlyList<string> filePaths,
         TimeSpan timeout,
         CancellationToken ct = default)
@@ -20,7 +20,7 @@ public sealed class FileLockService
         return AsyncFileLock.FileLockService.AcquireBatchAsync(filePaths, timeout, ct);
     }
 
-    public Task<BatchLockResult> AcquireAsync(
+    public static Task<BatchLockResult> AcquireAsync(
         string filePath,
         TimeSpan timeout,
         CancellationToken ct = default)

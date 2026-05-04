@@ -11,9 +11,9 @@ public sealed class LoggingMiddleware : LoggingMiddlewareBase
     {
     }
 
-    public override async Task InvokeAsync(ToolContext context, Func<Task> next)
+    public override async Task InvokeAsync(ToolContext context, Func<Task> nextMiddleware)
     {
-        ValidateContext(context, next);
+        ValidateContext(context, nextMiddleware);
 
         var toolName = context.ToolName;
         var parameters = JsonParameterHelper.SerializeForLog(context.Parameters);
@@ -24,7 +24,7 @@ public sealed class LoggingMiddleware : LoggingMiddlewareBase
 
         try
         {
-            await next();
+            await nextMiddleware();
 
             var result = context.Result ?? "(无结果)";
             Logger.Debug($"[{nameof(LoggingMiddleware)}] 结果: {result}");

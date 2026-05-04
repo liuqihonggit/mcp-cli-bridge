@@ -108,9 +108,9 @@ public static class ConstantManager
         Register(nameof(DateTimeFormats.LogEntry), Categories.DateTimeFormat, null, "yyyy-MM-dd HH:mm:ss.fff");
 
         // JSON值类型
-        Register(nameof(JsonValueTypes.Object), Categories.JsonValueType, null, "object");
-        Register(nameof(JsonValueTypes.String), Categories.JsonValueType, null, "string");
-        Register(nameof(JsonValueTypes.Integer), Categories.JsonValueType, null, "integer");
+        Register(nameof(JsonValueTypes.ObjectType), Categories.JsonValueType, null, "object");
+        Register(nameof(JsonValueTypes.StringType), Categories.JsonValueType, null, "string");
+        Register(nameof(JsonValueTypes.IntegerType), Categories.JsonValueType, null, "integer");
         Register(nameof(JsonValueTypes.Number), Categories.JsonValueType, null, "number");
         Register(nameof(JsonValueTypes.Boolean), Categories.JsonValueType, null, "boolean");
         Register(nameof(JsonValueTypes.Array), Categories.JsonValueType, null, "array");
@@ -567,9 +567,9 @@ public static class ConstantManager
     /// </summary>
     public static class JsonValueTypes
     {
-        public static string Object => GetString(nameof(Object));
-        public static string String => GetString(nameof(String));
-        public static string Integer => GetString(nameof(Integer));
+        public static string ObjectType => GetString(nameof(ObjectType));
+        public static string StringType => GetString(nameof(StringType));
+        public static string IntegerType => GetString(nameof(IntegerType));
         public static string Number => GetString(nameof(Number));
         public static string Boolean => GetString(nameof(Boolean));
         public static string Array => GetString(nameof(Array));

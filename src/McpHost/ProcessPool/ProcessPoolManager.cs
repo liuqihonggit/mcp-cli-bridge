@@ -181,7 +181,7 @@ public sealed class ProcessPoolManager : IProcessPoolManager
             kvp => (kvp.Value.TotalCount, kvp.Value.AvailableCount));
     }
 
-    private IProcessPool CreatePool(string cliName, string executablePath, ProcessPoolOptions? options)
+    private ProcessPool CreatePool(string cliName, string executablePath, ProcessPoolOptions? options)
     {
         lock (_createLock)
         {
@@ -201,8 +201,7 @@ public sealed class ProcessPoolManager : IProcessPoolManager
 
     private void ThrowIfDisposed()
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(ProcessPoolManager));
+        ObjectDisposedException.ThrowIf(_disposed, this);
     }
 
     public async ValueTask DisposeAsync()
