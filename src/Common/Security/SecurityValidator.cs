@@ -31,12 +31,11 @@ public sealed class SecurityValidator : ISecurityValidator
         ArgumentNullException.ThrowIfNull(toolName);
         ArgumentNullException.ThrowIfNull(parameters);
 
-        var errors = new List<SecurityValidationError>();
+        var errors = new List<ValidationError>();
 
-        // 检查参数数量限制
         if (parameters.Count > SecurityConstants.Limits.MaxParameterCount)
         {
-            errors.Add(SecurityValidationError.Create(
+            errors.Add(new ValidationError(
                 nameof(parameters),
                 $"参数数量超过限制: {parameters.Count} > {SecurityConstants.Limits.MaxParameterCount}"));
         }
@@ -186,36 +185,33 @@ public sealed class SecurityValidator : ISecurityValidator
 
     private SecurityValidationResult ValidateParameter(string key, JsonElement value)
     {
-        var errors = new List<SecurityValidationError>();
+        var errors = new List<ValidationError>();
 
-        // 检查字符串长度
         if (value.ValueKind == JsonValueKind.String)
         {
             var stringValue = value.GetString() ?? string.Empty;
             if (stringValue.Length > SecurityConstants.Limits.MaxStringLength)
             {
-                errors.Add(SecurityValidationError.Create(
+                errors.Add(new ValidationError(
                     key,
                     $"字符串长度超过限制: {stringValue.Length} > {SecurityConstants.Limits.MaxStringLength}"));
             }
 
-            // 检测恶意内容
             var maliciousResult = DetectMaliciousContent(stringValue);
             if (maliciousResult.IsMalicious)
             {
-                errors.Add(SecurityValidationError.Create(
+                errors.Add(new ValidationError(
                     key,
                     $"检测到恶意内容: {string.Join(", ", maliciousResult.DetectedTypes)}"));
             }
         }
 
-        // 检查数组长度
         if (value.ValueKind == JsonValueKind.Array)
         {
             var arrayLength = value.GetArrayLength();
             if (arrayLength > SecurityConstants.Limits.MaxArrayLength)
             {
-                errors.Add(SecurityValidationError.Create(
+                errors.Add(new ValidationError(
                     key,
                     $"数组长度超过限制: {arrayLength} > {SecurityConstants.Limits.MaxArrayLength}"));
             }

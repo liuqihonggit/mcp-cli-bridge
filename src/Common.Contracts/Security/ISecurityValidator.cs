@@ -50,40 +50,12 @@ public sealed class SecurityValidationResult
     /// <summary>
     /// 验证错误列表
     /// </summary>
-    public IReadOnlyList<SecurityValidationError> Errors { get; init; } = [];
+    public IReadOnlyList<ValidationError> Errors { get; init; } = [];
 
-    /// <summary>
-    /// 创建成功的验证结果
-    /// </summary>
     public static SecurityValidationResult Success() => new() { IsValid = true };
 
-    /// <summary>
-    /// 创建失败的验证结果
-    /// </summary>
-    public static SecurityValidationResult Failure(params SecurityValidationError[] errors) =>
+    public static SecurityValidationResult Failure(params ValidationError[] errors) =>
         new() { IsValid = false, Errors = errors };
-}
-
-/// <summary>
-/// 安全验证错误信息
-/// </summary>
-public sealed class SecurityValidationError
-{
-    /// <summary>
-    /// 错误字段
-    /// </summary>
-    public string Field { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 错误消息
-    /// </summary>
-    public string Message { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 创建验证错误
-    /// </summary>
-    public static SecurityValidationError Create(string field, string message) =>
-        new() { Field = field, Message = message };
 }
 
 

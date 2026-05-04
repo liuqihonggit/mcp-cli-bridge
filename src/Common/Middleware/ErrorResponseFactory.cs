@@ -1,4 +1,7 @@
 using Common.Tools;
+using Common.Contracts.Security;
+
+using ValidationError = Common.Contracts.Security.ValidationError;
 
 namespace Common.Middleware;
 
@@ -188,29 +191,5 @@ public static class ErrorResponseFactory
     public static void SetExecutionErrorResult(ToolContext context, string toolName, Exception ex)
     {
         context.Result = ExecutionError(toolName, ex);
-    }
-}
-
-/// <summary>
-/// 验证错误信息
-/// </summary>
-public sealed class ValidationError
-{
-    /// <summary>
-    /// 错误字段
-    /// </summary>
-    public string Field { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 错误消息
-    /// </summary>
-    public string Message { get; init; } = string.Empty;
-
-    /// <summary>
-    /// 创建验证错误
-    /// </summary>
-    public static ValidationError Create(string field, string message)
-    {
-        return new ValidationError { Field = field, Message = message };
     }
 }
