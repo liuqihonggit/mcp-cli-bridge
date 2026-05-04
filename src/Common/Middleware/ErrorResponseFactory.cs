@@ -1,7 +1,4 @@
 using Common.Tools;
-using Common.Contracts.Security;
-
-using ValidationError = Common.Contracts.Security.ValidationError;
 
 namespace Common.Middleware;
 
@@ -38,7 +35,7 @@ public static class ErrorResponseFactory
     /// <summary>
     /// 创建验证失败的错误响应（带字段详情）
     /// </summary>
-    public static string ValidationFailed(IEnumerable<ValidationError> errors)
+    public static string ValidationFailed(IEnumerable<(string Field, string Message)> errors)
     {
         var errorMessages = errors.Select(e => $"{e.Field}: {e.Message}");
         return ValidationFailed(errorMessages);
@@ -161,7 +158,7 @@ public static class ErrorResponseFactory
     /// <summary>
     /// 设置验证失败的结果到上下文（带字段详情）
     /// </summary>
-    public static void SetValidationFailedResult(ToolContext context, IEnumerable<ValidationError> errors)
+    public static void SetValidationFailedResult(ToolContext context, IEnumerable<(string Field, string Message)> errors)
     {
         context.Result = ValidationFailed(errors);
         context.IsCancelled = true;

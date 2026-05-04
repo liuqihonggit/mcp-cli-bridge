@@ -24,9 +24,6 @@ services.AddSingleton<ICacheProvider>(sp =>
     return new MemoryCacheProvider(logger, MemoryCacheOptions.Default);
 });
 
-services.AddSingleton<IInputValidator, Common.Security.Validation.JsonSchemaValidator>();
-services.AddSingleton<IPermissionChecker, Common.Security.Permissions.RbacPermissionChecker>();
-
 services.AddSingleton<IProcessPoolManager>(sp =>
 {
     var logger = sp.GetService<ILogger>();
@@ -46,7 +43,6 @@ services.AddSingleton<IMiddlewarePipeline>(sp =>
     var pipeline = new MiddlewarePipeline(sp);
     pipeline.Use<ExceptionHandlingMiddleware>();
     pipeline.Use<LoggingMiddleware>();
-    pipeline.Use<Common.Security.Middleware.SecurityValidationMiddleware>();
     pipeline.Use<Common.Caching.CacheMiddleware>();
     return pipeline;
 });

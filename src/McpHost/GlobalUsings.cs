@@ -26,7 +26,6 @@ global using Common.Logging;
 global using Common.Middleware;
 global using Common.PluginManager;
 global using Common.Reflection;
-global using Common.Security;
 global using Common;
 global using Common.Tools;
 
@@ -35,7 +34,6 @@ global using Common.Contracts.Caching;
 global using Common.Contracts.IoC;
 global using Common.Contracts.Middleware;
 global using Common.Contracts.PluginManager;
-global using Common.Contracts.Security;
 global using McpProtocol;
 global using McpProtocol.Contracts;
 global using Common.Contracts.Models;

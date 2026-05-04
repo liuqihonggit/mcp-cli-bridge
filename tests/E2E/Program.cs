@@ -906,6 +906,578 @@ class Program
                 return true;
             }));
 
+            // ============================================
+            // MemoryCli - Missing Command Tests
+            // ============================================
+
+            // Test 24: memory_add_observations - add observations to existing entity
+            testResults.Add(await RunTestAsync("MemoryCli - add_observations", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 24,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_add_observations",
+                            parameters = new
+                            {
+                                command = "add_observations",
+                                name = "E2ETestEntity1",
+                                observations = new[] { "Added observation 1", "Added observation 2" }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(24, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+
+                return true;
+            }));
+
+            // Test 25: memory_add_observations - entity not found
+            testResults.Add(await RunTestAsync("MemoryCli - add_observations (entity not found)", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 25,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_add_observations",
+                            parameters = new
+                            {
+                                command = "add_observations",
+                                name = "NonExistentEntity",
+                                observations = new[] { "Should fail" }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(25, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be MCP error (CLI handles the error)");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("false") ?? false, "Should indicate failure");
+                AssertTrue(text?.Contains("not found") ?? false, "Should mention entity not found");
+
+                return true;
+            }));
+
+            // Test 26: memory_open_nodes - get specific nodes by name
+            testResults.Add(await RunTestAsync("MemoryCli - open_nodes", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 26,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_open_nodes",
+                            parameters = new
+                            {
+                                command = "open_nodes",
+                                names = new[] { "E2ETestEntity1", "E2ETestEntity2" }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(26, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("E2ETestEntity1") ?? false, "Should find E2ETestEntity1");
+                AssertTrue(text?.Contains("E2ETestEntity2") ?? false, "Should find E2ETestEntity2");
+
+                return true;
+            }));
+
+            // Test 27: memory_open_nodes - empty names returns empty result
+            testResults.Add(await RunTestAsync("MemoryCli - open_nodes (empty names)", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 27,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_open_nodes",
+                            parameters = new
+                            {
+                                command = "open_nodes",
+                                names = new string[] { }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(27, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success (empty is valid)");
+
+                return true;
+            }));
+
+            // Test 28: memory_get_storage_info
+            testResults.Add(await RunTestAsync("MemoryCli - get_storage_info", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 28,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_get_storage_info",
+                            parameters = new
+                            {
+                                command = "get_storage_info"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(28, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("baseDirectory") ?? false, "Should contain baseDirectory");
+                AssertTrue(text?.Contains("memoryFilePath") ?? false, "Should contain memoryFilePath");
+                AssertTrue(text?.Contains("relationsFilePath") ?? false, "Should contain relationsFilePath");
+                AssertTrue(text?.Contains("MCP_MEMORY_PATH") ?? false, "Should contain environment variable name");
+
+                return true;
+            }));
+
+            // Test 29: memory_delete_observations - delete specific observations from entity
+            testResults.Add(await RunTestAsync("MemoryCli - delete_observations", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 29,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_delete_observations",
+                            parameters = new
+                            {
+                                command = "delete_observations",
+                                name = "E2ETestEntity1",
+                                observations = new[] { "Added observation 1" }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(29, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+
+                return true;
+            }));
+
+            // Test 30: memory_delete_relations - delete a specific relation
+            testResults.Add(await RunTestAsync("MemoryCli - delete_relations", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 30,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_delete_relations",
+                            parameters = new
+                            {
+                                command = "delete_relations",
+                                relations = new[]
+                                {
+                                    new { from = "E2ETestEntity1", to = "E2ETestEntity2", relationType = "related_to" }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(30, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+                AssertTrue(text?.Contains("deleted") ?? false, "Should mention deleted count");
+
+                return true;
+            }));
+
+            // Test 31: memory_delete_entities - delete entity and cascade delete relations
+            testResults.Add(await RunTestAsync("MemoryCli - delete_entities (cascade)", async () =>
+            {
+                // First create a new entity and relation for clean deletion test
+                var createReq = new JsonRpcRequest
+                {
+                    Id = 31,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_create_entities",
+                            parameters = new
+                            {
+                                command = "create_entities",
+                                entities = new[]
+                                {
+                                    new { name = "ToDeleteEntity", entityType = "temporary", observations = new[] { "Will be deleted" } }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, createReq);
+                await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                // Now delete the entity
+                var deleteRequest = new JsonRpcRequest
+                {
+                    Id = 32,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_delete_entities",
+                            parameters = new
+                            {
+                                command = "delete_entities",
+                                names = new[] { "ToDeleteEntity" }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, deleteRequest);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(32, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+                AssertTrue(text?.Contains("deleted") ?? false, "Should mention deleted count");
+
+                return true;
+            }));
+
+            // ============================================
+            // MemoryCli - Validation Error Tests
+            // ============================================
+
+            // Test 33: memory_create_entities - invalid entity name (special characters)
+            testResults.Add(await RunTestAsync("MemoryCli - create_entities (invalid name)", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 33,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_create_entities",
+                            parameters = new
+                            {
+                                command = "create_entities",
+                                entities = new[]
+                                {
+                                    new { name = "Invalid@Name#1", entityType = "test", observations = new[] { "test" } }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(33, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be MCP error (CLI handles the error)");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("false") ?? false, "Should indicate failure for invalid name");
+
+                return true;
+            }));
+
+            // Test 34: memory_create_entities - empty entities list
+            testResults.Add(await RunTestAsync("MemoryCli - create_entities (empty list)", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 34,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_create_entities",
+                            parameters = new
+                            {
+                                command = "create_entities",
+                                entities = new object[] { }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(34, root.GetProperty("id").GetInt32(), "Response ID should match");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("false") ?? false, "Should indicate failure for empty entities");
+
+                return true;
+            }));
+
+            // Test 35: memory_create_relations - relation to nonexistent entity
+            testResults.Add(await RunTestAsync("MemoryCli - create_relations (nonexistent entity)", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 35,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_create_relations",
+                            parameters = new
+                            {
+                                command = "create_relations",
+                                relations = new[]
+                                {
+                                    new { from = "GhostEntity", to = "E2ETestEntity1", relationType = "imagines" }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(35, root.GetProperty("id").GetInt32(), "Response ID should match");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("false") ?? false, "Should indicate failure for nonexistent entity in relation");
+
+                return true;
+            }));
+
+            // ============================================
+            // FileReaderCli - Boundary Tests
+            // ============================================
+
+            // Test 36: FileReaderCli - read empty file
+            testResults.Add(await RunTestAsync("FileReaderCli - read_head (empty file)", async () =>
+            {
+                var emptyFilePath = Path.Combine(testBaseDir, "empty_file.txt");
+                File.WriteAllText(emptyFilePath, string.Empty);
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 36,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "file_reader_read_head",
+                            parameters = new
+                            {
+                                command = "read_head",
+                                filePath = emptyFilePath,
+                                lineCount = 10
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(36, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be MCP error");
+
+                return true;
+            }));
+
+            // Test 37: FileReaderCli - read_head with lineCount exceeding file lines
+            testResults.Add(await RunTestAsync("FileReaderCli - read_head (lineCount > total lines)", async () =>
+            {
+                var smallFilePath = Path.Combine(testBaseDir, "small_file.txt");
+                File.WriteAllLines(smallFilePath, new[] { "Only line" });
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 37,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "file_reader_read_head",
+                            parameters = new
+                            {
+                                command = "read_head",
+                                filePath = smallFilePath,
+                                lineCount = 100
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(37, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("Only line") ?? false, "Should contain the single line");
+
+                return true;
+            }));
+
         }
         finally
         {

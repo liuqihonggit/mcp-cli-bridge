@@ -53,9 +53,8 @@ public sealed class MiddlewarePipelineConfiguration
         [
             new MiddlewareConfiguration { Name = nameof(ExceptionHandlingMiddleware), Order = 0 },
             new MiddlewareConfiguration { Name = nameof(LoggingMiddleware), Order = 1 },
-            new MiddlewareConfiguration { Name = nameof(Common.Security.Middleware.SecurityValidationMiddleware), Order = 2 },
-            new MiddlewareConfiguration { Name = nameof(Common.Caching.CacheMiddleware), Order = 3 },
-            new MiddlewareConfiguration { Name = nameof(ExecutionMiddleware), Order = 4 }
+            new MiddlewareConfiguration { Name = nameof(Common.Caching.CacheMiddleware), Order = 2 },
+            new MiddlewareConfiguration { Name = nameof(ExecutionMiddleware), Order = 3 }
         ]
     };
 }
@@ -133,9 +132,6 @@ public sealed class MiddlewarePipelineBuilder
             case nameof(LoggingMiddleware):
                 pipeline.Use<LoggingMiddleware>();
                 break;
-            case nameof(Common.Security.Middleware.SecurityValidationMiddleware):
-                pipeline.Use<Common.Security.Middleware.SecurityValidationMiddleware>();
-                break;
             case nameof(Common.Caching.CacheMiddleware):
                 pipeline.Use<Common.Caching.CacheMiddleware>();
                 break;
@@ -170,17 +166,9 @@ public static class MiddlewarePipelineBuilderExtensions
     }
 
     /// <summary>
-    /// 使用验证中间件
-    /// </summary>
-    public static MiddlewarePipelineBuilder UseValidation(this MiddlewarePipelineBuilder builder, int order = 2)
-    {
-        return builder.Use(nameof(Common.Security.Middleware.SecurityValidationMiddleware), order);
-    }
-
-    /// <summary>
     /// 使用缓存中间件
     /// </summary>
-    public static MiddlewarePipelineBuilder UseCache(this MiddlewarePipelineBuilder builder, int order = 3)
+    public static MiddlewarePipelineBuilder UseCache(this MiddlewarePipelineBuilder builder, int order = 2)
     {
         return builder.Use(nameof(Common.Caching.CacheMiddleware), order);
     }
@@ -188,7 +176,7 @@ public static class MiddlewarePipelineBuilderExtensions
     /// <summary>
     /// 使用执行中间件
     /// </summary>
-    public static MiddlewarePipelineBuilder UseExecution(this MiddlewarePipelineBuilder builder, int order = 4)
+    public static MiddlewarePipelineBuilder UseExecution(this MiddlewarePipelineBuilder builder, int order = 3)
     {
         return builder.Use(nameof(ExecutionMiddleware), order);
     }

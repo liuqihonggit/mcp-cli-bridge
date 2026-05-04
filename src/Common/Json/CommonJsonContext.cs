@@ -25,14 +25,6 @@ namespace Common.Json;
 // fix:问题是 OperationResult<object> 中的 Data 属性是 object 类型，在 AOT 编译后，JSON Source Generator 无法确定如何序列化这个 object 类型的数据。
 [JsonSerializable(typeof(OperationResult<JsonElement>))]
 
-// 安全模型
-[JsonSerializable(typeof(SecurityAuditEntry))]
-[JsonSerializable(typeof(Common.Contracts.Security.ValidationError))]
-[JsonSerializable(typeof(WhitelistConfiguration))]
-[JsonSerializable(typeof(RbacConfiguration))]
-[JsonSerializable(typeof(WhitelistConfigurationJsonModel))]
-[JsonSerializable(typeof(RbacConfigurationJsonModel))]
-
 // 知识图谱模型
 [JsonSerializable(typeof(KnowledgeGraphEntity))]
 [JsonSerializable(typeof(KnowledgeGraphRelation))]

@@ -17,7 +17,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Benchmarks/Benchmarks.csproj" />
     <Project Path="tests/E2E/MyMemoryServer.E2E.csproj" />
-    <Project Path="tests/SecurityTests/MyMemoryServer.SecurityTests.csproj" />
     <Project Path="tests/UnitTests/MyMemoryServer.UnitTests.csproj" />
     <Project Path="lib/AsyncFileLock/tests/AsyncFileLock.Tests/AsyncFileLock.Tests.csproj" />
   </Folder>
