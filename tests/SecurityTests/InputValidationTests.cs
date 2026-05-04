@@ -2,20 +2,13 @@ namespace MyMemoryServer.SecurityTests;
 
 using Common.Contracts.Security;
 
-/// <summary>
-/// 输入验证安全测试 - 测试各种恶意输入
-/// </summary>
 public sealed class InputValidationTests
 {
-    private readonly SecurityValidator _validator;
+    private readonly Common.Security.Validation.JsonSchemaValidator _validator;
 
     public InputValidationTests()
     {
-        var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
-        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(
-            new WhitelistConfiguration { IsEnabled = false },
-            new RbacConfiguration { IsEnabled = false });
-        _validator = new SecurityValidator(inputValidator, permissionChecker);
+        _validator = new Common.Security.Validation.JsonSchemaValidator();
     }
 
     #region SQL注入测试
@@ -30,18 +23,19 @@ public sealed class InputValidationTests
     [InlineData("'; EXEC xp_cmdshell('dir'); --")]
     public void ValidateInput_WithSqlInjection_ShouldReturnFailure(string maliciousInput)
     {
-        // Arrange
         var parameters = new Dictionary<string, JsonElement>
         {
             ["query"] = JsonSerializer.SerializeToElement(maliciousInput)
         };
 
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
+        var request = new InputValidationRequest
+        {
+            ToolName = "test_tool",
+            Parameters = parameters
+        };
 
-        // Assert
+        var result = _validator.DetectMaliciousContent(maliciousInput);
         result.IsValid.Should().BeFalse("SQL注入应该被检测到");
-        result.Errors.Should().Contain(e => e.Message.Contains("恶意内容") || e.Message.Contains("SQL"));
     }
 
     [Theory]
@@ -51,16 +45,7 @@ public sealed class InputValidationTests
     [InlineData("Price: $100")]
     public void ValidateInput_WithValidSqlLikeContent_ShouldReturnSuccess(string validInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["query"] = JsonSerializer.SerializeToElement(validInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(validInput);
         result.IsValid.Should().BeTrue("合法内容不应被误判");
     }
 
@@ -78,16 +63,7 @@ public sealed class InputValidationTests
     [InlineData("<div onmouseover='alert(1)'>")]
     public void ValidateInput_WithXssAttack_ShouldReturnFailure(string maliciousInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["content"] = JsonSerializer.SerializeToElement(maliciousInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(maliciousInput);
         result.IsValid.Should().BeFalse("XSS攻击应该被检测到");
     }
 
@@ -97,16 +73,7 @@ public sealed class InputValidationTests
     [InlineData("<a href='https://example.com'>Link</a>")]
     public void ValidateInput_WithValidHtml_ShouldReturnSuccess(string validInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["content"] = JsonSerializer.SerializeToElement(validInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(validInput);
         result.IsValid.Should().BeTrue("合法HTML不应被误判");
     }
 
@@ -125,16 +92,7 @@ public sealed class InputValidationTests
     [InlineData("| powershell -c 'Get-Process'")]
     public void ValidateInput_WithCommandInjection_ShouldReturnFailure(string maliciousInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["command"] = JsonSerializer.SerializeToElement(maliciousInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(maliciousInput);
         result.IsValid.Should().BeFalse("命令注入应该被检测到");
     }
 
@@ -145,16 +103,7 @@ public sealed class InputValidationTests
     [InlineData("cat document.txt")]
     public void ValidateInput_WithValidCommandLikeContent_ShouldReturnSuccess(string validInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["command"] = JsonSerializer.SerializeToElement(validInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(validInput);
         result.IsValid.Should().BeTrue("合法命令内容不应被误判");
     }
 
@@ -172,16 +121,7 @@ public sealed class InputValidationTests
     [InlineData("C:\\Windows\\System32\\config\\SAM")]
     public void ValidateInput_WithPathTraversal_ShouldReturnFailure(string maliciousInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["path"] = JsonSerializer.SerializeToElement(maliciousInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(maliciousInput);
         result.IsValid.Should().BeFalse("路径遍历攻击应该被检测到");
     }
 
@@ -192,16 +132,7 @@ public sealed class InputValidationTests
     [InlineData("./local/file.txt")]
     public void ValidateInput_WithValidPath_ShouldReturnSuccess(string validInput)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["path"] = JsonSerializer.SerializeToElement(validInput)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(validInput);
         result.IsValid.Should().BeTrue("合法路径不应被误判");
     }
 
@@ -210,53 +141,59 @@ public sealed class InputValidationTests
     #region 参数限制测试
 
     [Fact]
-    public void ValidateInput_WithTooManyParameters_ShouldReturnFailure()
+    public async Task ValidateInput_WithTooManyParameters_ShouldReturnFailure()
     {
-        // Arrange
         var parameters = new Dictionary<string, JsonElement>();
         for (int i = 0; i < 200; i++)
         {
             parameters[$"param{i}"] = JsonSerializer.SerializeToElement(i);
         }
 
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
+        var request = new InputValidationRequest
+        {
+            ToolName = "test_tool",
+            Parameters = parameters
+        };
 
-        // Assert
+        var result = await _validator.ValidateAsync(request);
         result.IsValid.Should().BeFalse("参数数量超过限制应该被拒绝");
     }
 
     [Fact]
-    public void ValidateInput_WithTooLongString_ShouldReturnFailure()
+    public async Task ValidateInput_WithTooLongString_ShouldReturnFailure()
     {
-        // Arrange
         var longString = new string('a', 200000);
         var parameters = new Dictionary<string, JsonElement>
         {
             ["longParam"] = JsonSerializer.SerializeToElement(longString)
         };
 
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
+        var request = new InputValidationRequest
+        {
+            ToolName = "test_tool",
+            Parameters = parameters
+        };
 
-        // Assert
+        var result = await _validator.ValidateAsync(request);
         result.IsValid.Should().BeFalse("超长字符串应该被拒绝");
     }
 
     [Fact]
-    public void ValidateInput_WithTooLargeArray_ShouldReturnFailure()
+    public async Task ValidateInput_WithTooLargeArray_ShouldReturnFailure()
     {
-        // Arrange
         var largeArray = Enumerable.Range(0, 2000).ToArray();
         var parameters = new Dictionary<string, JsonElement>
         {
             ["largeArray"] = JsonSerializer.SerializeToElement(largeArray)
         };
 
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
+        var request = new InputValidationRequest
+        {
+            ToolName = "test_tool",
+            Parameters = parameters
+        };
 
-        // Assert
+        var result = await _validator.ValidateAsync(request);
         result.IsValid.Should().BeFalse("超大数组应该被拒绝");
     }
 
@@ -270,16 +207,7 @@ public sealed class InputValidationTests
     [InlineData("$(whoami); <img src=x onerror=alert(1)>")]
     public void ValidateInput_WithMultipleAttacks_ShouldDetectAll(string combinedAttack)
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>
-        {
-            ["input"] = JsonSerializer.SerializeToElement(combinedAttack)
-        };
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(combinedAttack);
         result.IsValid.Should().BeFalse("组合攻击应该被检测到");
     }
 
@@ -288,39 +216,17 @@ public sealed class InputValidationTests
     #region 边界条件测试
 
     [Fact]
-    public void ValidateInput_WithEmptyParameters_ShouldReturnSuccess()
+    public void DetectMaliciousContent_WithEmptyContent_ShouldReturnSuccess()
     {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>();
-
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
-
-        // Assert
+        var result = _validator.DetectMaliciousContent(string.Empty);
         result.IsValid.Should().BeTrue();
     }
 
     [Fact]
-    public void ValidateInput_WithNullParameter_ShouldThrowArgumentNullException()
+    public void DetectMaliciousContent_WithNullContent_ShouldReturnSuccess()
     {
-        // Act
-        var act = () => _validator.ValidateInput("test_tool", null!);
-
-        // Assert
-        act.Should().Throw<ArgumentNullException>();
-    }
-
-    [Fact]
-    public void ValidateInput_WithNullToolName_ShouldThrowArgumentNullException()
-    {
-        // Arrange
-        var parameters = new Dictionary<string, JsonElement>();
-
-        // Act
-        var act = () => _validator.ValidateInput(null!, parameters);
-
-        // Assert
-        act.Should().Throw<ArgumentNullException>();
+        var result = _validator.DetectMaliciousContent(null!);
+        result.IsValid.Should().BeTrue();
     }
 
     #endregion

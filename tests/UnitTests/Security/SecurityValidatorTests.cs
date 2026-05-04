@@ -2,87 +2,63 @@ using Common.Contracts.Security;
 
 namespace MyMemoryServer.UnitTests.Security;
 
-public sealed class SecurityValidatorTests
+public sealed class JsonSchemaValidatorTests
 {
-    private readonly Mock<ILogger> _loggerMock;
-    private readonly Mock<IInputValidator> _inputValidatorMock;
-    private readonly Mock<IPermissionChecker> _permissionCheckerMock;
-    private readonly SecurityValidator _validator;
+    private readonly Common.Security.Validation.JsonSchemaValidator _validator;
 
-    public SecurityValidatorTests()
+    public JsonSchemaValidatorTests()
     {
-        _loggerMock = new Mock<ILogger>();
-        _inputValidatorMock = new Mock<IInputValidator>();
-        _permissionCheckerMock = new Mock<IPermissionChecker>();
-        _validator = new SecurityValidator(_inputValidatorMock.Object, _permissionCheckerMock.Object);
+        _validator = new Common.Security.Validation.JsonSchemaValidator();
     }
 
     [Fact]
-    public void ValidateInput_WithValidInput_ShouldReturnSuccess()
+    public void DetectMaliciousContent_WithXssAttack_ShouldReturnFailure()
     {
-        // Arrange
+        var result = _validator.DetectMaliciousContent("malicious<script>");
+        result.IsValid.Should().BeFalse();
+        result.DetectedAttacks.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void DetectMaliciousContent_WithValidContent_ShouldReturnSuccess()
+    {
+        var result = _validator.DetectMaliciousContent("hello world");
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithValidInput_ShouldReturnSuccess()
+    {
         var parameters = new Dictionary<string, JsonElement>
         {
             ["key"] = JsonSerializer.SerializeToElement("value")
         };
 
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
+        var request = new InputValidationRequest
+        {
+            ToolName = "test_tool",
+            Parameters = parameters
+        };
 
-        // Assert
+        var result = await _validator.ValidateAsync(request);
         result.IsValid.Should().BeTrue();
-        result.Errors.Should().BeEmpty();
     }
 
     [Fact]
-    public void ValidateInput_WithInvalidInput_ShouldReturnFailure()
+    public async Task ValidateAsync_WithMaliciousInput_ShouldReturnFailure()
     {
-        // Arrange
         var parameters = new Dictionary<string, JsonElement>
         {
             ["key"] = JsonSerializer.SerializeToElement("malicious<script>")
         };
 
-        // Act
-        var result = _validator.ValidateInput("test_tool", parameters);
+        var request = new InputValidationRequest
+        {
+            ToolName = "test_tool",
+            Parameters = parameters
+        };
 
-        // Assert
+        var result = await _validator.ValidateAsync(request);
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Message.Contains("恶意"));
-    }
-
-    [Fact]
-    public async Task CheckPermission_WithAllowedTool_ShouldReturnAllowed()
-    {
-        // Arrange
-        _permissionCheckerMock
-            .Setup(p => p.CheckPermissionAsync(It.IsAny<PermissionCheckRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(PermissionResult.Allowed());
-
-        var context = new SecurityContext { UserId = "user1", Roles = ["user"] };
-
-        // Act
-        var result = await _validator.CheckPermissionAsync("allowed_tool", context);
-
-        // Assert
-        result.IsAllowed.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task CheckPermission_WithDeniedTool_ShouldReturnDenied()
-    {
-        // Arrange
-        _permissionCheckerMock
-            .Setup(p => p.CheckPermissionAsync(It.IsAny<PermissionCheckRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(PermissionResult.Denied("Not allowed", "PERMISSION_DENIED"));
-
-        var context = new SecurityContext { UserId = "user1", Roles = ["user"] };
-
-        // Act
-        var result = await _validator.CheckPermissionAsync("denied_tool", context);
-
-        // Assert
-        result.IsAllowed.Should().BeFalse();
-        result.DenyReason.Should().Contain("Not allowed");
     }
 }

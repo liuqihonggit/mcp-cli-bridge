@@ -25,13 +25,7 @@ services.AddSingleton<ICacheProvider>(sp =>
 });
 
 services.AddSingleton<IInputValidator, Common.Security.Validation.JsonSchemaValidator>();
-services.AddSingleton<IPermissionChecker, Common.Security.Permissions.WhitelistPermissionChecker>();
-services.AddSingleton<ISecurityValidator>(sp =>
-{
-    var inputValidator = sp.GetService<IInputValidator>();
-    var permissionChecker = sp.GetService<IPermissionChecker>();
-    return new SecurityValidator(inputValidator, permissionChecker);
-});
+services.AddSingleton<IPermissionChecker, Common.Security.Permissions.RbacPermissionChecker>();
 
 services.AddSingleton<IProcessPoolManager, ProcessPoolManager>();
 services.AddSingleton<IPackageManager, PackageManager>();

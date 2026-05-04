@@ -26,6 +26,23 @@ public sealed class JsonSchemaValidator : IInputValidator
         var errors = new List<string>();
         var detectedAttacks = new List<string>();
 
+        if (request.Parameters.Count > SecurityConstants.Limits.MaxParameterCount)
+        {
+            errors.Add($"参数数量超过限制: {request.Parameters.Count} > {SecurityConstants.Limits.MaxParameterCount}");
+        }
+
+        foreach (var param in request.Parameters)
+        {
+            if (param.Value.ValueKind == JsonValueKind.Array)
+            {
+                var arrayLength = param.Value.GetArrayLength();
+                if (arrayLength > SecurityConstants.Limits.MaxArrayLength)
+                {
+                    errors.Add($"参数 '{param.Key}' 数组长度超过限制: {arrayLength} > {SecurityConstants.Limits.MaxArrayLength}");
+                }
+            }
+        }
+
         // 验证Schema
         var schemaResult = ValidateSchema(request.Parameters, request.InputSchema);
         if (!schemaResult.IsValid)
@@ -131,6 +148,18 @@ public sealed class JsonSchemaValidator : IInputValidator
         if (!pathTraversalResult.IsValid)
         {
             return pathTraversalResult;
+        }
+
+        var envInjectionResult = DetectEnvironmentVariableInjection(content);
+        if (!envInjectionResult.IsValid)
+        {
+            return envInjectionResult;
+        }
+
+        var multilineResult = DetectMultilineCommandInjection(content);
+        if (!multilineResult.IsValid)
+        {
+            return multilineResult;
         }
 
         return ValidationResultFactory.Success();
@@ -315,6 +344,48 @@ public sealed class JsonSchemaValidator : IInputValidator
                 return ValidationResultFactory.MaliciousContentDetected(
                     SecurityConstants.AttackTypes.PathTraversal,
                     $"检测到路径遍历模式: {pattern}");
+            }
+        }
+
+        return ValidationResultFactory.Success();
+    }
+
+    private static ValidationResult DetectEnvironmentVariableInjection(string content)
+    {
+        foreach (var pattern in SecurityConstants.MaliciousPatterns.EnvironmentVariablePatterns)
+        {
+            if (Regex.IsMatch(content, pattern, RegexOptions.Compiled))
+            {
+                return ValidationResultFactory.MaliciousContentDetected(
+                    SecurityConstants.AttackTypes.CommandInjection,
+                    $"检测到环境变量注入模式: {pattern}");
+            }
+        }
+
+        return ValidationResultFactory.Success();
+    }
+
+    private static ValidationResult DetectMultilineCommandInjection(string content)
+    {
+        var lines = content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length <= 1)
+        {
+            return ValidationResultFactory.Success();
+        }
+
+        var dangerousCommands = new[] { "rm", "del", "rmdir", "format", "mkfs", "dd" };
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            foreach (var cmd in dangerousCommands)
+            {
+                if (line.StartsWith(cmd + " ", StringComparison.OrdinalIgnoreCase) ||
+                    line.StartsWith(cmd + "\t", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ValidationResultFactory.MaliciousContentDetected(
+                        SecurityConstants.AttackTypes.CommandInjection,
+                        $"检测到多行命令注入: multiline_{cmd}");
+                }
             }
         }
 

