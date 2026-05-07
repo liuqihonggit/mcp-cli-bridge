@@ -241,7 +241,7 @@ internal sealed class CommandHandler
             Description = "AST CLI - Code analysis, symbol query, find references, and refactoring",
             Category = "code-analysis",
             CommandCount = 13,
-            HasDocumentation = false
+            HasDocumentation = true
         };
 
         return Ok(pluginDescriptor, "", CommonJsonContext.Default.PluginDescriptor);
