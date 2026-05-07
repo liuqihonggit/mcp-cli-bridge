@@ -6,11 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="MyMemoryServer.UnitTests" />
+    <InternalsVisibleTo Include="MyMemoryServer.E2E" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="McpProtocol" Version="1.0.2" />
+    <PackageReference Include="McpProtocol" Version="1.0.3" />
   </ItemGroup>
 
   <ItemGroup>

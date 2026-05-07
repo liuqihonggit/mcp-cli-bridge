@@ -175,6 +175,49 @@ class Program
                 return true;
             }));
 
+            // Test 2.5: Tools/List - InputSchema should NOT be empty (regression test for InputSchema bug)
+            testResults.Add(await RunTestAsync("Tools/List - InputSchema Not Empty", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 2,
+                    Method = "tools/list",
+                    Params = new { }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(5));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+                var tools = root.GetProperty("result").GetProperty("tools").EnumerateArray().ToList();
+
+                foreach (var tool in tools)
+                {
+                    var toolName = tool.GetProperty("name").GetString();
+                    AssertTrue(tool.TryGetProperty("inputSchema", out var schema), $"Tool {toolName} should have inputSchema");
+                    AssertTrue(schema.GetProperty("type").GetString() == "object", $"Tool {toolName} inputSchema type should be 'object'");
+                    AssertTrue(schema.TryGetProperty("properties", out var props), $"Tool {toolName} inputSchema should have properties");
+                }
+
+                var toolExecute = tools.First(t => t.GetProperty("name").GetString() == "tool_execute");
+                var executeSchema = toolExecute.GetProperty("inputSchema");
+                var executeProps = executeSchema.GetProperty("properties");
+                AssertTrue(executeProps.TryGetProperty("tool", out _), "tool_execute should have 'tool' property in schema");
+                AssertTrue(executeProps.TryGetProperty("parameters", out _), "tool_execute should have 'parameters' property in schema");
+                var executeRequired = executeSchema.GetProperty("required").EnumerateArray().Select(r => r.GetString()).ToList();
+                AssertTrue(executeRequired.Contains("tool"), "tool_execute should require 'tool'");
+                AssertTrue(executeRequired.Contains("parameters"), "tool_execute should require 'parameters'");
+
+                var toolDescribe = tools.First(t => t.GetProperty("name").GetString() == "tool_describe");
+                var describeSchema = toolDescribe.GetProperty("inputSchema");
+                var describeProps = describeSchema.GetProperty("properties");
+                AssertTrue(describeProps.TryGetProperty("pluginName", out _), "tool_describe should have 'pluginName' property in schema");
+
+                return true;
+            }));
+
             // ============================================
             // MCP Layer Tool Tests
             // ============================================
