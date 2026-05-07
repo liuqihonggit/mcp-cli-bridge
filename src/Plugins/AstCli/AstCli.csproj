@@ -4,8 +4,6 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>AstCli</AssemblyName>
     <Description>AST CLI Tool - Code analysis, symbol query, and refactoring</Description>
-    <PublishAot>true</PublishAot>
-    <TrimMode>full</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +15,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Common.csproj" />
     <ProjectReference Include="..\..\Common.Contracts\Common.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootAssembly Include="AstCli" />
   </ItemGroup>
 
 </Project>

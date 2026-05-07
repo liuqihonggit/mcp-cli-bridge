@@ -245,7 +245,7 @@ internal sealed class CommandHandler
             }
         };
 
-        return Ok<List<ToolDefinition>>(tools, "", CommonJsonContext.Default.ListToolDefinition);
+        return Ok(tools, "", CommonJsonContext.Default.ListToolDefinition);
     }
 
     private static OperationResult<JsonElement> Fail(string message)
@@ -258,7 +258,7 @@ internal sealed class CommandHandler
         };
     }
 
-    private static OperationResult<JsonElement> Ok<T>(T data, string message, JsonTypeInfo<T> typeInfo)
+    private static OperationResult<JsonElement> Ok<T>(T data, string message = "", JsonTypeInfo<T> typeInfo = null!)
     {
         return new OperationResult<JsonElement>
         {

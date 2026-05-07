@@ -25,6 +25,7 @@ global using Common.Json.Schema;
 global using Common.Logging;
 global using McpProtocol.Contracts;
 global using static Common.Constants.ConstantManager;
+global using static Common.Constants.ConstantManager.Commands;
 
 global using AstCli.Models;
 global using AstCli.Services;

@@ -10,14 +10,14 @@ using var logger = new Logger(
 var rootCommand = new RootCommand("AST CLI Tool - Code analysis, symbol query, and refactoring");
 
 var jsonInputOption = new Option<string>(
-    name: Common.Constants.ConstantManager.Commands.Cli.JsonInput,
+    name: Cli.JsonInput,
     description: "Base64-encoded JSON request")
 {
     IsRequired = true
 };
 
 var commandOption = new Option<string>(
-    name: Common.Constants.ConstantManager.Commands.Cli.Command,
+    name: Cli.Command,
     description: "Command to execute: symbol_query, reference_find, symbol_rename, symbol_replace, symbol_info, workspace_overview, file_context, diagnostics, symbol_outline, list_tools")
 {
     IsRequired = false
@@ -30,7 +30,7 @@ rootCommand.SetHandler(async (string jsonInput) =>
 {
     if (string.IsNullOrEmpty(jsonInput))
     {
-        logger.Error($"Missing required option: {Common.Constants.ConstantManager.Commands.Cli.JsonInput}");
+        logger.Error($"Missing required option: {Cli.JsonInput}");
         Environment.Exit(1);
         return;
     }
