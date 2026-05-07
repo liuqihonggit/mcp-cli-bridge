@@ -52,6 +52,7 @@ if (Test-Path "$PSScriptRoot\publish") {
 New-Item -ItemType Directory -Path "$PSScriptRoot\publish" -Force | Out-Null
 New-Item -ItemType Directory -Path "$PSScriptRoot\publish\Plugins\MemoryCli" -Force | Out-Null
 New-Item -ItemType Directory -Path "$PSScriptRoot\publish\Plugins\FileReaderCli" -Force | Out-Null
+New-Item -ItemType Directory -Path "$PSScriptRoot\publish\Plugins\AstCli" -Force | Out-Null
 
 # Step 4: Build McpHost
 Write-Host "`n[Build] McpHost (AOT)..." -ForegroundColor Cyan
@@ -98,7 +99,22 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Step 7: Copy npm package files
+# Step 7: Build AstCli
+Write-Host "`n[Build] AstCli (AOT)..." -ForegroundColor Cyan
+dotnet publish "$PSScriptRoot\src\Plugins\AstCli\AstCli.csproj" `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -p:PublishAot=true `
+    -p:PublishDir="$PSScriptRoot\publish\Plugins\AstCli"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "AstCli build failed!"
+    exit 1
+}
+
+# Step 8: Copy npm package files
 Write-Host "`n[Copy] npm package files..." -ForegroundColor Cyan
 Copy-Item "$PSScriptRoot\package.json" "$PSScriptRoot\publish\" -Force
 Copy-Item "$PSScriptRoot\index.js" "$PSScriptRoot\publish\" -Force
@@ -107,12 +123,14 @@ Copy-Item "$PSScriptRoot\README.md" "$PSScriptRoot\publish\" -Force
 # Copy CLI documentation files to Plugins subdirectories
 Copy-Item "$PSScriptRoot\src\Plugins\MemoryCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\MemoryCli\CLI说明.md" -Force
 Copy-Item "$PSScriptRoot\src\Plugins\FileReaderCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\FileReaderCli\CLI说明.md" -Force
+Copy-Item "$PSScriptRoot\src\Plugins\AstCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\AstCli\CLI说明.md" -Force
 
 # Verify outputs
 $requiredFiles = @(
     "$PSScriptRoot\publish\McpHost.exe",
     "$PSScriptRoot\publish\Plugins\MemoryCli\MemoryCli.exe",
-    "$PSScriptRoot\publish\Plugins\FileReaderCli\FileReaderCli.exe"
+    "$PSScriptRoot\publish\Plugins\FileReaderCli\FileReaderCli.exe",
+    "$PSScriptRoot\publish\Plugins\AstCli\AstCli.exe"
 )
 
 foreach ($file in $requiredFiles) {

@@ -35,6 +35,14 @@ class Program
             return;
         }
 
+        // 查找 AstCli 可执行文件
+        var astCliPath = FindAstCliExecutable();
+        if (string.IsNullOrEmpty(astCliPath))
+        {
+            Console.WriteLine("AstCli 未构建，请先运行: dotnet build src/Plugins/AstCli/AstCli.csproj -c Release");
+            return;
+        }
+
         // 使用临时测试目录
         var testBaseDir = Path.Combine(Path.GetTempPath(), $"McpHost_E2E_{DateTime.Now:yyyyMMdd_HHmmss}");
         var testTimestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -87,9 +95,10 @@ class Program
         Console.WriteLine($"Test memory directory: {testBaseDir}");
         Console.WriteLine();
 
-        // 预先创建测试数据文件（用于多文件合并测试）
         EnsureDirectory(testBaseDir);
         CreateTestMemoryFiles(testBaseDir, testTimestamp);
+
+        DeployAstCliToServer(serverPath, astCliPath);
 
         process.Start();
         process.BeginOutputReadLine();
@@ -899,9 +908,10 @@ class Program
                 var text = content.GetProperty("text").GetString();
                 
                 var listResult = JsonSerializer.Deserialize(text!, CommonJsonContext.Default.ToolListResult);
-                AssertTrue(listResult?.TotalPlugins >= 2, "Should have at least 2 plugins");
+                AssertTrue(listResult?.TotalPlugins >= 3, "Should have at least 3 plugins");
                 AssertTrue(listResult!.Plugins.Any(p => p.Name == "MemoryCli"), "Should have MemoryCli plugin");
                 AssertTrue(listResult.Plugins.Any(p => p.Name == "FileReaderCli"), "Should have FileReaderCli plugin");
+                AssertTrue(listResult.Plugins.Any(p => p.Name == "AstCli"), "Should have AstCli plugin");
 
                 return true;
             }));
@@ -1478,6 +1488,352 @@ class Program
                 return true;
             }));
 
+            // ============================================
+            // AstCli Tool Tests (via tool_execute)
+            // ============================================
+
+            var astProjectDir = CreateTestAstProject(testBaseDir);
+
+            // Test 38: AstCli - tool_search should find ast tools
+            testResults.Add(await RunTestAsync("AstCli - tool_search", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 38,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_search",
+                        Arguments = new { query = "ast" }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(5));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(38, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+
+                var searchResults = JsonSerializer.Deserialize<PluginDescriptor[]>(text!, CommonJsonContext.Default.PluginDescriptorArray);
+                AssertTrue(searchResults?.Length > 0, "Should find ast-related tools");
+                AssertTrue(searchResults!.Any(p => p.Name.Contains("Ast", StringComparison.OrdinalIgnoreCase)), "Should find AstCli plugin");
+
+                return true;
+            }));
+
+            // Test 39: AstCli - ast_query_symbol
+            testResults.Add(await RunTestAsync("AstCli - query_symbol", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 39,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_query_symbol",
+                            parameters = new
+                            {
+                                command = "query_symbol",
+                                projectPath = astProjectDir,
+                                symbolName = "ServiceA"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(39, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("ServiceA") ?? false, "Should find ServiceA symbol");
+                AssertTrue(text?.Contains("Class") ?? false, "Should identify it as a Class");
+
+                return true;
+            }));
+
+            // Test 40: AstCli - ast_find_references
+            testResults.Add(await RunTestAsync("AstCli - find_references", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 40,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_find_references",
+                            parameters = new
+                            {
+                                command = "find_references",
+                                projectPath = astProjectDir,
+                                symbolName = "ServiceA"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(40, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("ServiceA") ?? false, "Should find ServiceA references");
+                AssertTrue(text?.Contains("ServiceB") ?? false, "ServiceB references ServiceA");
+
+                return true;
+            }));
+
+            // Test 41: AstCli - ast_get_symbol_info
+            testResults.Add(await RunTestAsync("AstCli - get_symbol_info", async () =>
+            {
+                var serviceAPath = Path.Combine(astProjectDir, "ServiceA.cs");
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 41,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_get_symbol_info",
+                            parameters = new
+                            {
+                                command = "get_symbol_info",
+                                projectPath = astProjectDir,
+                                filePath = serviceAPath,
+                                lineNumber = 3,
+                                columnNumber = 13
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(41, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("ServiceA") ?? false, "Should find ServiceA at the position");
+
+                return true;
+            }));
+
+            // Test 42: AstCli - ast_rename_symbol
+            testResults.Add(await RunTestAsync("AstCli - rename_symbol", async () =>
+            {
+                var renameProjectDir = CreateTestAstProject(Path.Combine(testBaseDir, "rename_test"));
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 42,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_rename_symbol",
+                            parameters = new
+                            {
+                                command = "rename_symbol",
+                                projectPath = renameProjectDir,
+                                symbolName = "ServiceA",
+                                newName = "RenamedServiceA"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(42, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("RenamedServiceA") ?? false, "Should mention the new name");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+
+                var renamedContent = File.ReadAllText(Path.Combine(renameProjectDir, "ServiceA.cs"));
+                AssertTrue(renamedContent.Contains("RenamedServiceA"), "File should contain the renamed symbol");
+                AssertFalse(renamedContent.Contains("class ServiceA"), "File should not contain old class name");
+
+                var refContent = File.ReadAllText(Path.Combine(renameProjectDir, "ServiceB.cs"));
+                AssertTrue(refContent.Contains("RenamedServiceA"), "Referencing file should contain the renamed symbol");
+
+                return true;
+            }));
+
+            // Test 43: AstCli - ast_replace_symbol
+            testResults.Add(await RunTestAsync("AstCli - replace_symbol", async () =>
+            {
+                var replaceProjectDir = CreateTestAstProject(Path.Combine(testBaseDir, "replace_test"));
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 43,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_replace_symbol",
+                            parameters = new
+                            {
+                                command = "replace_symbol",
+                                projectPath = replaceProjectDir,
+                                symbolName = "Execute",
+                                newName = "Process"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(43, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("Process") ?? false, "Should mention the new name");
+
+                var replacedContent = File.ReadAllText(Path.Combine(replaceProjectDir, "ServiceA.cs"));
+                AssertTrue(replacedContent.Contains("Process"), "File should contain the replaced symbol");
+
+                return true;
+            }));
+
+            // Test 44: AstCli - nonexistent project path error
+            testResults.Add(await RunTestAsync("AstCli - nonexistent project path", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 44,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_query_symbol",
+                            parameters = new
+                            {
+                                command = "query_symbol",
+                                projectPath = "C:\\Nonexistent\\Path\\Project",
+                                symbolName = "Test"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(44, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be MCP error (CLI handles the error)");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("false") ?? false, "Should indicate failure");
+                AssertTrue(text?.Contains("not found") ?? false, "Should mention path not found");
+
+                return true;
+            }));
+
+            // Test 45: AstCli - query_symbol with wildcard
+            testResults.Add(await RunTestAsync("AstCli - query_symbol (wildcard)", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 45,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_query_symbol",
+                            parameters = new
+                            {
+                                command = "query_symbol",
+                                projectPath = astProjectDir,
+                                symbolName = "*"
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(45, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("ServiceA") ?? false, "Should find ServiceA");
+                AssertTrue(text?.Contains("ServiceB") ?? false, "Should find ServiceB");
+                AssertTrue(text?.Contains("IEntity") ?? false, "Should find IEntity");
+
+                return true;
+            }));
+
         }
         finally
         {
@@ -1522,6 +1878,25 @@ class Program
         Console.WriteLine($"Total: {passedCount}/{totalCount} tests passed");
 
         Environment.Exit(passedCount == totalCount ? 0 : 1);
+    }
+
+    static void DeployAstCliToServer(string serverPath, string astCliPath)
+    {
+        var serverDir = Path.GetDirectoryName(serverPath);
+        if (string.IsNullOrEmpty(serverDir)) return;
+
+        var pluginsDir = Path.Combine(serverDir, "Plugins", "AstCli");
+        if (!Directory.Exists(pluginsDir))
+        {
+            Directory.CreateDirectory(pluginsDir);
+        }
+
+        var destPath = Path.Combine(pluginsDir, "AstCli.exe");
+        if (!File.Exists(destPath) || File.GetLastWriteTimeUtc(astCliPath) > File.GetLastWriteTimeUtc(destPath))
+        {
+            File.Copy(astCliPath, destPath, overwrite: true);
+            Console.WriteLine($"Deployed AstCli to: {destPath}");
+        }
     }
 
     static string? FindServerExecutable()
@@ -1576,6 +1951,25 @@ class Program
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "publish", "FileReaderCli.exe")),
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Plugins", "FileReaderCli", "bin", "Release", "net10.0", "win-x64", "publish", "FileReaderCli.exe")),
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Plugins", "FileReaderCli", "bin", "Release", "net10.0", "FileReaderCli.exe")),
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            if (File.Exists(path))
+                return path;
+        }
+
+        return null;
+    }
+
+    static string? FindAstCliExecutable()
+    {
+        var possiblePaths = new[]
+        {
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Plugins", "AstCli", "bin", "Release", "net10.0", "win-x64", "publish", "AstCli.exe")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Plugins", "AstCli", "bin", "Debug", "net10.0", "AstCli.exe")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "publish", "Plugins", "AstCli", "AstCli.exe")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Plugins", "AstCli", "bin", "Release", "net10.0", "AstCli.exe")),
         };
 
         foreach (var path in possiblePaths)
@@ -1723,6 +2117,61 @@ class Program
             RelationType = "connects_to"
         };
         File.WriteAllText(relationFile, JsonSerializer.Serialize(relation, options) + Environment.NewLine);
+    }
+
+    static string CreateTestAstProject(string baseDir)
+    {
+        var astProjectDir = Path.Combine(baseDir, "AstTestProject");
+        Directory.CreateDirectory(astProjectDir);
+
+        File.WriteAllText(Path.Combine(astProjectDir, "ServiceA.cs"), """
+            namespace AstTestProject;
+
+            public class ServiceA
+            {
+                public void Execute()
+                {
+                    Console.WriteLine("ServiceA executing");
+                }
+
+                public string GetName()
+                {
+                    return "ServiceA";
+                }
+            }
+            """);
+
+        File.WriteAllText(Path.Combine(astProjectDir, "ServiceB.cs"), """
+            namespace AstTestProject;
+
+            public class ServiceB
+            {
+                private ServiceA _serviceA = new();
+
+                public void Run()
+                {
+                    _serviceA.Execute();
+                    var name = _serviceA.GetName();
+                }
+            }
+            """);
+
+        File.WriteAllText(Path.Combine(astProjectDir, "Models.cs"), """
+            namespace AstTestProject.Models;
+
+            public interface IEntity
+            {
+                string Name { get; }
+            }
+
+            public class Entity : IEntity
+            {
+                public string Name { get; set; }
+                public int Age { get; set; }
+            }
+            """);
+
+        return astProjectDir;
     }
 }
 
