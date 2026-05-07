@@ -198,4 +198,136 @@ public static class AstToolSchemaTemplates
 
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
+
+    public static JsonElement StringQuerySchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("string_query")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Optional: specific file to scan (scans entire project if omitted)")
+                .Build())
+            .WithProperty("prefix", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Filter strings by prefix (e.g. 'MCP' returns only strings starting with 'MCP')")
+                .Build())
+            .WithProperty("filter", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Filter strings by content (substring match)")
+                .Build())
+            .WithRequired("command", "projectPath")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    public static JsonElement StringPrefixSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("string_prefix")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Optional: specific file to modify (modifies entire project if omitted)")
+                .Build())
+            .WithProperty("insertText", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Text to insert as prefix at position 0 of each string")
+                .Build())
+            .WithProperty("filter", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Only modify strings containing this substring")
+                .Build())
+            .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                .WithType("boolean")
+                .WithDescription("Preview mode: do not actually modify files (default: false)")
+                .Build())
+            .WithRequired("command", "projectPath", "insertText")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    public static JsonElement StringSuffixSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("string_suffix")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Optional: specific file to modify (modifies entire project if omitted)")
+                .Build())
+            .WithProperty("insertText", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Text to insert as suffix at the end of each string")
+                .Build())
+            .WithProperty("filter", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Only modify strings containing this substring")
+                .Build())
+            .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                .WithType("boolean")
+                .WithDescription("Preview mode: do not actually modify files (default: false)")
+                .Build())
+            .WithRequired("command", "projectPath", "insertText")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    public static JsonElement StringInsertSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("string_insert")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Optional: specific file to modify (modifies entire project if omitted)")
+                .Build())
+            .WithProperty("insertText", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Text to insert at the specified position")
+                .Build())
+            .WithProperty("position", new JsonSchemaPropertyBuilder()
+                .WithType("integer")
+                .WithDescription("Character position to insert at (0=beginning, equals string length=end)")
+                .Build())
+            .WithProperty("filter", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Only modify strings containing this substring")
+                .Build())
+            .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                .WithType("boolean")
+                .WithDescription("Preview mode: do not actually modify files (default: false)")
+                .Build())
+            .WithRequired("command", "projectPath", "insertText", "position")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
 }

@@ -17,6 +17,10 @@ internal sealed class CommandHandler
             "file_context" => await FileContextAsync(request),
             "diagnostics" => await DiagnosticsAsync(request),
             "symbol_outline" => await SymbolOutlineAsync(request),
+            "string_query" => await StringQueryAsync(request),
+            "string_prefix" => await StringPrefixAsync(request),
+            "string_suffix" => await StringSuffixAsync(request),
+            "string_insert" => await StringInsertAsync(request),
             "list_tools" => ListTools(),
             "list_commands" => ListCommands(),
             _ => Fail($"Unknown command: {request.Command}")
@@ -162,6 +166,73 @@ internal sealed class CommandHandler
         return Ok(result, $"Symbol outline: {result.Types.Count} type(s)", AstCliJsonContext.Default.SymbolOutlineResultDto);
     }
 
+    private static async Task<OperationResult<JsonElement>> StringQueryAsync(AstCliRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await StringLiteralEngine.QueryAsync(request.ProjectPath, request.FilePath, request.Prefix, request.Filter);
+        return Ok(result, $"Found {result.TotalCount} string literal(s)", AstCliJsonContext.Default.StringQueryResultDto);
+    }
+
+    private static async Task<OperationResult<JsonElement>> StringPrefixAsync(AstCliRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.InsertText))
+            return Fail("insertText is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await StringLiteralEngine.InsertAsync(
+            request.ProjectPath, request.FilePath, request.InsertText, 0, "prefix", request.Filter, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
+    }
+
+    private static async Task<OperationResult<JsonElement>> StringSuffixAsync(AstCliRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.InsertText))
+            return Fail("insertText is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await StringLiteralEngine.InsertAsync(
+            request.ProjectPath, request.FilePath, request.InsertText, int.MaxValue, "suffix", request.Filter, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
+    }
+
+    private static async Task<OperationResult<JsonElement>> StringInsertAsync(AstCliRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.InsertText))
+            return Fail("insertText is required");
+        if (request.Position < 0)
+            return Fail("position must be >= 0");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await StringLiteralEngine.InsertAsync(
+            request.ProjectPath, request.FilePath, request.InsertText, request.Position, "insert", request.Filter, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
+    }
+
     private static OperationResult<JsonElement> ListTools()
     {
         var pluginDescriptor = new PluginDescriptor
@@ -169,7 +240,7 @@ internal sealed class CommandHandler
             Name = "ast_cli",
             Description = "AST CLI - Code analysis, symbol query, find references, and refactoring",
             Category = "code-analysis",
-            CommandCount = 9,
+            CommandCount = 13,
             HasDocumentation = false
         };
 
@@ -242,6 +313,34 @@ internal sealed class CommandHandler
                 Description = "Get symbol outline of a C# file: types, members, line ranges, accessibility",
                 Category = "symbol",
                 InputSchema = SymbolOutlineSchema()
+            },
+            new()
+            {
+                Name = "ast_string_query",
+                Description = "Query string literals in a C# project, optionally filter by prefix or content",
+                Category = "string",
+                InputSchema = StringQuerySchema()
+            },
+            new()
+            {
+                Name = "ast_string_prefix",
+                Description = "Insert text at the beginning (position 0) of each string literal",
+                Category = "string",
+                InputSchema = StringPrefixSchema()
+            },
+            new()
+            {
+                Name = "ast_string_suffix",
+                Description = "Insert text at the end of each string literal",
+                Category = "string",
+                InputSchema = StringSuffixSchema()
+            },
+            new()
+            {
+                Name = "ast_string_insert",
+                Description = "Insert text at an arbitrary position within each string literal",
+                Category = "string",
+                InputSchema = StringInsertSchema()
             }
         };
 
