@@ -9,6 +9,10 @@ Write-Host "Building MCP-CLI Bridge..." -ForegroundColor Green
 Write-Host "`n[Packing] Local NuGet packages..." -ForegroundColor Cyan
 
 $localNugetPath = "$PSScriptRoot\nuget"
+if (Test-Path $localNugetPath) {
+    Write-Host "  Cleaning old NuGet packages..." -ForegroundColor Gray
+    Get-ChildItem $localNugetPath -Filter "*.nupkg" -File | Remove-Item -Force
+}
 if (-not (Test-Path $localNugetPath)) {
     New-Item -ItemType Directory -Path $localNugetPath -Force | Out-Null
 }
