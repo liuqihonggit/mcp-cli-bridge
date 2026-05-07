@@ -8,11 +8,11 @@ internal sealed class CommandHandler
     {
         return request.Command?.ToLowerInvariant() switch
         {
-            "query_symbol" => await QuerySymbolAsync(request),
-            "find_references" => await FindReferencesAsync(request),
-            "rename_symbol" => await RenameSymbolAsync(request),
-            "replace_symbol" => await ReplaceSymbolAsync(request),
-            "get_symbol_info" => await GetSymbolInfoAsync(request),
+            "reference_find" => await FindReferencesAsync(request),
+            "symbol_query" => await QuerySymbolAsync(request),
+            "symbol_rename" => await RenameSymbolAsync(request),
+            "symbol_replace" => await ReplaceSymbolAsync(request),
+            "symbol_info" => await GetSymbolInfoAsync(request),
             "list_tools" => ListTools(),
             "list_commands" => ListCommands(),
             _ => Fail($"Unknown command: {request.Command}")
@@ -120,38 +120,38 @@ internal sealed class CommandHandler
         {
             new()
             {
-                Name = "ast_query_symbol",
+                Name = "ast_symbol_query",
                 Description = "Query symbols in a C# project by name",
                 Category = "code-analysis",
-                InputSchema = QuerySymbolSchema()
+                InputSchema = SymbolQuerySchema()
             },
             new()
             {
-                Name = "ast_find_references",
+                Name = "ast_reference_find",
                 Description = "Find all references to a symbol in a C# project",
                 Category = "code-analysis",
-                InputSchema = FindReferencesSchema()
+                InputSchema = ReferenceFindSchema()
             },
             new()
             {
-                Name = "ast_rename_symbol",
+                Name = "ast_symbol_rename",
                 Description = "Rename a symbol across all files in a C# project",
                 Category = "code-analysis",
-                InputSchema = RenameSymbolSchema()
+                InputSchema = SymbolRenameSchema()
             },
             new()
             {
-                Name = "ast_replace_symbol",
+                Name = "ast_symbol_replace",
                 Description = "Replace a symbol name with a new name across all files in a C# project",
                 Category = "code-analysis",
-                InputSchema = ReplaceSymbolSchema()
+                InputSchema = SymbolReplaceSchema()
             },
             new()
             {
-                Name = "ast_get_symbol_info",
+                Name = "ast_symbol_info",
                 Description = "Get symbol information at a specific position in a file",
                 Category = "code-analysis",
-                InputSchema = GetSymbolInfoSchema()
+                InputSchema = SymbolInfoSchema()
             }
         };
 

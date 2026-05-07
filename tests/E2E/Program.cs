@@ -1528,8 +1528,8 @@ class Program
                 return true;
             }));
 
-            // Test 39: AstCli - ast_query_symbol
-            testResults.Add(await RunTestAsync("AstCli - query_symbol", async () =>
+            // Test 39: AstCli - ast_symbol_query
+            testResults.Add(await RunTestAsync("AstCli - symbol_query", async () =>
             {
                 var request = new JsonRpcRequest
                 {
@@ -1540,10 +1540,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_query_symbol",
+                            tool = "ast_symbol_query",
                             parameters = new
                             {
-                                command = "query_symbol",
+                                command = "symbol_query",
                                 projectPath = astProjectDir,
                                 symbolName = "ServiceA"
                             }
@@ -1569,8 +1569,8 @@ class Program
                 return true;
             }));
 
-            // Test 40: AstCli - ast_find_references
-            testResults.Add(await RunTestAsync("AstCli - find_references", async () =>
+            // Test 40: AstCli - ast_reference_find
+            testResults.Add(await RunTestAsync("AstCli - reference_find", async () =>
             {
                 var request = new JsonRpcRequest
                 {
@@ -1581,10 +1581,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_find_references",
+                            tool = "ast_reference_find",
                             parameters = new
                             {
-                                command = "find_references",
+                                command = "reference_find",
                                 projectPath = astProjectDir,
                                 symbolName = "ServiceA"
                             }
@@ -1610,8 +1610,8 @@ class Program
                 return true;
             }));
 
-            // Test 41: AstCli - ast_get_symbol_info
-            testResults.Add(await RunTestAsync("AstCli - get_symbol_info", async () =>
+            // Test 41: AstCli - ast_symbol_info
+            testResults.Add(await RunTestAsync("AstCli - symbol_info", async () =>
             {
                 var serviceAPath = Path.Combine(astProjectDir, "ServiceA.cs");
 
@@ -1624,10 +1624,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_get_symbol_info",
+                            tool = "ast_symbol_info",
                             parameters = new
                             {
-                                command = "get_symbol_info",
+                                command = "symbol_info",
                                 projectPath = astProjectDir,
                                 filePath = serviceAPath,
                                 lineNumber = 3,
@@ -1654,8 +1654,8 @@ class Program
                 return true;
             }));
 
-            // Test 42: AstCli - ast_rename_symbol
-            testResults.Add(await RunTestAsync("AstCli - rename_symbol", async () =>
+            // Test 42: AstCli - ast_symbol_rename
+            testResults.Add(await RunTestAsync("AstCli - symbol_rename", async () =>
             {
                 var renameProjectDir = CreateTestAstProject(Path.Combine(testBaseDir, "rename_test"));
 
@@ -1668,10 +1668,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_rename_symbol",
+                            tool = "ast_symbol_rename",
                             parameters = new
                             {
-                                command = "rename_symbol",
+                                command = "symbol_rename",
                                 projectPath = renameProjectDir,
                                 symbolName = "ServiceA",
                                 newName = "RenamedServiceA"
@@ -1705,8 +1705,8 @@ class Program
                 return true;
             }));
 
-            // Test 43: AstCli - ast_replace_symbol
-            testResults.Add(await RunTestAsync("AstCli - replace_symbol", async () =>
+            // Test 43: AstCli - ast_symbol_replace
+            testResults.Add(await RunTestAsync("AstCli - symbol_replace", async () =>
             {
                 var replaceProjectDir = CreateTestAstProject(Path.Combine(testBaseDir, "replace_test"));
 
@@ -1719,10 +1719,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_replace_symbol",
+                            tool = "ast_symbol_replace",
                             parameters = new
                             {
-                                command = "replace_symbol",
+                                command = "symbol_replace",
                                 projectPath = replaceProjectDir,
                                 symbolName = "Execute",
                                 newName = "Process"
@@ -1763,10 +1763,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_query_symbol",
+                            tool = "ast_symbol_query",
                             parameters = new
                             {
-                                command = "query_symbol",
+                                command = "symbol_query",
                                 projectPath = "C:\\Nonexistent\\Path\\Project",
                                 symbolName = "Test"
                             }
@@ -1792,8 +1792,8 @@ class Program
                 return true;
             }));
 
-            // Test 45: AstCli - query_symbol with wildcard
-            testResults.Add(await RunTestAsync("AstCli - query_symbol (wildcard)", async () =>
+            // Test 45: AstCli - symbol_query with wildcard
+            testResults.Add(await RunTestAsync("AstCli - symbol_query (wildcard)", async () =>
             {
                 var request = new JsonRpcRequest
                 {
@@ -1804,10 +1804,10 @@ class Program
                         Name = "tool_execute",
                         Arguments = new
                         {
-                            tool = "ast_query_symbol",
+                            tool = "ast_symbol_query",
                             parameters = new
                             {
-                                command = "query_symbol",
+                                command = "symbol_query",
                                 projectPath = astProjectDir,
                                 symbolName = "*"
                             }

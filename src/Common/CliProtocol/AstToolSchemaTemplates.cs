@@ -2,12 +2,12 @@ namespace Common.CliProtocol;
 
 public static class AstToolSchemaTemplates
 {
-    public static JsonElement QuerySymbolSchema()
+    public static JsonElement SymbolQuerySchema()
     {
         var schema = new JsonSchemaBuilder()
             .WithProperty("command", new JsonSchemaPropertyBuilder()
                 .WithType("string")
-                .WithConst("query_symbol")
+                .WithConst("symbol_query")
                 .Build())
             .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
                 .WithType("string")
@@ -27,12 +27,12 @@ public static class AstToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    public static JsonElement FindReferencesSchema()
+    public static JsonElement ReferenceFindSchema()
     {
         var schema = new JsonSchemaBuilder()
             .WithProperty("command", new JsonSchemaPropertyBuilder()
                 .WithType("string")
-                .WithConst("find_references")
+                .WithConst("reference_find")
                 .Build())
             .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
                 .WithType("string")
@@ -48,12 +48,12 @@ public static class AstToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    public static JsonElement RenameSymbolSchema()
+    public static JsonElement SymbolRenameSchema()
     {
         var schema = new JsonSchemaBuilder()
             .WithProperty("command", new JsonSchemaPropertyBuilder()
                 .WithType("string")
-                .WithConst("rename_symbol")
+                .WithConst("symbol_rename")
                 .Build())
             .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
                 .WithType("string")
@@ -73,12 +73,12 @@ public static class AstToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    public static JsonElement ReplaceSymbolSchema()
+    public static JsonElement SymbolReplaceSchema()
     {
         var schema = new JsonSchemaBuilder()
             .WithProperty("command", new JsonSchemaPropertyBuilder()
                 .WithType("string")
-                .WithConst("replace_symbol")
+                .WithConst("symbol_replace")
                 .Build())
             .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
                 .WithType("string")
@@ -98,12 +98,12 @@ public static class AstToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    public static JsonElement GetSymbolInfoSchema()
+    public static JsonElement SymbolInfoSchema()
     {
         var schema = new JsonSchemaBuilder()
             .WithProperty("command", new JsonSchemaPropertyBuilder()
                 .WithType("string")
-                .WithConst("get_symbol_info")
+                .WithConst("symbol_info")
                 .Build())
             .WithProperty("filePath", new JsonSchemaPropertyBuilder()
                 .WithType("string")
