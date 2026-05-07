@@ -25,6 +25,21 @@ public sealed class AstCliRequest
 
     [JsonPropertyName("scope")]
     public string? Scope { get; set; }
+
+    [JsonPropertyName("insertText")]
+    public string? InsertText { get; set; }
+
+    [JsonPropertyName("position")]
+    public int Position { get; set; }
+
+    [JsonPropertyName("prefix")]
+    public string? Prefix { get; set; }
+
+    [JsonPropertyName("filter")]
+    public string? Filter { get; set; }
+
+    [JsonPropertyName("dryRun")]
+    public bool DryRun { get; set; }
 }
 
 public sealed class SymbolInfoDto
@@ -289,4 +304,67 @@ public sealed class MemberOutlineDto
 
     [JsonPropertyName("line")]
     public int Line { get; set; }
+}
+
+public sealed class StringLiteralInfoDto
+{
+    [JsonPropertyName("value")]
+    public string Value { get; set; } = string.Empty;
+
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = string.Empty;
+
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("line")]
+    public int Line { get; set; }
+
+    [JsonPropertyName("column")]
+    public int Column { get; set; }
+
+    [JsonPropertyName("length")]
+    public int Length { get; set; }
+
+    [JsonPropertyName("context")]
+    public string? Context { get; set; }
+}
+
+public sealed class StringQueryResultDto
+{
+    [JsonPropertyName("projectPath")]
+    public string ProjectPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("strings")]
+    public List<StringLiteralInfoDto> Strings { get; set; } = [];
+
+    [JsonPropertyName("totalCount")]
+    public int TotalCount { get; set; }
+
+    [JsonPropertyName("countByKind")]
+    public Dictionary<string, int> CountByKind { get; set; } = [];
+}
+
+public sealed class StringInsertResultDto
+{
+    [JsonPropertyName("insertText")]
+    public string InsertText { get; set; } = string.Empty;
+
+    [JsonPropertyName("position")]
+    public int Position { get; set; }
+
+    [JsonPropertyName("mode")]
+    public string Mode { get; set; } = string.Empty;
+
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("transformedCount")]
+    public int TransformedCount { get; set; }
+
+    [JsonPropertyName("modifiedFiles")]
+    public List<string> ModifiedFiles { get; set; } = [];
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = string.Empty;
 }

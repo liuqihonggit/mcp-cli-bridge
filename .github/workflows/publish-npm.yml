@@ -33,7 +33,7 @@ jobs:
           
           Write-Host "Tag version: $tagVersion"
           
-          $packageJsonPath = "package.json"
+          $packageJsonPath = "publish\package.json"
           $content = Get-Content $packageJsonPath -Raw
           $content = $content -replace '"version":\s*"[^"]*"', "`"version`": `"$tagVersion`""
           Set-Content $packageJsonPath $content -NoNewline

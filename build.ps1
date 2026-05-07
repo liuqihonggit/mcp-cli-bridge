@@ -1,5 +1,5 @@
 #!/usr/bin/env powershell
-# Build script for MCP-CLI Bridge npm package
+# Build script for MCP-CLI Bridge
 
 $ErrorActionPreference = "Stop"
 
@@ -114,13 +114,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Step 8: Copy npm package files
-Write-Host "`n[Copy] npm package files..." -ForegroundColor Cyan
-Copy-Item "$PSScriptRoot\package.json" "$PSScriptRoot\publish\" -Force
-Copy-Item "$PSScriptRoot\index.js" "$PSScriptRoot\publish\" -Force
-Copy-Item "$PSScriptRoot\README.md" "$PSScriptRoot\publish\" -Force
-
-# Copy CLI documentation files to Plugins subdirectories
+# Step 8: Copy CLI documentation files to Plugins subdirectories
 Copy-Item "$PSScriptRoot\src\Plugins\MemoryCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\MemoryCli\CLI说明.md" -Force
 Copy-Item "$PSScriptRoot\src\Plugins\FileReaderCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\FileReaderCli\CLI说明.md" -Force
 Copy-Item "$PSScriptRoot\src\Plugins\AstCli\CLI说明.md" "$PSScriptRoot\publish\Plugins\AstCli\CLI说明.md" -Force
@@ -167,5 +161,3 @@ $pluginsSize = (Get-ChildItem "$PSScriptRoot\publish\Plugins" -Recurse -File | M
 $totalSize = $hostSize + $pluginsSize
 $sizeMB = "{0:N2}" -f ($totalSize / 1MB)
 Write-Host "  Total: $sizeMB MB"
-
-Write-Host "`nTo publish to npm, run: npm publish" -ForegroundColor Yellow

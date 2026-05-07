@@ -43,7 +43,7 @@ jobs:
           Write-Host "[Clean] Completed" -ForegroundColor Green
 
       - name: AOT Build
-        run: .\build.ps1
+        run: .\buildAndNpm.ps1
 
       - name: Unit Tests
         run: dotnet test McpHost.slnx -c Release --verbosity normal
@@ -55,9 +55,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mcp-cli-bridge-build
-          path: |
-            publish/
-            package.json
-            index.js
-            README.md
+          path: publish/
           retention-days: 7
