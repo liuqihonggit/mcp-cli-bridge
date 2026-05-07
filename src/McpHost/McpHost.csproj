@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="MyMemoryServer.UnitTests" />
-    <InternalsVisibleTo Include="MyMemoryServer.E2E" />
   </ItemGroup>
 
   <ItemGroup>
