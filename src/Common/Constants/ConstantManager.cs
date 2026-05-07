@@ -605,46 +605,69 @@ public static class ConstantManager
     }
 
     /// <summary>
-    /// 命令名称
+    /// 命令名称 - CLI 命令统一使用小写下划线格式
     /// </summary>
     public static class Commands
     {
         public static class Memory
         {
+            [CliName("create_entities")]
             public static string CreateEntities => GetString(nameof(CreateEntities));
+            [CliName("create_relations")]
             public static string CreateRelations => GetString(nameof(CreateRelations));
+            [CliName("read_graph")]
             public static string ReadGraph => GetString(nameof(ReadGraph));
+            [CliName("search_nodes")]
             public static string SearchNodes => GetString(nameof(SearchNodes));
+            [CliName("add_observations")]
             public static string AddObservations => GetString(nameof(AddObservations));
+            [CliName("delete_entities")]
             public static string DeleteEntities => GetString(nameof(DeleteEntities));
+            [CliName("delete_observations")]
             public static string DeleteObservations => GetString(nameof(DeleteObservations));
+            [CliName("delete_relations")]
             public static string DeleteRelations => GetString(nameof(DeleteRelations));
+            [CliName("open_nodes")]
             public static string OpenNodes => GetString(nameof(OpenNodes));
+            [CliName("get_storage_info")]
             public static string GetStorageInfo => GetString(nameof(GetStorageInfo));
+            [CliName("list_tools")]
             public static string ListTools => GetString(nameof(ListTools));
         }
 
         public static class Mcp
         {
+            [CliName("initialize")]
             public static string Initialize => GetString(nameof(Initialize));
+            [CliName("tools/list")]
             public static string ToolsList => GetString(nameof(ToolsList));
+            [CliName("tools/call")]
             public static string ToolsCall => GetString(nameof(ToolsCall));
+            [CliName("initialized")]
             public static string Initialized => GetString(nameof(Initialized));
         }
 
         public static class Cli
         {
+            [CliName("--help")]
             public static string Help => GetString(nameof(Help));
+            [CliName("-h")]
             public static string HelpShort => GetString(nameof(HelpShort));
+            [CliName("/?")]
             public static string HelpWindows => GetString(nameof(HelpWindows));
+            [CliName("--json-input")]
             public static string JsonInput => GetString(nameof(JsonInput));
+            [CliName("--command")]
             public static string Command => GetString(nameof(Command));
         }
 
         public static class FileReader
         {
+            [CliName("read_head")]
             public static string ReadHead => GetString(nameof(ReadHead));
+            [CliName("read_tail")]
             public static string ReadTail => GetString(nameof(ReadTail));
+            [CliName("list_tools")]
             public static string ListTools => GetString(nameof(ListTools));
         }
     }

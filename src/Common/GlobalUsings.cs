@@ -20,6 +20,7 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using static Common.Constants.ConstantManager;
 global using Common.Contracts;
+global using Common.Contracts.Attributes;
 global using Common.Contracts.Models;
 global using Common.Contracts.Caching;
 global using Common.Contracts.IoC;
