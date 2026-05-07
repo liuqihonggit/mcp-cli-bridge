@@ -64,6 +64,15 @@ function Update-PackageJson {
     Set-Content $packageJsonPath $content -NoNewline
 }
 
+function Update-DirectoryBuildProps {
+    param([string]$newVersion)
+    
+    $propsPath = "$repoRoot\Directory.Build.props"
+    $content = Get-Content $propsPath -Raw
+    $content = $content -replace '<UnifiedVersion>[^<]*</UnifiedVersion>', "<UnifiedVersion>$newVersion</UnifiedVersion>"
+    Set-Content $propsPath $content -NoNewline
+}
+
 function Invoke-GitPush {
     param([string]$remote, [string]$ref, [int]$timeoutSeconds = 60)
     
@@ -116,9 +125,12 @@ Write-Host "`n[Version] $baseVersion -> $newVersion ($VersionBump)" -ForegroundC
 Update-PackageJson $newVersion
 Write-Host "  Updated package.json" -ForegroundColor Gray
 
+Update-DirectoryBuildProps $newVersion
+Write-Host "  Updated Directory.Build.props" -ForegroundColor Gray
+
 Write-Host "`n[Git] Committing and tagging..." -ForegroundColor Cyan
 
-git add "$repoRoot\package.json"
+git add "$repoRoot\package.json" "$repoRoot\Directory.Build.props"
 git commit -m "release: v$newVersion"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Git commit failed!"

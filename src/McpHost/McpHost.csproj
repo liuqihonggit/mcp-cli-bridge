@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="McpProtocol" Version="1.0.3" />
+    <PackageReference Include="McpProtocol" Version="$(McpProtocolVersion)" />
   </ItemGroup>
 
   <ItemGroup>

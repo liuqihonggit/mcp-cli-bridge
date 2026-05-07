@@ -9,7 +9,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Description>Async file lock library with NativeAOT support</Description>
     <PackageId>AsyncFileLock</PackageId>
-    <Version>1.0.0</Version>
+    <Version>$(AsyncFileLockVersion)</Version>
   </PropertyGroup>
 
   <ItemGroup>
