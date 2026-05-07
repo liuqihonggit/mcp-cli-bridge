@@ -5,6 +5,7 @@
     <Project Path="src/McpHost/McpHost.csproj" />
     <Project Path="src/Plugins/MemoryCli/MemoryCli.csproj" />
     <Project Path="src/Plugins/FileReaderCli/FileReaderCli.csproj" />
+    <Project Path="src/Plugins/AstCli/AstCli.csproj" />
     <Folder Name="/Analyzers/">
       <Project Path="src/Analyzers/FileLockAnalyzer/FileLockAnalyzer.csproj" />
     </Folder>
