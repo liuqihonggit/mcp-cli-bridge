@@ -99,6 +99,8 @@ class Program
         CreateTestMemoryFiles(testBaseDir, testTimestamp);
 
         DeployAstCliToServer(serverPath, astCliPath);
+        DeployCliToServer(serverPath, memoryCliPath, "MemoryCli");
+        DeployCliToServer(serverPath, fileReaderCliPath, "FileReaderCli");
 
         process.Start();
         process.BeginOutputReadLine();
@@ -204,9 +206,9 @@ class Program
                 var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
                 var text = content.GetProperty("text").GetString();
                 
-                var searchResults = JsonSerializer.Deserialize<PluginDescriptor[]>(text!, CommonJsonContext.Default.PluginDescriptorArray);
-                AssertTrue(searchResults?.Length > 0, "Should find memory-related tools");
-                AssertTrue(searchResults!.Any(p => p.Name.Contains("Memory", StringComparison.OrdinalIgnoreCase)), "Should find MemoryCli plugin");
+                var searchResults = JsonSerializer.Deserialize(text!, CommonJsonContext.Default.ToolListResult);
+                AssertTrue(searchResults?.Plugins.Count > 0, "Should find memory-related tools");
+                AssertTrue(searchResults!.Plugins.Any(p => p.Name.Contains("memory", StringComparison.OrdinalIgnoreCase)), "Should find memory_cli plugin");
 
                 return true;
             }));
@@ -221,7 +223,7 @@ class Program
                     Params = new CallToolRequestParams
                     {
                         Name = "tool_describe",
-                        Arguments = new { pluginName = "MemoryCli" }
+                        Arguments = new { pluginName = "memory_cli" }
                     }
                 };
 
@@ -732,9 +734,9 @@ class Program
                 var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
                 var text = content.GetProperty("text").GetString();
                 
-                var searchResults = JsonSerializer.Deserialize<PluginDescriptor[]>(text!, CommonJsonContext.Default.PluginDescriptorArray);
-                AssertTrue(searchResults?.Length > 0, "Should find file-related tools");
-                AssertTrue(searchResults!.Any(p => p.Name.Contains("FileReader", StringComparison.OrdinalIgnoreCase)), "Should find FileReaderCli plugin");
+                var searchResults = JsonSerializer.Deserialize(text!, CommonJsonContext.Default.ToolListResult);
+                AssertTrue(searchResults?.Plugins.Count > 0, "Should find file-related tools");
+                AssertTrue(searchResults!.Plugins.Any(p => p.Name.Contains("file_reader", StringComparison.OrdinalIgnoreCase)), "Should find file_reader_cli plugin");
 
                 return true;
             }));
@@ -909,9 +911,9 @@ class Program
                 
                 var listResult = JsonSerializer.Deserialize(text!, CommonJsonContext.Default.ToolListResult);
                 AssertTrue(listResult?.TotalPlugins >= 3, "Should have at least 3 plugins");
-                AssertTrue(listResult!.Plugins.Any(p => p.Name == "MemoryCli"), "Should have MemoryCli plugin");
-                AssertTrue(listResult.Plugins.Any(p => p.Name == "FileReaderCli"), "Should have FileReaderCli plugin");
-                AssertTrue(listResult.Plugins.Any(p => p.Name == "AstCli"), "Should have AstCli plugin");
+                AssertTrue(listResult!.Plugins.Any(p => p.Name == "memory_cli"), "Should have memory_cli plugin");
+                AssertTrue(listResult.Plugins.Any(p => p.Name == "file_reader_cli"), "Should have file_reader_cli plugin");
+                AssertTrue(listResult.Plugins.Any(p => p.Name == "ast_cli"), "Should have ast_cli plugin");
 
                 return true;
             }));
@@ -1521,9 +1523,9 @@ class Program
                 var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
                 var text = content.GetProperty("text").GetString();
 
-                var searchResults = JsonSerializer.Deserialize<PluginDescriptor[]>(text!, CommonJsonContext.Default.PluginDescriptorArray);
-                AssertTrue(searchResults?.Length > 0, "Should find ast-related tools");
-                AssertTrue(searchResults!.Any(p => p.Name.Contains("Ast", StringComparison.OrdinalIgnoreCase)), "Should find AstCli plugin");
+                var searchResults = JsonSerializer.Deserialize(text!, CommonJsonContext.Default.ToolListResult);
+                AssertTrue(searchResults?.Plugins.Count > 0, "Should find ast-related tools");
+                AssertTrue(searchResults!.Plugins.Any(p => p.Name.Contains("ast", StringComparison.OrdinalIgnoreCase)), "Should find ast_cli plugin");
 
                 return true;
             }));
@@ -2056,6 +2058,51 @@ class Program
         Console.WriteLine($"Total: {passedCount}/{totalCount} tests passed");
 
         Environment.Exit(passedCount == totalCount ? 0 : 1);
+    }
+
+    static void DeployCliToServer(string serverPath, string cliPath, string cliName)
+    {
+        var serverDir = Path.GetDirectoryName(serverPath);
+        if (string.IsNullOrEmpty(serverDir)) return;
+
+        var pluginsDir = Path.Combine(serverDir, "Plugins", cliName);
+        if (!Directory.Exists(pluginsDir))
+        {
+            Directory.CreateDirectory(pluginsDir);
+        }
+
+        var cliDir = Path.GetDirectoryName(cliPath);
+        if (string.IsNullOrEmpty(cliDir)) return;
+
+        foreach (var file in Directory.GetFiles(cliDir, $"{cliName}.*"))
+        {
+            var fileName = Path.GetFileName(file);
+            var destPath = Path.Combine(pluginsDir, fileName);
+            if (!File.Exists(destPath) || File.GetLastWriteTimeUtc(file) > File.GetLastWriteTimeUtc(destPath))
+            {
+                File.Copy(file, destPath, overwrite: true);
+            }
+        }
+
+        foreach (var file in Directory.GetFiles(cliDir, "*.dll"))
+        {
+            var destPath = Path.Combine(pluginsDir, Path.GetFileName(file));
+            if (!File.Exists(destPath) || File.GetLastWriteTimeUtc(file) > File.GetLastWriteTimeUtc(destPath))
+            {
+                File.Copy(file, destPath, overwrite: true);
+            }
+        }
+
+        foreach (var file in Directory.GetFiles(cliDir, "*.json"))
+        {
+            var destPath = Path.Combine(pluginsDir, Path.GetFileName(file));
+            if (!File.Exists(destPath) || File.GetLastWriteTimeUtc(file) > File.GetLastWriteTimeUtc(destPath))
+            {
+                File.Copy(file, destPath, overwrite: true);
+            }
+        }
+
+        Console.WriteLine($"Deployed {cliName} to: {pluginsDir}");
     }
 
     static void DeployAstCliToServer(string serverPath, string astCliPath)

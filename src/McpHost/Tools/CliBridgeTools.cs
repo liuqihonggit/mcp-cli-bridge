@@ -164,7 +164,13 @@ internal sealed class CliBridgeTools : IDisposable
         if (matches.Count == 0)
             return CreateErrorResponse($"No plugins found matching '{query}'");
 
-        return JsonSerializer.Serialize(matches, CommonJsonContext.Default.ListPluginDescriptor);
+        var result = new ToolListResult
+        {
+            TotalPlugins = matches.Count,
+            Plugins = matches
+        };
+
+        return JsonSerializer.Serialize(result, CommonJsonContext.Default.ToolListResult);
     }
 
     /// <summary>
