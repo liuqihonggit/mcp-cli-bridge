@@ -91,7 +91,7 @@ internal sealed class CommandHandler
     {
         var pluginDescriptor = new PluginDescriptor
         {
-            Name = "file_reader",
+            Name = "file_reader_cli",
             Description = "File Reader CLI - Read file contents (head/tail) with line control",
             Category = "file-operations",
             CommandCount = 2,

@@ -166,7 +166,7 @@ internal sealed class CommandHandler
     {
         var pluginDescriptor = new PluginDescriptor
         {
-            Name = "ast",
+            Name = "ast_cli",
             Description = "AST CLI - Code analysis, symbol query, find references, and refactoring",
             Category = "code-analysis",
             CommandCount = 9,

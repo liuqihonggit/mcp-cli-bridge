@@ -374,7 +374,7 @@ internal sealed class CommandHandler
     {
         var pluginDescriptor = new PluginDescriptor
         {
-            Name = "memory",
+            Name = "memory_cli",
             Description = "Knowledge Graph CLI - Manage entities, relations, and observations in a persistent knowledge graph",
             Category = "knowledge-graph",
             CommandCount = 10,

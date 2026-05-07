@@ -4,11 +4,13 @@
 using System.Diagnostics;
 
 /// <summary>
-/// 自动发现 CLI 插件 - 查找同目录下的所有 .exe 文件
+/// 自动发现 CLI 插件 - 查找同目录下的所有 .exe 文件，名称规范化为小写下划线格式
 /// </summary>
-static List<string> DiscoverCliPlugins(IPackageManager packageManager, ILogger logger)
+static List<(string NormalizedName, string ExeFileName)> DiscoverCliPlugins(IPackageManager packageManager, ILogger logger)
 {
-    return packageManager.DiscoverAvailablePlugins().ToList();
+    return packageManager.DiscoverAvailablePlugins()
+        .Select(exeName => (NormalizedName: CliNaming.ToSnakeCase(exeName), ExeFileName: exeName))
+        .ToList();
 }
 
 var services = new ServiceContainer();
@@ -83,11 +85,11 @@ try
     // 自动发现同目录下的所有 CLI.exe 插件
     var discoveredPlugins = DiscoverCliPlugins(packageManager, logger);
 
-    foreach (var pluginName in discoveredPlugins)
+    foreach (var (normalizedName, exeFileName) in discoveredPlugins)
     {
         var config = DefaultPluginConfiguration.CreateCliProvider(
-            pluginName,
-            pluginName,
+            normalizedName,
+            exeFileName,
             processPoolSize: 5,
             timeout: TimeSpan.FromSeconds(30));
 
@@ -101,11 +103,11 @@ try
         if (discovered)
         {
             toolRegistry.RegisterProvider(provider);
-            logger.Info($"Registered plugin: {pluginName}");
+            logger.Info($"Registered plugin: {normalizedName}");
         }
         else
         {
-            logger.Warn($"Failed to discover tools for provider: {pluginName}");
+            logger.Warn($"Failed to discover tools for provider: {normalizedName}");
             provider.Dispose();
         }
     }
