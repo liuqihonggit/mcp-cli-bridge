@@ -4,7 +4,7 @@ using Common.CliProtocol;
 using Common.Results;
 using Common.Tools;
 using Common.Contracts.Models;
-using static Common.CliProtocol.MemoryToolSchemaTemplates;
+using static MemoryCli.Schemas.MemoryToolSchemaTemplates;
 
 namespace MemoryCli.Commands;
 

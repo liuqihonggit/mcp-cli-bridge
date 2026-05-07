@@ -1,4 +1,4 @@
-namespace Common.CliProtocol;
+namespace AstCli.Schemas;
 
 public static class AstToolSchemaTemplates
 {

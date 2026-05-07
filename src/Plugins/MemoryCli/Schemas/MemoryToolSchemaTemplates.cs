@@ -1,12 +1,7 @@
-namespace Common.CliProtocol;
+namespace MemoryCli.Schemas;
 
-/// <summary>
-/// Memory CLI 工具 Schema 模板 - 特性驱动版本
-/// 使用 ToolSchemaAttribute 特性定义工具Schema
-/// </summary>
 public static class MemoryToolSchemaTemplates
 {
-    // 实体属性定义
     private static readonly SchemaPropertyDefinition EntityProperty = new(
         "entity",
         "object",
@@ -18,7 +13,6 @@ public static class MemoryToolSchemaTemplates
         ["name", "entityType"]
     );
 
-    // 关系属性定义
     private static readonly SchemaPropertyDefinition RelationProperty = new(
         "relation",
         "object",
@@ -30,9 +24,6 @@ public static class MemoryToolSchemaTemplates
         ["from", "to", "relationType"]
     );
 
-    /// <summary>
-    /// 创建实体工具Schema
-    /// </summary>
     public static JsonElement CreateEntitiesSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -51,9 +42,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 创建关系工具Schema
-    /// </summary>
     public static JsonElement CreateRelationsSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -72,9 +60,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 读取图谱工具Schema
-    /// </summary>
     public static JsonElement ReadGraphSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -88,9 +73,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 搜索节点工具Schema
-    /// </summary>
     public static JsonElement SearchNodesSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -108,9 +90,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 添加观察工具Schema
-    /// </summary>
     public static JsonElement AddObservationsSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -133,9 +112,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 删除实体工具Schema
-    /// </summary>
     public static JsonElement DeleteEntitiesSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -154,9 +130,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 删除观察工具Schema
-    /// </summary>
     public static JsonElement DeleteObservationsSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -179,9 +152,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 删除关系工具Schema
-    /// </summary>
     public static JsonElement DeleteRelationsSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -200,9 +170,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 打开节点工具Schema
-    /// </summary>
     public static JsonElement OpenNodesSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -221,9 +188,6 @@ public static class MemoryToolSchemaTemplates
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 
-    /// <summary>
-    /// 获取存储信息工具Schema
-    /// </summary>
     public static JsonElement GetStorageInfoSchema()
     {
         var schema = new JsonSchemaBuilder()
@@ -266,59 +230,5 @@ public static class MemoryToolSchemaTemplates
             })
             .WithRequired("from", "to", "relationType")
             .Build();
-    }
-}
-
-/// <summary>
-/// File Reader CLI 工具 Schema 模板 - 特性驱动版本
-/// </summary>
-public static class FileReaderToolSchemaTemplates
-{
-    /// <summary>
-    /// 读取文件头部工具Schema
-    /// </summary>
-    public static JsonElement ReadHeadSchema()
-    {
-        var schema = new JsonSchemaBuilder()
-            .WithProperty("command", new JsonSchemaPropertyBuilder()
-                .WithType("string")
-                .WithConst("read_head")
-                .Build())
-            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
-                .WithType("string")
-                .WithDescription("Path to the file to read")
-                .Build())
-            .WithProperty("lineCount", new JsonSchemaPropertyBuilder()
-                .WithType("integer")
-                .WithDescription("Number of lines to read from the beginning (default: 10)")
-                .Build())
-            .WithRequired("command", "filePath")
-            .Build();
-
-        return JsonSchemaBuilder.SerializeToJsonElement(schema);
-    }
-
-    /// <summary>
-    /// 读取文件尾部工具Schema
-    /// </summary>
-    public static JsonElement ReadTailSchema()
-    {
-        var schema = new JsonSchemaBuilder()
-            .WithProperty("command", new JsonSchemaPropertyBuilder()
-                .WithType("string")
-                .WithConst("read_tail")
-                .Build())
-            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
-                .WithType("string")
-                .WithDescription("Path to the file to read")
-                .Build())
-            .WithProperty("lineCount", new JsonSchemaPropertyBuilder()
-                .WithType("integer")
-                .WithDescription("Number of lines to read from the end (default: 10)")
-                .Build())
-            .WithRequired("command", "filePath")
-            .Build();
-
-        return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
 }

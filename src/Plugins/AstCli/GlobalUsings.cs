@@ -21,6 +21,7 @@ global using Common.Json;
 global using Common.Results;
 global using Common.Tools;
 global using Common.CliProtocol;
+global using Common.Json.Schema;
 global using Common.Logging;
 global using McpProtocol.Contracts;
 global using static Common.Constants.ConstantManager;

@@ -5,7 +5,7 @@ using Common.CliProtocol;
 using Common.Results;
 using Common.Tools;
 using Common.Contracts.Models;
-using static Common.CliProtocol.FileReaderToolSchemaTemplates;
+using static FileReaderCli.Schemas.FileReaderToolSchemaTemplates;
 
 namespace FileReaderCli.Commands;
 

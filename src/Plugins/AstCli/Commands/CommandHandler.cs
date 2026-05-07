@@ -1,4 +1,4 @@
-using static Common.CliProtocol.AstToolSchemaTemplates;
+using static AstCli.Schemas.AstToolSchemaTemplates;
 
 namespace AstCli.Commands;
 

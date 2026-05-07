@@ -12,6 +12,7 @@ global using Common.Configuration;
 global using Common.Constants;
 global using Common.Logging;
 global using Common.CliProtocol;
+global using Common.Json.Schema;
 global using FileReaderCli.Commands;
 global using FileReaderCli.Services;
 global using Common.Contracts.Models;
