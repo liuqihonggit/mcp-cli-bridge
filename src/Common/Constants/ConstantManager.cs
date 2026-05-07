@@ -130,35 +130,35 @@ public static class ConstantManager
         Register(nameof(ProjectPaths.PublishDirectory), Categories.ProjectPath, null, "publish");
 
         // 命令名称 - Memory
-        Register(nameof(Commands.Memory.CreateEntities), Categories.Command, SubCategories.MemoryCommand, "create_entities");
-        Register(nameof(Commands.Memory.CreateRelations), Categories.Command, SubCategories.MemoryCommand, "create_relations");
-        Register(nameof(Commands.Memory.ReadGraph), Categories.Command, SubCategories.MemoryCommand, "read_graph");
-        Register(nameof(Commands.Memory.SearchNodes), Categories.Command, SubCategories.MemoryCommand, "search_nodes");
-        Register(nameof(Commands.Memory.AddObservations), Categories.Command, SubCategories.MemoryCommand, "add_observations");
-        Register(nameof(Commands.Memory.DeleteEntities), Categories.Command, SubCategories.MemoryCommand, "delete_entities");
-        Register(nameof(Commands.Memory.DeleteObservations), Categories.Command, SubCategories.MemoryCommand, "delete_observations");
-        Register(nameof(Commands.Memory.DeleteRelations), Categories.Command, SubCategories.MemoryCommand, "delete_relations");
-        Register(nameof(Commands.Memory.OpenNodes), Categories.Command, SubCategories.MemoryCommand, "open_nodes");
-        Register(nameof(Commands.Memory.GetStorageInfo), Categories.Command, SubCategories.MemoryCommand, "get_storage_info");
-        Register(nameof(Commands.Memory.ListTools), Categories.Command, SubCategories.MemoryCommand, "list_tools");
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.CreateEntities), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.CreateRelations), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.ReadGraph), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.SearchNodes), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.AddObservations), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.DeleteEntities), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.DeleteObservations), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.DeleteRelations), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.OpenNodes), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.GetStorageInfo), Categories.Command, SubCategories.MemoryCommand);
+        RegisterCliName(typeof(Commands.Memory), nameof(Commands.Memory.ListTools), Categories.Command, SubCategories.MemoryCommand);
 
         // 命令名称 - MCP
-        Register(nameof(Commands.Mcp.Initialize), Categories.Command, SubCategories.McpCommand, "initialize");
-        Register(nameof(Commands.Mcp.ToolsList), Categories.Command, SubCategories.McpCommand, "tools/list");
-        Register(nameof(Commands.Mcp.ToolsCall), Categories.Command, SubCategories.McpCommand, "tools/call");
-        Register(nameof(Commands.Mcp.Initialized), Categories.Command, SubCategories.McpCommand, "initialized");
+        RegisterCliName(typeof(Commands.Mcp), nameof(Commands.Mcp.Initialize), Categories.Command, SubCategories.McpCommand);
+        RegisterCliName(typeof(Commands.Mcp), nameof(Commands.Mcp.ToolsList), Categories.Command, SubCategories.McpCommand);
+        RegisterCliName(typeof(Commands.Mcp), nameof(Commands.Mcp.ToolsCall), Categories.Command, SubCategories.McpCommand);
+        RegisterCliName(typeof(Commands.Mcp), nameof(Commands.Mcp.Initialized), Categories.Command, SubCategories.McpCommand);
 
         // 命令名称 - CLI
-        Register(nameof(Commands.Cli.Help), Categories.Command, SubCategories.CliCommand, "--help");
-        Register(nameof(Commands.Cli.HelpShort), Categories.Command, SubCategories.CliCommand, "-h");
-        Register(nameof(Commands.Cli.HelpWindows), Categories.Command, SubCategories.CliCommand, "/?");
-        Register(nameof(Commands.Cli.JsonInput), Categories.Command, SubCategories.CliCommand, "--json-input");
-        Register(nameof(Commands.Cli.Command), Categories.Command, SubCategories.CliCommand, "--command");
+        RegisterCliName(typeof(Commands.Cli), nameof(Commands.Cli.Help), Categories.Command, SubCategories.CliCommand);
+        RegisterCliName(typeof(Commands.Cli), nameof(Commands.Cli.HelpShort), Categories.Command, SubCategories.CliCommand);
+        RegisterCliName(typeof(Commands.Cli), nameof(Commands.Cli.HelpWindows), Categories.Command, SubCategories.CliCommand);
+        RegisterCliName(typeof(Commands.Cli), nameof(Commands.Cli.JsonInput), Categories.Command, SubCategories.CliCommand);
+        RegisterCliName(typeof(Commands.Cli), nameof(Commands.Cli.Command), Categories.Command, SubCategories.CliCommand);
 
         // 命令名称 - FileReader
-        Register(nameof(Commands.FileReader.ReadHead), Categories.Command, SubCategories.FileReaderCommand, "read_head");
-        Register(nameof(Commands.FileReader.ReadTail), Categories.Command, SubCategories.FileReaderCommand, "read_tail");
-        Register(nameof(Commands.FileReader.ListTools), Categories.Command, SubCategories.FileReaderCommand, "list_tools");
+        RegisterCliName(typeof(Commands.FileReader), nameof(Commands.FileReader.ReadHead), Categories.Command, SubCategories.FileReaderCommand);
+        RegisterCliName(typeof(Commands.FileReader), nameof(Commands.FileReader.ReadTail), Categories.Command, SubCategories.FileReaderCommand);
+        RegisterCliName(typeof(Commands.FileReader), nameof(Commands.FileReader.ListTools), Categories.Command, SubCategories.FileReaderCommand);
 
         // 日志级别
         Register(nameof(LogLevels.Debug), Categories.LogLevel, null, "DBG");
@@ -229,6 +229,17 @@ public static class ConstantManager
     }
 
     #region 注册方法
+
+    /// <summary>
+    /// 从 [CliName] 特性自动读取 CLI 名称并注册，消除硬编码字符串重复
+    /// </summary>
+    private static void RegisterCliName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type ownerType, string propertyName, string category, string? subCategory)
+    {
+        var property = ownerType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static);
+        var cliName = property?.GetCustomAttributes<CliNameAttribute>().FirstOrDefault()?.Name
+            ?? CliNaming.ToSnakeCase(propertyName);
+        Register(propertyName, category, subCategory, cliName);
+    }
 
     private static void Register(string name, string category, string? subCategory, string value, string? description = null)
     {
