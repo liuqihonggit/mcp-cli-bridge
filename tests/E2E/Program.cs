@@ -1834,6 +1834,184 @@ class Program
                 return true;
             }));
 
+            // Test 46: AstCli - ast_workspace_overview
+            testResults.Add(await RunTestAsync("AstCli - workspace_overview", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 46,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_workspace_overview",
+                            parameters = new
+                            {
+                                command = "workspace_overview",
+                                projectPath = astProjectDir
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(46, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("AstTestProject") ?? false, "Should contain project namespace");
+                AssertTrue(text?.Contains("totalFiles") ?? false, "Should contain file statistics");
+
+                return true;
+            }));
+
+            // Test 47: AstCli - ast_file_context
+            testResults.Add(await RunTestAsync("AstCli - file_context", async () =>
+            {
+                var serviceBPath = Path.Combine(astProjectDir, "ServiceB.cs");
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 47,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_file_context",
+                            parameters = new
+                            {
+                                command = "file_context",
+                                projectPath = astProjectDir,
+                                filePath = serviceBPath
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(47, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("ServiceA") ?? false, "Should reference ServiceA");
+                AssertTrue((text?.Contains("using") ?? false) || (text?.Contains("Using") ?? false), "Should contain using information");
+
+                return true;
+            }));
+
+            // Test 48: AstCli - ast_diagnostics
+            testResults.Add(await RunTestAsync("AstCli - diagnostics", async () =>
+            {
+                var errorProjectDir = CreateTestAstProject(Path.Combine(testBaseDir, "diagnostics_test"));
+                var errorFilePath = Path.Combine(errorProjectDir, "Broken.cs");
+                File.WriteAllText(errorFilePath, """
+                    namespace Broken;
+                    public class BrokenClass
+                    {
+                        public void Method(
+                        {
+                        }
+                    }
+                    """);
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 48,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_diagnostics",
+                            parameters = new
+                            {
+                                command = "diagnostics",
+                                projectPath = errorProjectDir,
+                                filePath = errorFilePath
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(48, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be MCP error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue((text?.Contains("error") ?? false) || (text?.Contains("Error") ?? false), "Should report syntax errors");
+
+                return true;
+            }));
+
+            // Test 49: AstCli - ast_symbol_outline
+            testResults.Add(await RunTestAsync("AstCli - symbol_outline", async () =>
+            {
+                var serviceAPath = Path.Combine(astProjectDir, "ServiceA.cs");
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 49,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_symbol_outline",
+                            parameters = new
+                            {
+                                command = "symbol_outline",
+                                filePath = serviceAPath
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(49, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("ServiceA") ?? false, "Should contain ServiceA class");
+                AssertTrue(text?.Contains("Execute") ?? false, "Should contain Execute method");
+                AssertTrue(text?.Contains("GetName") ?? false, "Should contain GetName method");
+
+                return true;
+            }));
+
         }
         finally
         {
@@ -2169,6 +2347,31 @@ class Program
                 public string Name { get; set; }
                 public int Age { get; set; }
             }
+            """);
+
+        File.WriteAllText(Path.Combine(astProjectDir, "Program.cs"), """
+            using AstTestProject;
+
+            public class Program
+            {
+                public static void Main(string[] args)
+                {
+                    var service = new ServiceA();
+                    service.Execute();
+                }
+            }
+            """);
+
+        File.WriteAllText(Path.Combine(astProjectDir, "AstTestProject.csproj"), """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <OutputType>Exe</OutputType>
+                <TargetFramework>net10.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <ProjectReference Include="..\\Common\\Common.csproj" />
+              </ItemGroup>
+            </Project>
             """);
 
         return astProjectDir;

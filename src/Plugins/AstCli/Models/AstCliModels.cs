@@ -146,3 +146,147 @@ public sealed class GetSymbolInfoResultDto
     [JsonPropertyName("found")]
     public bool Found { get; set; }
 }
+
+public sealed class WorkspaceOverviewResultDto
+{
+    [JsonPropertyName("projectPath")]
+    public string ProjectPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("totalFiles")]
+    public int TotalFiles { get; set; }
+
+    [JsonPropertyName("totalLines")]
+    public int TotalLines { get; set; }
+
+    [JsonPropertyName("namespaces")]
+    public List<string> Namespaces { get; set; } = [];
+
+    [JsonPropertyName("csprojFiles")]
+    public List<CsprojInfoDto> CsprojFiles { get; set; } = [];
+
+    [JsonPropertyName("directoryRoles")]
+    public List<DirectoryRoleDto> DirectoryRoles { get; set; } = [];
+
+    [JsonPropertyName("entryPoints")]
+    public List<string> EntryPoints { get; set; } = [];
+}
+
+public sealed class CsprojInfoDto
+{
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("projectReferences")]
+    public List<string> ProjectReferences { get; set; } = [];
+}
+
+public sealed class DirectoryRoleDto
+{
+    [JsonPropertyName("path")]
+    public string Path { get; set; } = string.Empty;
+
+    [JsonPropertyName("role")]
+    public string Role { get; set; } = string.Empty;
+}
+
+public sealed class FileContextResultDto
+{
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("systemUsings")]
+    public List<string> SystemUsings { get; set; } = [];
+
+    [JsonPropertyName("projectUsings")]
+    public List<string> ProjectUsings { get; set; } = [];
+
+    [JsonPropertyName("referencedSymbols")]
+    public List<SymbolInfoDto> ReferencedSymbols { get; set; } = [];
+
+    [JsonPropertyName("sameNamespaceSymbols")]
+    public List<SymbolInfoDto> SameNamespaceSymbols { get; set; } = [];
+
+    [JsonPropertyName("reverseDependencies")]
+    public List<string> ReverseDependencies { get; set; } = [];
+}
+
+public sealed class DiagnosticsResultDto
+{
+    [JsonPropertyName("projectPath")]
+    public string ProjectPath { get; set; } = string.Empty;
+
+    [JsonPropertyName("errors")]
+    public List<DiagnosticItemDto> Errors { get; set; } = [];
+
+    [JsonPropertyName("totalErrorCount")]
+    public int TotalErrorCount { get; set; }
+
+    [JsonPropertyName("totalWarningCount")]
+    public int TotalWarningCount { get; set; }
+}
+
+public sealed class DiagnosticItemDto
+{
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("line")]
+    public int Line { get; set; }
+
+    [JsonPropertyName("column")]
+    public int Column { get; set; }
+
+    [JsonPropertyName("severity")]
+    public string Severity { get; set; } = string.Empty;
+
+    [JsonPropertyName("code")]
+    public string Code { get; set; } = string.Empty;
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class SymbolOutlineResultDto
+{
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("types")]
+    public List<TypeOutlineDto> Types { get; set; } = [];
+}
+
+public sealed class TypeOutlineDto
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = string.Empty;
+
+    [JsonPropertyName("accessibility")]
+    public string Accessibility { get; set; } = string.Empty;
+
+    [JsonPropertyName("startLine")]
+    public int StartLine { get; set; }
+
+    [JsonPropertyName("endLine")]
+    public int EndLine { get; set; }
+
+    [JsonPropertyName("members")]
+    public List<MemberOutlineDto> Members { get; set; } = [];
+}
+
+public sealed class MemberOutlineDto
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("kind")]
+    public string Kind { get; set; } = string.Empty;
+
+    [JsonPropertyName("accessibility")]
+    public string Accessibility { get; set; } = string.Empty;
+
+    [JsonPropertyName("line")]
+    public int Line { get; set; }
+}

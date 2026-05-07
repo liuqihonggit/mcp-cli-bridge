@@ -122,4 +122,80 @@ public static class AstToolSchemaTemplates
 
         return JsonSchemaBuilder.SerializeToJsonElement(schema);
     }
+
+    public static JsonElement WorkspaceOverviewSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("workspace_overview")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithRequired("command", "projectPath")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    public static JsonElement FileContextSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("file_context")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Path to the C# source file to analyze")
+                .Build())
+            .WithRequired("command", "projectPath", "filePath")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    public static JsonElement DiagnosticsSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("diagnostics")
+                .Build())
+            .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Root path of the C# project")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Optional: specific file to check (scans entire project if omitted)")
+                .Build())
+            .WithRequired("command", "projectPath")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
+
+    public static JsonElement SymbolOutlineSchema()
+    {
+        var schema = new JsonSchemaBuilder()
+            .WithProperty("command", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithConst("symbol_outline")
+                .Build())
+            .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                .WithType("string")
+                .WithDescription("Path to the C# source file")
+                .Build())
+            .WithRequired("command", "filePath")
+            .Build();
+
+        return JsonSchemaBuilder.SerializeToJsonElement(schema);
+    }
 }

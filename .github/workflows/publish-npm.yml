@@ -26,23 +26,20 @@ jobs:
           name: mcp-cli-bridge-build
           path: .
 
-      - name: Validate version match
+      - name: Inject version from tag
         run: |
           $tag = "${{ github.ref_name }}"
           $tagVersion = $tag -replace '^v', ''
-          $package = Get-Content "package.json" | ConvertFrom-Json
-          $packageVersion = $package.version
           
           Write-Host "Tag version: $tagVersion"
-          Write-Host "Package version: $packageVersion"
           
-          if ($tagVersion -ne $packageVersion) {
-            Write-Error "Version mismatch! Tag is '$tagVersion' but package.json is '$packageVersion'"
-            Write-Error "Please update package.json version to match the tag before pushing."
-            exit 1
-          }
+          $packageJsonPath = "package.json"
+          $content = Get-Content $packageJsonPath -Raw
+          $content = $content -replace '"version":\s*"[^"]*"', "`"version`": `"$tagVersion`""
+          Set-Content $packageJsonPath $content -NoNewline
           
-          Write-Host "Version match confirmed: $tagVersion" -ForegroundColor Green
+          $package = Get-Content $packageJsonPath | ConvertFrom-Json
+          Write-Host "Package version after injection: $($package.version)" -ForegroundColor Green
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

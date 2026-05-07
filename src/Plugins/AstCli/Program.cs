@@ -18,7 +18,7 @@ var jsonInputOption = new Option<string>(
 
 var commandOption = new Option<string>(
     name: Common.Constants.ConstantManager.Commands.Cli.Command,
-    description: "Command to execute: symbol_query, reference_find, symbol_rename, symbol_replace, symbol_info, list_tools")
+    description: "Command to execute: symbol_query, reference_find, symbol_rename, symbol_replace, symbol_info, workspace_overview, file_context, diagnostics, symbol_outline, list_tools")
 {
     IsRequired = false
 };
