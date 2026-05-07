@@ -1,3 +1,5 @@
+using Common.Contracts.Models;
+
 namespace Common.Contracts.PluginManager;
 
 /// <summary>
@@ -9,6 +11,11 @@ public interface IToolProvider
     /// 提供者名称，用于标识和日志记录
     /// </summary>
     string ProviderName { get; }
+
+    /// <summary>
+    /// 插件元数据（从CLI的list_tools返回），包含描述、分类、命令数等信息
+    /// </summary>
+    PluginDescriptor? PluginMetadata { get; }
 
     /// <summary>
     /// 获取此提供者支持的所有工具元数据

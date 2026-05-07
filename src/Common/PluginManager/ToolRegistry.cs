@@ -144,6 +144,19 @@ public sealed class ToolRegistry : IToolRegistry
     }
 
     /// <inheritdoc />
+    public PluginDescriptor? GetProviderMetadata(string providerName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(providerName);
+
+        if (!_providers.TryGetValue(providerName, out var provider))
+        {
+            return null;
+        }
+
+        return provider.PluginMetadata;
+    }
+
+    /// <inheritdoc />
     /// <remarks>
     /// 三级查找：缓存 → 已注册字典 → 按需遍历 provider
     /// </remarks>

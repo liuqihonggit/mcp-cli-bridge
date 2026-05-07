@@ -1,4 +1,5 @@
 using Common.Contracts;
+using Common.Contracts.Models;
 
 namespace MyMemoryServer.UnitTests.Plugins;
 
@@ -293,6 +294,68 @@ public sealed class ToolRegistryTests : IDisposable
 
     #endregion
 
+    #region GetProviderMetadata 测试
+
+    [Fact]
+    public void GetProviderMetadata_ShouldReturnMetadataFromProvider()
+    {
+        var metadata = new PluginDescriptor
+        {
+            Name = "AstCli",
+            Description = "AST CLI - Code analysis",
+            Category = "code-analysis",
+            CommandCount = 9,
+            HasDocumentation = false
+        };
+        var provider = CreateMockProvider("AstCli", ["tool1"], metadata);
+        _registry.RegisterProvider(provider.Object);
+
+        var result = _registry.GetProviderMetadata("AstCli");
+
+        result.Should().NotBeNull();
+        result!.Name.Should().Be("AstCli");
+        result.Description.Should().Be("AST CLI - Code analysis");
+        result.Category.Should().Be("code-analysis");
+        result.CommandCount.Should().Be(9);
+        result.HasDocumentation.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetProviderMetadata_WithNonExistentProvider_ShouldReturnNull()
+    {
+        var result = _registry.GetProviderMetadata("NonExistent");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetProviderMetadata_WithNullOrEmptyName_ShouldThrowArgumentException()
+    {
+        var act1 = () => _registry.GetProviderMetadata(null!);
+        var act2 = () => _registry.GetProviderMetadata(string.Empty);
+        var act3 = () => _registry.GetProviderMetadata("   ");
+
+        act1.Should().Throw<ArgumentException>();
+        act2.Should().Throw<ArgumentException>();
+        act3.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void GetProviderMetadata_WhenProviderHasNoMetadata_ShouldReturnNull()
+    {
+        var mock = new Mock<IToolProvider>();
+        mock.SetupGet(p => p.ProviderName).Returns("NoMetaProvider");
+        mock.SetupGet(p => p.PluginMetadata).Returns((PluginDescriptor?)null);
+        mock.Setup(p => p.GetAvailableTools()).Returns(new List<IToolMetadata>().AsReadOnly());
+        _registry.RegisterProvider(mock.Object);
+
+        var result = _registry.GetProviderMetadata("NoMetaProvider");
+
+        result.Should().BeNull();
+    }
+
+    #endregion
+
     #region 缓存集成测试（渐进式架构）
 
     [Fact]
@@ -328,10 +391,18 @@ public sealed class ToolRegistryTests : IDisposable
 
     #region Helper Methods
 
-    private static Mock<IToolProvider> CreateMockProvider(string name, string[] toolNames)
+    private static Mock<IToolProvider> CreateMockProvider(string name, string[] toolNames, PluginDescriptor? pluginMetadata = null)
     {
         var mock = new Mock<IToolProvider>();
         mock.SetupGet(p => p.ProviderName).Returns(name);
+        mock.SetupGet(p => p.PluginMetadata).Returns(pluginMetadata ?? new PluginDescriptor
+        {
+            Name = name,
+            Description = $"{name} CLI Plugin",
+            Category = "general",
+            CommandCount = toolNames.Length,
+            HasDocumentation = true
+        });
 
         var tools = toolNames.Select(t =>
         {

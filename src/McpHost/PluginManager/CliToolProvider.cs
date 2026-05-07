@@ -19,6 +19,8 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
 
     public string ProviderName => _configuration.Name;
 
+    public PluginDescriptor? PluginMetadata => _pluginMetadata;
+
     public CliToolProvider(
         ILogger logger,
         IPackageManager packageManager,

@@ -169,7 +169,7 @@ internal sealed class CommandHandler
             Name = "ast",
             Description = "AST CLI - Code analysis, symbol query, find references, and refactoring",
             Category = "code-analysis",
-            CommandCount = 5,
+            CommandCount = 9,
             HasDocumentation = false
         };
 

@@ -1,3 +1,5 @@
+using Common.Contracts.Models;
+
 namespace Common.Contracts.PluginManager;
 
 /// <summary>
@@ -30,6 +32,13 @@ public interface IToolRegistry
     /// <param name="pluginName">插件/提供者名称</param>
     /// <returns>命令元数据列表，如果插件不存在返回空列表</returns>
     Task<IReadOnlyList<IToolMetadata>> GetPluginCommandsAsync(string pluginName);
+
+    /// <summary>
+    /// 获取指定提供者的插件元数据（从CLI的list_tools返回）
+    /// </summary>
+    /// <param name="providerName">提供者名称</param>
+    /// <returns>插件描述符，如果提供者不存在或未发现则返回null</returns>
+    PluginDescriptor? GetProviderMetadata(string providerName);
 
     /// <summary>
     /// 根据工具名称获取工具元数据

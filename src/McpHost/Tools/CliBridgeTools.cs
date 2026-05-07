@@ -49,14 +49,7 @@ internal sealed class CliBridgeTools : IDisposable
     public string ToolList()
     {
         var providers = _toolRegistry.GetProviderNames();
-        var plugins = providers.Select(p => new PluginDescriptor
-        {
-            Name = p,
-            Description = GetPluginDescription(p),
-            Category = GetPluginCategory(p),
-            CommandCount = GetPluginCommandCount(p),
-            HasDocumentation = true
-        }).ToList();
+        var plugins = providers.Select(BuildPluginDescriptor).ToList();
 
         var result = new ToolListResult
         {
@@ -105,10 +98,11 @@ internal sealed class CliBridgeTools : IDisposable
         if (commands is null || commands.Count == 0)
             return CreateErrorResponse($"Plugin not found or no commands: {pluginName}");
 
+        var metadata = _toolRegistry.GetProviderMetadata(pluginName);
         var result = new PluginDescribeResult
         {
             PluginName = pluginName,
-            Description = GetPluginDescription(pluginName),
+            Description = metadata?.Description ?? $"{pluginName} CLI Plugin",
             Commands = commands.Select(c => new CommandDescriptor
             {
                 Name = c.Name,
@@ -156,17 +150,15 @@ internal sealed class CliBridgeTools : IDisposable
 
         var providers = _toolRegistry.GetProviderNames();
         var matches = providers
-            .Where(p => p.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                        GetPluginDescription(p).Contains(query, StringComparison.OrdinalIgnoreCase))
-            .Take(limit)
-            .Select(p => new PluginDescriptor
+            .Where(p =>
             {
-                Name = p,
-                Description = GetPluginDescription(p),
-                Category = GetPluginCategory(p),
-                CommandCount = GetPluginCommandCount(p),
-                HasDocumentation = true
+                var meta = _toolRegistry.GetProviderMetadata(p);
+                var desc = meta?.Description ?? $"{p} CLI Plugin";
+                return p.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                       desc.Contains(query, StringComparison.OrdinalIgnoreCase);
             })
+            .Take(limit)
+            .Select(BuildPluginDescriptor)
             .ToList();
 
         if (matches.Count == 0)
@@ -254,10 +246,14 @@ internal sealed class CliBridgeTools : IDisposable
     {
         var providers = _toolRegistry.GetProviderNames();
 
-        var providerInfo = providers.Select(p => new ProviderInfo
+        var providerInfo = providers.Select(p =>
         {
-            Name = p,
-            ToolCount = GetPluginCommandCount(p)
+            var meta = _toolRegistry.GetProviderMetadata(p);
+            return new ProviderInfo
+            {
+                Name = p,
+                ToolCount = meta?.CommandCount ?? 0
+            };
         }).ToList();
 
         var result = new ProviderListResult
@@ -345,33 +341,16 @@ internal sealed class CliBridgeTools : IDisposable
         }
     }
 
-    private static string GetPluginDescription(string providerName)
+    private PluginDescriptor BuildPluginDescriptor(string providerName)
     {
-        return providerName.ToLowerInvariant() switch
+        var meta = _toolRegistry.GetProviderMetadata(providerName);
+        return new PluginDescriptor
         {
-            "memory" or "memorycli" or "jj_memory" => "Knowledge Graph CLI - Manage entities, relations, and observations",
-            "file_reader" or "filereadercli" or "file_reader_cli" => "File Reader CLI - Read file contents with line control",
-            _ => $"{providerName} CLI Plugin"
-        };
-    }
-
-    private static string GetPluginCategory(string providerName)
-    {
-        return providerName.ToLowerInvariant() switch
-        {
-            "memory" or "memorycli" or "jj_memory" => "knowledge-graph",
-            "file_reader" or "filereadercli" or "file_reader_cli" => "file-operations",
-            _ => "general"
-        };
-    }
-
-    private static int GetPluginCommandCount(string providerName)
-    {
-        return providerName.ToLowerInvariant() switch
-        {
-            "memory" or "memorycli" or "jj_memory" => 7,
-            "file_reader" or "filereadercli" or "file_reader_cli" => 2,
-            _ => 0
+            Name = providerName,
+            Description = meta?.Description ?? $"{providerName} CLI Plugin",
+            Category = meta?.Category ?? "general",
+            CommandCount = meta?.CommandCount ?? 0,
+            HasDocumentation = meta?.HasDocumentation ?? true
         };
     }
 
