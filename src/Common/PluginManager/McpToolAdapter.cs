@@ -1,6 +1,7 @@
 namespace Common.PluginManager;
 
 using McpProtocol;
+using Common.Json.Schema;
 
 public class McpToolAdapter
 {
@@ -48,21 +49,86 @@ public class McpToolAdapter
         private readonly ToolMethodMetadata _metadata;
         private readonly object _instance;
         private readonly McpToolMethodInvoker _invoker;
+        private readonly JsonElement _inputSchema;
 
         public ToolHandlerAdapter(ToolMethodMetadata metadata, object instance, McpToolMethodInvoker invoker)
         {
             _metadata = metadata;
             _instance = instance;
             _invoker = invoker;
+            _inputSchema = BuildInputSchema(metadata);
         }
 
         public string Name => _metadata.Name;
         public string Description => _metadata.Description;
+        public JsonElement InputSchema => _inputSchema;
 
         public async Task<object> ExecuteAsync(Dictionary<string, JsonElement> arguments)
         {
             var result = await _invoker.InvokeAsync(_instance, _metadata.Method, arguments);
             return result ?? "null";
+        }
+
+        private static JsonElement BuildInputSchema(ToolMethodMetadata metadata)
+        {
+            if (metadata.Parameters.Count == 0)
+            {
+                return CreateEmptySchema();
+            }
+
+            var builder = new JsonSchemaBuilder();
+            var required = new List<string>();
+
+            foreach (var param in metadata.Parameters)
+            {
+                var propBuilder = new JsonSchemaPropertyBuilder()
+                    .WithType(MapTypeToJsonSchema(param.Type));
+
+                var description = metadata.ParameterDescriptions.GetValueOrDefault(param.Name);
+                if (!string.IsNullOrEmpty(description))
+                {
+                    propBuilder.WithDescription(description);
+                }
+
+                builder.WithProperty(param.Name, propBuilder.Build());
+
+                if (!param.IsOptional)
+                {
+                    required.Add(param.Name);
+                }
+            }
+
+            if (required.Count > 0)
+            {
+                builder.WithRequired(required.ToArray());
+            }
+
+            return JsonSchemaBuilder.SerializeToJsonElement(builder.Build());
+        }
+
+        private static string MapTypeToJsonSchema(Type type)
+        {
+            var underlying = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (underlying == typeof(string))
+                return "string";
+            if (underlying == typeof(int) || underlying == typeof(long))
+                return "integer";
+            if (underlying == typeof(double) || underlying == typeof(float) || underlying == typeof(decimal))
+                return "number";
+            if (underlying == typeof(bool))
+                return "boolean";
+            if (underlying == typeof(Dictionary<string, JsonElement>))
+                return "object";
+
+            return "object";
+        }
+
+        private static JsonElement CreateEmptySchema()
+        {
+            var json = @"{""type"":""object"",""properties"":{},""required"":[]}";
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.Clone();
         }
     }
 }

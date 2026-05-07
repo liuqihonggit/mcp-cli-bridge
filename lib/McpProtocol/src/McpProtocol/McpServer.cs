@@ -197,17 +197,10 @@ public class McpServer : IMcpServer
         {
             Name = h.Name,
             Description = h.Description,
-            InputSchema = CreateEmptyInputSchema()
+            InputSchema = h.InputSchema
         }).ToList();
 
         return new ListToolsResult { Tools = tools };
-    }
-
-    private static JsonElement CreateEmptyInputSchema()
-    {
-        var json = @"{""type"":""object"",""properties"":{},""required"":[]}";
-        using var doc = JsonDocument.Parse(json);
-        return doc.RootElement.Clone();
     }
 
     private async Task<CallToolResult> HandleCallToolAsync(object? paramsObj, CancellationToken cancellationToken)
