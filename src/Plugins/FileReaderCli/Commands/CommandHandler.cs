@@ -1,52 +1,12 @@
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
-using FileReaderCli.Services;
-using Common.CliProtocol;
-using Common.Results;
-using Common.Tools;
-using Common.Contracts.Models;
-using static FileReaderCli.Schemas.FileReaderToolSchemaTemplates;
+using Common.Contracts.Attributes;
+using FileReaderCli.Schemas;
 
 namespace FileReaderCli.Commands;
 
-internal sealed class CommandHandler
+[CliCommandHandler("file_reader_cli", "File Reader CLI - Read file contents (head/tail) with line control", Category = "file-operations", ToolNamePrefix = "file_reader_", HasDocumentation = true)]
+internal sealed partial class CommandHandler
 {
-    public CommandHandler()
-    {
-    }
-
-    public static async Task<OperationResult<JsonElement>> ExecuteAsync(FileReaderRequest request)
-    {
-        return request.Command?.ToLowerInvariant() switch
-        {
-            "read_head" => await ReadHeadAsync(request),
-            "read_tail" => await ReadTailAsync(request),
-            "list_tools" => ListTools(),
-            "list_commands" => ListCommands(),
-            _ => Fail($"Unknown command: {request.Command}")
-        };
-    }
-
-    private static OperationResult<JsonElement> Fail(string message)
-    {
-        return new OperationResult<JsonElement>
-        {
-            Success = false,
-            Message = message,
-            Data = McpJsonSerializer.EmptyObject
-        };
-    }
-
-    private static OperationResult<JsonElement> Ok<T>(T data, string message = "", JsonTypeInfo<T> typeInfo = null!)
-    {
-        return new OperationResult<JsonElement>
-        {
-            Success = true,
-            Message = message,
-            Data = JsonSerializer.SerializeToElement(data, typeInfo)
-        };
-    }
-
+    [CliCommand("read_head", Description = "Read the first N lines from a file", Category = "file-operations", SchemaType = typeof(FileReaderSchemas.ReadHead))]
     private static async Task<OperationResult<JsonElement>> ReadHeadAsync(FileReaderRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FilePath))
@@ -67,6 +27,7 @@ internal sealed class CommandHandler
         }
     }
 
+    [CliCommand("read_tail", Description = "Read the last N lines from a file", Category = "file-operations", SchemaType = typeof(FileReaderSchemas.ReadTail))]
     private static async Task<OperationResult<JsonElement>> ReadTailAsync(FileReaderRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FilePath))
@@ -87,40 +48,23 @@ internal sealed class CommandHandler
         }
     }
 
-    private static OperationResult<JsonElement> ListTools()
+    private static OperationResult<JsonElement> Fail(string message)
     {
-        var pluginDescriptor = new PluginDescriptor
+        return new OperationResult<JsonElement>
         {
-            Name = "file_reader_cli",
-            Description = "File Reader CLI - Read file contents (head/tail) with line control",
-            Category = "file-operations",
-            CommandCount = 2,
-            HasDocumentation = true
+            Success = false,
+            Message = message,
+            Data = McpJsonSerializer.EmptyObject
         };
-
-        return Ok(pluginDescriptor, "", CommonJsonContext.Default.PluginDescriptor);
     }
 
-    private static OperationResult<JsonElement> ListCommands()
+    private static OperationResult<JsonElement> Ok<T>(T data, string message = "", JsonTypeInfo<T> typeInfo = null!)
     {
-        var tools = new List<ToolDefinition>
+        return new OperationResult<JsonElement>
         {
-            new()
-            {
-                Name = "file_reader_read_head",
-                Description = "Read the first N lines from a file",
-                Category = "file-operations",
-                InputSchema = ReadHeadSchema()
-            },
-            new()
-            {
-                Name = "file_reader_read_tail",
-                Description = "Read the last N lines from a file",
-                Category = "file-operations",
-                InputSchema = ReadTailSchema()
-            }
+            Success = true,
+            Message = message,
+            Data = JsonSerializer.SerializeToElement(data, typeInfo)
         };
-
-        return Ok(tools, "", CommonJsonContext.Default.ListToolDefinition);
     }
 }

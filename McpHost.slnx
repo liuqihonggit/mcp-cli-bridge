@@ -9,6 +9,9 @@
     <Folder Name="/Analyzers/">
       <Project Path="src/Analyzers/FileLockAnalyzer/FileLockAnalyzer.csproj" />
     </Folder>
+    <Folder Name="/Generators/">
+      <Project Path="src/Generators/CliCommandGenerator/CliCommandGenerator.csproj" />
+    </Folder>
   </Folder>
   <Folder Name="/lib/">
     <Project Path="lib/AsyncFileLock/src/AsyncFileLock/AsyncFileLock.csproj" />

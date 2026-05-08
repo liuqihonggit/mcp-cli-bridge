@@ -6,6 +6,7 @@ global using System.Linq;
 global using System.Text;
 global using System.Text.Json;
 global using System.Text.Json.Serialization;
+global using System.Text.Json.Serialization.Metadata;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using Common.Configuration;
@@ -18,6 +19,8 @@ global using FileReaderCli.Services;
 global using Common.Contracts.Models;
 global using Common.Json;
 global using Common.Contracts;
+global using Common.Contracts.Attributes;
+global using Common.Contracts.Schema;
 
 global using McpProtocol.Contracts;
 global using static Common.Constants.ConstantManager;

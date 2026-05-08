@@ -1,14 +1,10 @@
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
-using Common.CliProtocol;
-using Common.Results;
-using Common.Tools;
-using Common.Contracts.Models;
-using static MemoryCli.Schemas.MemoryToolSchemaTemplates;
+using Common.Contracts.Attributes;
+using MemoryCli.Schemas;
 
 namespace MemoryCli.Commands;
 
-internal sealed class CommandHandler
+[CliCommandHandler("memory_cli", "Knowledge Graph CLI - Manage entities, relations, and observations in a persistent knowledge graph", Category = "knowledge-graph", ToolNamePrefix = "memory_", HasDocumentation = true)]
+internal sealed partial class CommandHandler
 {
     private static readonly System.Text.CompositeFormat s_partialBusyFormat = System.Text.CompositeFormat.Parse(MessageTemplates.PartialBusy);
     private static readonly System.Text.CompositeFormat s_deletedButBusyFormat = System.Text.CompositeFormat.Parse(MessageTemplates.DeletedButBusy);
@@ -22,46 +18,7 @@ internal sealed class CommandHandler
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
-    public async Task<OperationResult<JsonElement>> ExecuteAsync(CliRequest request)
-    {
-        return request.Command?.ToLowerInvariant() switch
-        {
-            "create_entities" => await CreateEntitiesAsync(request),
-            "create_relations" => await CreateRelationsAsync(request),
-            "read_graph" => await ReadGraphAsync(),
-            "search_nodes" => await SearchNodesAsync(request),
-            "add_observations" => await AddObservationsAsync(request),
-            "delete_entities" => await DeleteEntitiesAsync(request),
-            "delete_observations" => await DeleteObservationsAsync(request),
-            "delete_relations" => await DeleteRelationsAsync(request),
-            "open_nodes" => await OpenNodesAsync(request),
-            "get_storage_info" => GetStorageInfo(),
-            "list_tools" => ListTools(),
-            "list_commands" => ListCommands(),
-            _ => Fail($"Unknown command: {request.Command}")
-        };
-    }
-
-    private static OperationResult<JsonElement> Fail(string message)
-    {
-        return new OperationResult<JsonElement>
-        {
-            Success = false,
-            Message = message,
-            Data = McpJsonSerializer.EmptyObject
-        };
-    }
-
-    private static OperationResult<JsonElement> Ok<T>(T data, string message = "", JsonTypeInfo<T> typeInfo = null!)
-    {
-        return new OperationResult<JsonElement>
-        {
-            Success = true,
-            Message = message,
-            Data = JsonSerializer.SerializeToElement(data, typeInfo)
-        };
-    }
-
+    [CliCommand("create_entities", Description = "Create multiple new entities in the knowledge graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.CreateEntities))]
     private async Task<OperationResult<JsonElement>> CreateEntitiesAsync(CliRequest request)
     {
         var entities = request.Entities;
@@ -101,6 +58,7 @@ internal sealed class CommandHandler
         return Ok(new CountResult { Count = added }, $"Created {added} entities", CommonJsonContext.Default.CountResult);
     }
 
+    [CliCommand("create_relations", Description = "Create relations between entities", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.CreateRelations))]
     private async Task<OperationResult<JsonElement>> CreateRelationsAsync(CliRequest request)
     {
         var relations = request.Relations;
@@ -148,6 +106,7 @@ internal sealed class CommandHandler
         return Ok(new CountResult { Count = added }, $"Created {added} relations", CommonJsonContext.Default.CountResult);
     }
 
+    [CliCommand("read_graph", Description = "Read the entire knowledge graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.ReadGraph))]
     private async Task<OperationResult<JsonElement>> ReadGraphAsync()
     {
         var entitiesResult = await _ioService.LoadEntitiesAsync();
@@ -166,6 +125,7 @@ internal sealed class CommandHandler
         return Ok(data, message, CommonJsonContext.Default.KnowledgeGraphData);
     }
 
+    [CliCommand("search_nodes", Description = "Search for nodes in the knowledge graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.SearchNodes))]
     private async Task<OperationResult<JsonElement>> SearchNodesAsync(CliRequest request)
     {
         var query = request.Query;
@@ -202,6 +162,7 @@ internal sealed class CommandHandler
         return Ok(data, message, CommonJsonContext.Default.KnowledgeGraphData);
     }
 
+    [CliCommand("add_observations", Description = "Add observations to existing entities", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.AddObservations))]
     private async Task<OperationResult<JsonElement>> AddObservationsAsync(CliRequest request)
     {
         var name = request.Name;
@@ -228,6 +189,7 @@ internal sealed class CommandHandler
         return Ok(new CountResult { Count = observations.Count }, $"Added {observations.Count} observations to {name}", CommonJsonContext.Default.CountResult);
     }
 
+    [CliCommand("delete_entities", Description = "Delete entities from the graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.DeleteEntities))]
     private async Task<OperationResult<JsonElement>> DeleteEntitiesAsync(CliRequest request)
     {
         var names = request.Names;
@@ -262,6 +224,7 @@ internal sealed class CommandHandler
         return Ok(new DeleteResult { Deleted = originalCount - entities.Count }, $"Deleted {originalCount - entities.Count} entities and related relations", CommonJsonContext.Default.DeleteResult);
     }
 
+    [CliCommand("delete_observations", Description = "Delete specific observations from entities", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.DeleteObservations))]
     private async Task<OperationResult<JsonElement>> DeleteObservationsAsync(CliRequest request)
     {
         var name = request.Name;
@@ -293,6 +256,7 @@ internal sealed class CommandHandler
         return Ok(new DeleteResult { Deleted = deletedCount }, $"Deleted {deletedCount} observations from {name}", CommonJsonContext.Default.DeleteResult);
     }
 
+    [CliCommand("delete_relations", Description = "Delete relations between entities", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.DeleteRelations))]
     private async Task<OperationResult<JsonElement>> DeleteRelationsAsync(CliRequest request)
     {
         var relations = request.Relations;
@@ -325,6 +289,7 @@ internal sealed class CommandHandler
         return Ok(new DeleteResult { Deleted = deletedCount }, $"Deleted {deletedCount} relations", CommonJsonContext.Default.DeleteResult);
     }
 
+    [CliCommand("open_nodes", Description = "Get specific nodes by name", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.OpenNodes))]
     private async Task<OperationResult<JsonElement>> OpenNodesAsync(CliRequest request)
     {
         var names = request.Names;
@@ -357,6 +322,7 @@ internal sealed class CommandHandler
         return Ok(data, message, CommonJsonContext.Default.KnowledgeGraphData);
     }
 
+    [CliCommand("get_storage_info", Description = "Get the storage location information for the knowledge graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.GetStorageInfo))]
     private OperationResult<JsonElement> GetStorageInfo()
     {
         var info = new StorageInfo
@@ -370,96 +336,23 @@ internal sealed class CommandHandler
         return Ok(info, "", CommonJsonContext.Default.StorageInfo);
     }
 
-    private static OperationResult<JsonElement> ListTools()
+    private static OperationResult<JsonElement> Fail(string message)
     {
-        var pluginDescriptor = new PluginDescriptor
+        return new OperationResult<JsonElement>
         {
-            Name = "memory_cli",
-            Description = "Knowledge Graph CLI - Manage entities, relations, and observations in a persistent knowledge graph",
-            Category = "knowledge-graph",
-            CommandCount = 10,
-            HasDocumentation = true
+            Success = false,
+            Message = message,
+            Data = McpJsonSerializer.EmptyObject
         };
-
-        return Ok(pluginDescriptor, "", CommonJsonContext.Default.PluginDescriptor);
     }
 
-    private static OperationResult<JsonElement> ListCommands()
+    private static OperationResult<JsonElement> Ok<T>(T data, string message = "", JsonTypeInfo<T> typeInfo = null!)
     {
-        var tools = new List<ToolDefinition>
+        return new OperationResult<JsonElement>
         {
-            new()
-            {
-                Name = "memory_create_entities",
-                Description = "Create multiple new entities in the knowledge graph",
-                Category = "knowledge-graph",
-                InputSchema = CreateEntitiesSchema()
-            },
-            new()
-            {
-                Name = "memory_create_relations",
-                Description = "Create relations between entities",
-                Category = "knowledge-graph",
-                InputSchema = CreateRelationsSchema()
-            },
-            new()
-            {
-                Name = "memory_read_graph",
-                Description = "Read the entire knowledge graph",
-                Category = "knowledge-graph",
-                InputSchema = ReadGraphSchema()
-            },
-            new()
-            {
-                Name = "memory_search_nodes",
-                Description = "Search for nodes in the knowledge graph",
-                Category = "knowledge-graph",
-                InputSchema = SearchNodesSchema()
-            },
-            new()
-            {
-                Name = "memory_add_observations",
-                Description = "Add observations to existing entities",
-                Category = "knowledge-graph",
-                InputSchema = AddObservationsSchema()
-            },
-            new()
-            {
-                Name = "memory_delete_entities",
-                Description = "Delete entities from the graph",
-                Category = "knowledge-graph",
-                InputSchema = DeleteEntitiesSchema()
-            },
-            new()
-            {
-                Name = "memory_delete_observations",
-                Description = "Delete specific observations from entities",
-                Category = "knowledge-graph",
-                InputSchema = DeleteObservationsSchema()
-            },
-            new()
-            {
-                Name = "memory_delete_relations",
-                Description = "Delete relations between entities",
-                Category = "knowledge-graph",
-                InputSchema = DeleteRelationsSchema()
-            },
-            new()
-            {
-                Name = "memory_open_nodes",
-                Description = "Get specific nodes by name",
-                Category = "knowledge-graph",
-                InputSchema = OpenNodesSchema()
-            },
-            new()
-            {
-                Name = "memory_get_storage_info",
-                Description = "Get the storage location information for the knowledge graph",
-                Category = "knowledge-graph",
-                InputSchema = GetStorageInfoSchema()
-            }
+            Success = true,
+            Message = message,
+            Data = JsonSerializer.SerializeToElement(data, typeInfo)
         };
-
-        return Ok(tools, "", CommonJsonContext.Default.ListToolDefinition);
     }
 }

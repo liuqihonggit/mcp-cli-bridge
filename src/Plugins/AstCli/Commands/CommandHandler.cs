@@ -1,32 +1,13 @@
-using static AstCli.Schemas.AstToolSchemaTemplates;
+using Common.Contracts.Attributes;
+using Common.Contracts.Schema;
+using AstCli.Schemas;
 
 namespace AstCli.Commands;
 
-internal sealed class CommandHandler
+[CliCommandHandler("ast_cli", "AST CLI - Code analysis, symbol query, find references, and refactoring", Category = "code-analysis", ToolNamePrefix = "ast_", HasDocumentation = true)]
+internal sealed partial class CommandHandler
 {
-    public static async Task<OperationResult<JsonElement>> ExecuteAsync(AstCliRequest request)
-    {
-        return request.Command?.ToLowerInvariant() switch
-        {
-            "reference_find" => await FindReferencesAsync(request),
-            "symbol_query" => await QuerySymbolAsync(request),
-            "symbol_rename" => await RenameSymbolAsync(request),
-            "symbol_replace" => await ReplaceSymbolAsync(request),
-            "symbol_info" => await GetSymbolInfoAsync(request),
-            "workspace_overview" => await WorkspaceOverviewAsync(request),
-            "file_context" => await FileContextAsync(request),
-            "diagnostics" => await DiagnosticsAsync(request),
-            "symbol_outline" => await SymbolOutlineAsync(request),
-            "string_query" => await StringQueryAsync(request),
-            "string_prefix" => await StringPrefixAsync(request),
-            "string_suffix" => await StringSuffixAsync(request),
-            "string_insert" => await StringInsertAsync(request),
-            "list_tools" => ListTools(),
-            "list_commands" => ListCommands(),
-            _ => Fail($"Unknown command: {request.Command}")
-        };
-    }
-
+    [CliCommand("symbol_query", Description = "Query symbols in a C# project by name", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolQuery))]
     private static async Task<OperationResult<JsonElement>> QuerySymbolAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -43,6 +24,7 @@ internal sealed class CommandHandler
         return Ok(result, $"Found {result.TotalCount} symbol(s) matching '{request.SymbolName}'", AstCliJsonContext.Default.QuerySymbolResultDto);
     }
 
+    [CliCommand("reference_find", Description = "Find all references to a symbol in a C# project", Category = "code-analysis", SchemaType = typeof(AstSchemas.ReferenceFind))]
     private static async Task<OperationResult<JsonElement>> FindReferencesAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -59,6 +41,7 @@ internal sealed class CommandHandler
         return Ok(result, $"Found {result.TotalCount} reference(s) for '{request.SymbolName}'", AstCliJsonContext.Default.FindReferencesResultDto);
     }
 
+    [CliCommand("symbol_rename", Description = "Rename a symbol across all files in a C# project", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolRename))]
     private static async Task<OperationResult<JsonElement>> RenameSymbolAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -77,6 +60,7 @@ internal sealed class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.RenameSymbolResultDto);
     }
 
+    [CliCommand("symbol_replace", Description = "Replace a symbol name with a new name across all files in a C# project", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolReplace))]
     private static async Task<OperationResult<JsonElement>> ReplaceSymbolAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -95,6 +79,7 @@ internal sealed class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.ReplaceSymbolResultDto);
     }
 
+    [CliCommand("symbol_info", Description = "Get symbol information at a specific position in a file", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolInfo))]
     private static async Task<OperationResult<JsonElement>> GetSymbolInfoAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FilePath))
@@ -108,6 +93,7 @@ internal sealed class CommandHandler
         return Ok(result, result.Found ? "Symbol found" : "Symbol not found", AstCliJsonContext.Default.GetSymbolInfoResultDto);
     }
 
+    [CliCommand("workspace_overview", Description = "Get project structure overview: file stats, namespace tree, csproj references, directory roles, entry points", Category = "workspace", SchemaType = typeof(AstSchemas.WorkspaceOverview))]
     private static async Task<OperationResult<JsonElement>> WorkspaceOverviewAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -122,6 +108,7 @@ internal sealed class CommandHandler
         return Ok(result, $"Workspace overview: {result.TotalFiles} files, {result.Namespaces.Count} namespaces", AstCliJsonContext.Default.WorkspaceOverviewResultDto);
     }
 
+    [CliCommand("file_context", Description = "Analyze file context: usings, project symbol references, same-namespace symbols, reverse dependencies", Category = "file-context", SchemaType = typeof(AstSchemas.FileContext))]
     private static async Task<OperationResult<JsonElement>> FileContextAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -138,6 +125,7 @@ internal sealed class CommandHandler
         return Ok(result, $"File context: {result.ProjectUsings.Count} project usings, {result.ReferencedSymbols.Count} referenced symbols", AstCliJsonContext.Default.FileContextResultDto);
     }
 
+    [CliCommand("diagnostics", Description = "Get syntax diagnostics for a C# project or specific file", Category = "diagnostics", SchemaType = typeof(AstSchemas.Diagnostics))]
     private static async Task<OperationResult<JsonElement>> DiagnosticsAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -152,6 +140,7 @@ internal sealed class CommandHandler
         return Ok(result, result.TotalErrorCount > 0 ? $"Found {result.TotalErrorCount} error(s)" : "No errors found", AstCliJsonContext.Default.DiagnosticsResultDto);
     }
 
+    [CliCommand("symbol_outline", Description = "Get symbol outline of a C# file: types, members, line ranges, accessibility", Category = "symbol", SchemaType = typeof(AstSchemas.SymbolOutline))]
     private static async Task<OperationResult<JsonElement>> SymbolOutlineAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.FilePath))
@@ -166,6 +155,7 @@ internal sealed class CommandHandler
         return Ok(result, $"Symbol outline: {result.Types.Count} type(s)", AstCliJsonContext.Default.SymbolOutlineResultDto);
     }
 
+    [CliCommand("string_query", Description = "Query string literals in a C# project, optionally filter by prefix or content", Category = "string", SchemaType = typeof(AstSchemas.StringQuery))]
     private static async Task<OperationResult<JsonElement>> StringQueryAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -180,6 +170,7 @@ internal sealed class CommandHandler
         return Ok(result, $"Found {result.TotalCount} string literal(s)", AstCliJsonContext.Default.StringQueryResultDto);
     }
 
+    [CliCommand("string_prefix", Description = "Insert text at the beginning (position 0) of each string literal", Category = "string", SchemaType = typeof(AstSchemas.StringPrefix))]
     private static async Task<OperationResult<JsonElement>> StringPrefixAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -197,6 +188,7 @@ internal sealed class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
     }
 
+    [CliCommand("string_suffix", Description = "Insert text at the end of each string literal", Category = "string", SchemaType = typeof(AstSchemas.StringSuffix))]
     private static async Task<OperationResult<JsonElement>> StringSuffixAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -214,6 +206,7 @@ internal sealed class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
     }
 
+    [CliCommand("string_insert", Description = "Insert text at an arbitrary position within each string literal", Category = "string", SchemaType = typeof(AstSchemas.StringInsert))]
     private static async Task<OperationResult<JsonElement>> StringInsertAsync(AstCliRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
@@ -231,120 +224,6 @@ internal sealed class CommandHandler
         var result = await StringLiteralEngine.InsertAsync(
             request.ProjectPath, request.FilePath, request.InsertText, request.Position, "insert", request.Filter, request.DryRun);
         return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
-    }
-
-    private static OperationResult<JsonElement> ListTools()
-    {
-        var pluginDescriptor = new PluginDescriptor
-        {
-            Name = "ast_cli",
-            Description = "AST CLI - Code analysis, symbol query, find references, and refactoring",
-            Category = "code-analysis",
-            CommandCount = 13,
-            HasDocumentation = true
-        };
-
-        return Ok(pluginDescriptor, "", CommonJsonContext.Default.PluginDescriptor);
-    }
-
-    private static OperationResult<JsonElement> ListCommands()
-    {
-        var tools = new List<ToolDefinition>
-        {
-            new()
-            {
-                Name = "ast_symbol_query",
-                Description = "Query symbols in a C# project by name",
-                Category = "code-analysis",
-                InputSchema = SymbolQuerySchema()
-            },
-            new()
-            {
-                Name = "ast_reference_find",
-                Description = "Find all references to a symbol in a C# project",
-                Category = "code-analysis",
-                InputSchema = ReferenceFindSchema()
-            },
-            new()
-            {
-                Name = "ast_symbol_rename",
-                Description = "Rename a symbol across all files in a C# project",
-                Category = "code-analysis",
-                InputSchema = SymbolRenameSchema()
-            },
-            new()
-            {
-                Name = "ast_symbol_replace",
-                Description = "Replace a symbol name with a new name across all files in a C# project",
-                Category = "code-analysis",
-                InputSchema = SymbolReplaceSchema()
-            },
-            new()
-            {
-                Name = "ast_symbol_info",
-                Description = "Get symbol information at a specific position in a file",
-                Category = "code-analysis",
-                InputSchema = SymbolInfoSchema()
-            },
-            new()
-            {
-                Name = "ast_workspace_overview",
-                Description = "Get project structure overview: file stats, namespace tree, csproj references, directory roles, entry points",
-                Category = "workspace",
-                InputSchema = WorkspaceOverviewSchema()
-            },
-            new()
-            {
-                Name = "ast_file_context",
-                Description = "Analyze file context: usings, project symbol references, same-namespace symbols, reverse dependencies",
-                Category = "file-context",
-                InputSchema = FileContextSchema()
-            },
-            new()
-            {
-                Name = "ast_diagnostics",
-                Description = "Get syntax diagnostics for a C# project or specific file",
-                Category = "diagnostics",
-                InputSchema = DiagnosticsSchema()
-            },
-            new()
-            {
-                Name = "ast_symbol_outline",
-                Description = "Get symbol outline of a C# file: types, members, line ranges, accessibility",
-                Category = "symbol",
-                InputSchema = SymbolOutlineSchema()
-            },
-            new()
-            {
-                Name = "ast_string_query",
-                Description = "Query string literals in a C# project, optionally filter by prefix or content",
-                Category = "string",
-                InputSchema = StringQuerySchema()
-            },
-            new()
-            {
-                Name = "ast_string_prefix",
-                Description = "Insert text at the beginning (position 0) of each string literal",
-                Category = "string",
-                InputSchema = StringPrefixSchema()
-            },
-            new()
-            {
-                Name = "ast_string_suffix",
-                Description = "Insert text at the end of each string literal",
-                Category = "string",
-                InputSchema = StringSuffixSchema()
-            },
-            new()
-            {
-                Name = "ast_string_insert",
-                Description = "Insert text at an arbitrary position within each string literal",
-                Category = "string",
-                InputSchema = StringInsertSchema()
-            }
-        };
-
-        return Ok(tools, "", CommonJsonContext.Default.ListToolDefinition);
     }
 
     private static OperationResult<JsonElement> Fail(string message)

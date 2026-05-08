@@ -16,7 +16,9 @@ global using Microsoft.CodeAnalysis.CSharp.Syntax;
 global using Microsoft.CodeAnalysis.Text;
 
 global using Common.Contracts;
+global using Common.Contracts.Attributes;
 global using Common.Contracts.Models;
+global using Common.Contracts.Schema;
 global using Common.Json;
 global using Common.Results;
 global using Common.Tools;
