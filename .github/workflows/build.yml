@@ -49,6 +49,9 @@ jobs:
 
       - name: Restore and build local NuGet packages (lib/)
         run: |
+          Write-Host "[Prepare] Creating empty nuget/ directory for local source..." -ForegroundColor Cyan
+          New-Item -ItemType Directory -Path "nuget" -Force | Out-Null
+
           Write-Host "[Restore] Restoring lib/ projects..." -ForegroundColor Cyan
           Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
             $name = $_.BaseName
