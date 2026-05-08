@@ -61,6 +61,7 @@ public static class ConstantManager
         Register(nameof(FileNames.Tools), Categories.File, SubCategories.Name, "tools");
         Register(nameof(FileNames.Npm), Categories.File, SubCategories.Name, "npm");
         Register(nameof(FileNames.NpmCmd), Categories.File, SubCategories.Name, "npm.cmd");
+        Register(nameof(FileNames.CliDocumentation), Categories.File, SubCategories.Name, "CLI说明.md");
 
         // 目录名
         Register(nameof(DirectoryNames.Cache), Categories.Directory, null, "Cache");
@@ -481,6 +482,7 @@ public static class ConstantManager
         public static string Tools => GetString(nameof(Tools));
         public static string Npm => GetString(nameof(Npm));
         public static string NpmCmd => GetString(nameof(NpmCmd));
+        public static string CliDocumentation => GetString(nameof(CliDocumentation));
     }
 
     /// <summary>

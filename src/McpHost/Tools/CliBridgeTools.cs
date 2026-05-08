@@ -39,7 +39,7 @@ internal sealed class CliBridgeTools : IDisposable
 一次性返回所有插件的摘要列表（无分页）：名称、描述、分类、命令数量、是否有文档
 
 【帮助系统】
-- 每个插件的 HasDocumentation 字段标识是否提供 CLI说明.md 文档
+- 每个插件的 HasDocumentation 字段标识是否提供内置帮助文档
 - 可通过 tool_execute 调用 list_tools 命令获取插件内部命令详情
 - 类似 git --no-pager，直接展开所有结果，不进入交互模式
 
@@ -76,7 +76,7 @@ internal sealed class CliBridgeTools : IDisposable
 
 【帮助系统】
 - 每个插件都内置 list_tools 帮助命令，可通过 tool_execute 调用
-- 部分插件提供 CLI说明.md 文档（通过 HasDocumentation 标识）
+- 部分插件提供内置帮助文档（通过 HasDocumentation 标识）
 - 命令参数遵循 JSON Schema 格式，可直接用于构建请求
 
 【使用流程】
