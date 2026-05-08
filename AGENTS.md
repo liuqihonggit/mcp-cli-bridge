@@ -122,95 +122,21 @@ git push origin main                         # 推送
 | --- | --- | --- | --- |
 | `build.ps1` | 开发者 / AI智能体 | AOT构建所有项目 → 输出到 `publish/` | ✅ 可用 |
 | `buildAndNpm.ps1` | CI/CD 流水线 | 调用 `build.ps1` → 复制 npm 文件 → `npm publish` | ⛔ 禁止使用 |
-| `release.ps1` | 开发者 / AI（用户触发） | 递增版本号 → 更新 package.json / Directory.Build.props → git commit + tag → **输出推送命令（由用户手动执行）** → 清理 npm 缓存 | ⚠️ 仅用户明确要求时 |
+| `release.ps1` | 开发者 / AI（用户触发） | 递增版本号 → 更新文件 → git commit + tag → 输出推送命令 | ⚠️ 仅用户明确要求时 |
 
-### 🧪 CI 脚本本地验证（修改 build.yml 后必做）
-
-> **为什么需要？** CI 环境与本地环境存在差异（路径、缓存、nuget源等），推送后才发现问题会浪费大量时间。
-
-#### 验证方法：模拟 CI 完整流程
-
-修改 `.github/workflows/build.yml` 后，**必须**在本地按以下步骤模拟 CI 环境：
-
-```powershell
-# === Step 0: 彻底清理（模拟 CI 的 Clean 步骤）===
-if (Test-Path "nuget") { Remove-Item -Path "nuget" -Recurse -Force }
-if (Test-Path "publish") { Remove-Item -Path "publish" -Recurse -Force }
-
-# === Step 1: 模拟 CI 新增的预编译步骤（按 build.yml 顺序执行）===
-# 关键：创建空 nuget/ 目录！否则 restore 会报 NU1301 错误
-New-Item -ItemType Directory -Path "nuget" -Force | Out-Null
-
-# Restore lib/ 项目（使用 nuget.config）
-Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
-    $name = $_.BaseName
-    if ($name -like "*.Tests") { return }
-    dotnet restore $_.FullName --configfile nuget.config
-}
-
-# Build lib/ 项目
-Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
-    $name = $_.BaseName
-    if ($name -like "*.Tests") { return }
-    dotnet build $_.FullName -c Release --no-restore
-}
-
-# === Step 2: 验证关键 dll 是否生成 ===
-@(
-    "lib\AsyncFileLock\src\AsyncFileLock\bin\Release\net10.0\AsyncFileLock.dll",
-    "lib\McpProtocol\src\McpProtocol.Contracts\bin\Release\net10.0\McpProtocol.Contracts.dll",
-    "lib\McpProtocol\src\McpProtocol\bin\Release\net10.0\McpProtocol.dll"
-) | ForEach-Object {
-    if (-not (Test-Path $_)) { Write-Error "缺失: $_"; exit 1 }
-}
-
-# === Step 3: 执行完整 AOT Build ===
-.\build.ps1
-```
-
-#### 常见 CI vs 本地差异
-
-| 差异点 | 本地环境 | CI 环境 | 解决方案 |
-| ------ | -------- | ------- | -------- |
-| **nuget/ 目录** | 已存在（有历史缓存） | Clean 步骤删除后不存在 | CI 中必须先 `New-Item nuget` |
-| **NuGet 缓存** | `~/.nuget/packages` 有缓存 | 全新环境无缓存 | lib 项目需显式 restore + build |
-| **nuget.config** | 本地 restore 自动找到 | 必须显式指定 `--configfile` | CI 步骤中传入 config |
-| **路径分隔符** | PowerShell 自动兼容 | GitHub Actions 用 `windows-latest` | 统一用 `\` 或 `/` |
-
-#### 经验教训（v3.0.12 失败案例）
-
-**错误**: `McpProtocol.Contracts.dll to be packed was not found on disk`
-**根因链**:
-1. CI Clean 删除 `nuget/` 目录
-2. `build.ps1` 内的 `dotnet pack` 尝试 pack McpProtocol.Contracts
-3. pack 需要 dll 存在于 `bin/Release/`
-4. 但 `nuget.config` 指向的 local 源 `nuget/` 不存在 → restore 报 NU1301 → dll 未生成
-5. pack 找不到 dll → 失败
-
-**修复**: 在 build.yml 的 AOT Build 步骤前，新增「创建空 nuget/ + 预编译 lib/」步骤
+> 📖 **CI/CD 详细流程**: [CI-CD发布流程.md](./AI交互文档/CI-CD发布流程.md)（本地验证、CI vs 本地差异、排障检查清单、发布版本完整流程）
 
 ### ⚠️ 强制规则
 
 - **❌ 禁止手动复制文件**到 `publish/` 目录，必须通过 `build.ps1`
-- **⛔ 禁止执行 `buildAndNpm.ps1`**: 该脚本仅供 CI/CD 流水线使用，AI智能体不得调用
-- **⚠️ `release.ps1` 仅用户触发时执行**: AI智能体不得自主执行，但当用户使用以下触发词时必须执行：
-  - 触发词：`发布npm`、`发布新的npm`、`发布新版本`、`release`、`发版`
-  - 执行方式：`.\release.ps1 [-VersionBump patch|minor|major]`（默认 patch）
-  - **脚本行为**: 自动完成版本号递增 → 更新文件 → git commit + tag → 输出推送命令
-  - **⛔ AI智能体禁止执行 git push**: 脚本输出推送命令后，由用户手动执行 `git push` 确保网络通畅
-  - 用户需手动执行的推送命令:
-    ```powershell
-    # 推送到 Gitee
-    git push origin main && git push origin v{新版本号}
-    # 推送到 GitHub (触发 CI/CD)
-    git push github main && git push github v{新版本号}
-    ```
+- **⛔ 禁止执行 `buildAndNpm.ps1`**: 该脚本仅供 CI/CD 流水线使用
+- **⛔ 禁止手动执行 `npm publish`**: 正式发布由 CI/CD 自动完成
+- **⚠️ `release.ps1` 仅用户触发时执行**: 当用户使用触发词（`发布npm`、`发布新版本`、`release`等）时方可执行
   - 执行后向用户报告：新版本号、待执行的推送命令、CI/CD 监控链接
-- **⛔ 禁止手动执行 `npm publish`**: 正式发布由 CI/CD 自动完成，AI智能体不得手动发布
+- **⛔ 禁止执行 git push**: 推送命令由用户手动执行
 - **Git提交顺序**: CI/CD 发布成功 → git commit → git push
 - **❌ 禁止在 CI/CD 发布成功前 commit**
-- **⛔ 禁止并行子智能体期间提交 Git**: 指派子智能体时必须告知"当前处于并行期间，禁止 git commit/push"，由主智能体统一提交
-- **⚠️ Git 提交前遇到错误禁止强行提交**: 可能是并行子智能体正在操作同一仓库，应等待并行任务完成后再统一处理
+- **⛔ 禁止并行子智能体期间提交 Git**: 由主智能体统一提交
 
 ## 🌐 环境变量
 
