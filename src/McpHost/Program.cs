@@ -23,7 +23,7 @@ services.AddInstance<ILogger>(new Logger(
 services.AddSingleton<ICacheProvider>(sp =>
 {
     var logger = sp.GetService<ILogger>();
-    return new MemoryCacheProvider(logger, MemoryCacheOptions.Default);
+    return CacheProviderFactory.Create(logger!);
 });
 
 services.AddSingleton<IProcessPoolManager>(sp =>
