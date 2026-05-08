@@ -7,12 +7,12 @@ public sealed class StringLiteralEngine
     private static readonly string[] s_excludedDirs = ["bin", "obj", ".git", "node_modules", ".vs"];
     private static readonly TimeSpan s_lockTimeout = TimeSpan.FromSeconds(5);
 
-    public static async Task<StringQueryResultDto> QueryAsync(
-        string projectPath, string? filePath, string? prefix, string? filter)
+    internal static async Task<StringQueryResultDto> QueryAsync(
+        ILanguageProvider provider, string projectPath, string? filePath, string? prefix, string? filter)
     {
         var files = filePath != null
             ? [filePath]
-            : GetProjectFiles(projectPath);
+            : GetProjectFiles(projectPath, provider.FileSearchPattern);
 
         var strings = new List<StringLiteralInfoDto>();
 
@@ -46,13 +46,13 @@ public sealed class StringLiteralEngine
         };
     }
 
-    public static async Task<StringInsertResultDto> InsertAsync(
-        string projectPath, string? filePath, string insertText,
+    internal static async Task<StringInsertResultDto> InsertAsync(
+        ILanguageProvider provider, string projectPath, string? filePath, string insertText,
         int position, string mode, string? filter, bool dryRun)
     {
         var files = filePath != null
             ? [filePath]
-            : GetProjectFiles(projectPath);
+            : GetProjectFiles(projectPath, provider.FileSearchPattern);
 
         var modifiedFiles = new List<string>();
         var totalTransformed = 0;
@@ -100,13 +100,13 @@ public sealed class StringLiteralEngine
         };
     }
 
-    public static async Task<StringReplaceResultDto> ReplaceAsync(
-        string projectPath, string? filePath, string pattern, string replacement,
+    internal static async Task<StringReplaceResultDto> ReplaceAsync(
+        ILanguageProvider provider, string projectPath, string? filePath, string pattern, string replacement,
         bool useRegex, string? filter, bool dryRun)
     {
         var files = filePath != null
             ? [filePath]
-            : GetProjectFiles(projectPath);
+            : GetProjectFiles(projectPath, provider.FileSearchPattern);
 
         var modifiedFiles = new List<string>();
         var totalTransformed = 0;
@@ -182,7 +182,7 @@ public sealed class StringLiteralEngine
         }
     }
 
-    internal static List<string> GetProjectFiles(string projectPath)
+    internal static List<string> GetProjectFiles(string projectPath, string fileSearchPattern)
     {
 #pragma warning disable MCP001
         if (!Directory.Exists(projectPath))
@@ -190,7 +190,7 @@ public sealed class StringLiteralEngine
 #pragma warning restore MCP001
 
 #pragma warning disable MCP001
-        return Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories)
+        return Directory.GetFiles(projectPath, fileSearchPattern, SearchOption.AllDirectories)
 #pragma warning restore MCP001
             .Where(f => !IsExcluded(f))
             .ToList();

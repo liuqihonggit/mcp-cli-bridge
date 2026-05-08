@@ -132,5 +132,6 @@ public sealed class LanguageProviderRegistryTests
             IsSupported = true
         };
         public string FileSearchPattern => "*.fs";
+        public IReadOnlyList<string> ProjectFilePatterns => ["*.fsproj"];
     }
 }

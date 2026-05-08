@@ -12,10 +12,14 @@ internal interface ILanguageProvider
 {
     LanguageInfo Language { get; }
     string FileSearchPattern { get; }
+    IReadOnlyList<string> ProjectFilePatterns { get; }
 }
 
 internal sealed class CSharpLanguageProvider : ILanguageProvider
 {
+    private static readonly IReadOnlyList<string> s_projectFilePatterns =
+        ["*.csproj"];
+
     public LanguageInfo Language => new()
     {
         Name = "csharp",
@@ -25,12 +29,16 @@ internal sealed class CSharpLanguageProvider : ILanguageProvider
     };
 
     public string FileSearchPattern => "*.cs";
+    public IReadOnlyList<string> ProjectFilePatterns => s_projectFilePatterns;
 }
 
 internal sealed class UnsupportedLanguageProvider : ILanguageProvider
 {
+    private static readonly IReadOnlyList<string> s_emptyPatterns = [];
+
     public LanguageInfo Language { get; }
     public string FileSearchPattern => "";
+    public IReadOnlyList<string> ProjectFilePatterns => s_emptyPatterns;
 
     public UnsupportedLanguageProvider(string name, string displayName, string fileExtension)
     {

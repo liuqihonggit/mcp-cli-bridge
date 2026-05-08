@@ -21,14 +21,7 @@ function Pack-NugetProject {
     param([string]$ProjectPath, [string]$ProjectName)
 
     Write-Host "  Packing $ProjectName..." -ForegroundColor Gray
-    dotnet pack $ProjectPath -c Release -o $localNugetPath --no-build
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  Building $ProjectName first..." -ForegroundColor Yellow
-        dotnet build $ProjectPath -c Release
-        if ($LASTEXITCODE -ne 0) { throw "$ProjectName build failed!" }
-        dotnet pack $ProjectPath -c Release -o $localNugetPath
-    }
+    dotnet pack $ProjectPath -c Release -o $localNugetPath
 
     if ($LASTEXITCODE -ne 0) { throw "$ProjectName pack failed!" }
 }

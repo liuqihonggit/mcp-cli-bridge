@@ -171,7 +171,7 @@ internal static class AstSchemas
                 .WithProperty("command", new JsonSchemaPropertyBuilder()
                     .WithType("string").WithConst("symbol_outline").Build())
                 .WithProperty("filePath", new JsonSchemaPropertyBuilder()
-                    .WithType("string").WithDescription("Path to the C# source file").Build())
+                    .WithType("string").WithDescription("Path to the source file").Build())
                 .WithProperty("language", new JsonSchemaPropertyBuilder()
                     .WithType("string").WithDescription("Programming language of the project (default: csharp). Unsupported languages will return an error").Build())
                 .WithRequired("command", "filePath")

@@ -5,9 +5,9 @@ public sealed class AstEngine
     private static readonly string[] s_excludedDirs = ["bin", "obj", ".git", "node_modules", ".vs"];
     private static readonly TimeSpan s_lockTimeout = TimeSpan.FromSeconds(5);
 
-    public static async Task<QuerySymbolResultDto> QuerySymbolAsync(string projectPath, string symbolName, string? scope)
+    internal static async Task<QuerySymbolResultDto> QuerySymbolAsync(ILanguageProvider provider, string projectPath, string symbolName, string? scope)
     {
-        var files = GetProjectFiles(projectPath, scope);
+        var files = GetProjectFiles(projectPath, provider.FileSearchPattern, scope);
         var symbols = new List<SymbolInfoDto>();
 
         foreach (var file in files)
@@ -32,9 +32,9 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<FindReferencesResultDto> FindReferencesAsync(string projectPath, string symbolName)
+    internal static async Task<FindReferencesResultDto> FindReferencesAsync(ILanguageProvider provider, string projectPath, string symbolName)
     {
-        var files = GetProjectFiles(projectPath);
+        var files = GetProjectFiles(projectPath, provider.FileSearchPattern);
         var references = new List<ReferenceLocationDto>();
         SymbolInfoDto? definition = null;
 
@@ -62,9 +62,9 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<RenameSymbolResultDto> RenameSymbolAsync(string projectPath, string symbolName, string newName)
+    internal static async Task<RenameSymbolResultDto> RenameSymbolAsync(ILanguageProvider provider, string projectPath, string symbolName, string newName)
     {
-        var files = GetProjectFiles(projectPath);
+        var files = GetProjectFiles(projectPath, provider.FileSearchPattern);
         var modifiedFiles = new List<string>();
 
         foreach (var file in files)
@@ -102,9 +102,9 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<ReplaceSymbolResultDto> ReplaceSymbolAsync(string projectPath, string oldName, string newName)
+    internal static async Task<ReplaceSymbolResultDto> ReplaceSymbolAsync(ILanguageProvider provider, string projectPath, string oldName, string newName)
     {
-        var files = GetProjectFiles(projectPath);
+        var files = GetProjectFiles(projectPath, provider.FileSearchPattern);
         var modifiedFiles = new List<string>();
 
         foreach (var file in files)
@@ -143,7 +143,7 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<GetSymbolInfoResultDto> GetSymbolInfoAsync(string projectPath, string filePath, int lineNumber, int columnNumber)
+    internal static async Task<GetSymbolInfoResultDto> GetSymbolInfoAsync(ILanguageProvider provider, string projectPath, string filePath, int lineNumber, int columnNumber)
     {
 #pragma warning disable MCP001
         if (!File.Exists(filePath))
@@ -420,7 +420,7 @@ public sealed class AstEngine
         };
     }
 
-    private static List<string> GetProjectFiles(string projectPath, string? scope = null)
+    private static List<string> GetProjectFiles(string projectPath, string fileSearchPattern, string? scope = null)
     {
 #pragma warning disable MCP001
         if (!Directory.Exists(projectPath))
@@ -432,7 +432,7 @@ public sealed class AstEngine
             : SearchOption.AllDirectories;
 
 #pragma warning disable MCP001
-        return Directory.GetFiles(projectPath, "*.cs", searchOption)
+        return Directory.GetFiles(projectPath, fileSearchPattern, searchOption)
 #pragma warning restore MCP001
             .Where(f => !IsExcluded(f))
             .ToList();
@@ -449,14 +449,14 @@ public sealed class AstEngine
         return false;
     }
 
-    public static async Task<WorkspaceOverviewResultDto> WorkspaceOverviewAsync(string projectPath)
+    internal static async Task<WorkspaceOverviewResultDto> WorkspaceOverviewAsync(ILanguageProvider provider, string projectPath)
     {
 #pragma warning disable MCP001
         if (!Directory.Exists(projectPath))
             return new WorkspaceOverviewResultDto { ProjectPath = projectPath };
 #pragma warning restore MCP001
 
-        var files = GetProjectFiles(projectPath);
+        var files = GetProjectFiles(projectPath, provider.FileSearchPattern);
         var namespaces = new HashSet<string>();
         var csprojFiles = new List<CsprojInfoDto>();
         var directoryRoles = new List<DirectoryRoleDto>();
@@ -489,7 +489,8 @@ public sealed class AstEngine
         }
 
 #pragma warning disable MCP001
-        foreach (var csproj in Directory.GetFiles(projectPath, "*.csproj", SearchOption.AllDirectories))
+        foreach (var projectFilePattern in provider.ProjectFilePatterns)
+        foreach (var csproj in Directory.GetFiles(projectPath, projectFilePattern, SearchOption.AllDirectories))
 #pragma warning restore MCP001
         {
             try
@@ -533,7 +534,7 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<FileContextResultDto> FileContextAsync(string projectPath, string filePath)
+    internal static async Task<FileContextResultDto> FileContextAsync(ILanguageProvider provider, string projectPath, string filePath)
     {
 #pragma warning disable MCP001
         if (!File.Exists(filePath))
@@ -572,7 +573,7 @@ public sealed class AstEngine
         var sameNamespaceSymbols = new List<SymbolInfoDto>();
         var reverseDependencies = new List<string>();
 
-        var allProjectFiles = GetProjectFiles(projectPath);
+        var allProjectFiles = GetProjectFiles(projectPath, provider.FileSearchPattern);
 
         foreach (var otherFile in allProjectFiles)
         {
@@ -660,11 +661,11 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<DiagnosticsResultDto> DiagnosticsAsync(string projectPath, string? filePath)
+    internal static async Task<DiagnosticsResultDto> DiagnosticsAsync(ILanguageProvider provider, string projectPath, string? filePath)
     {
         var files = filePath != null
             ? new List<string> { filePath }
-            : GetProjectFiles(projectPath);
+            : GetProjectFiles(projectPath, provider.FileSearchPattern);
 
         var errors = new List<DiagnosticItemDto>();
         var errorCount = 0;
@@ -715,7 +716,7 @@ public sealed class AstEngine
         };
     }
 
-    public static async Task<SymbolOutlineResultDto> SymbolOutlineAsync(string filePath)
+    internal static async Task<SymbolOutlineResultDto> SymbolOutlineAsync(ILanguageProvider provider, string filePath)
     {
 #pragma warning disable MCP001
         if (!File.Exists(filePath))
