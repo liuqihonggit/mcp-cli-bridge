@@ -47,6 +47,26 @@ jobs:
           
           Write-Host "[Clean] Completed" -ForegroundColor Green
 
+      - name: Restore and build local NuGet packages (lib/)
+        run: |
+          Write-Host "[Restore] Restoring lib/ projects..." -ForegroundColor Cyan
+          Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
+            $name = $_.BaseName
+            if ($name -like "*.Tests") { return }
+            Write-Host "  Restoring $name..." -ForegroundColor Gray
+            dotnet restore $_.FullName --configfile nuget.config
+          }
+
+          Write-Host "`n[Build] Building lib/ projects..." -ForegroundColor Cyan
+          Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
+            $name = $_.BaseName
+            if ($name -like "*.Tests") { return }
+            Write-Host "  Building $name..." -ForegroundColor Gray
+            dotnet build $_.FullName -c Release --no-restore
+          }
+
+          Write-Host "`n[Lib] All lib/ projects built successfully!" -ForegroundColor Green
+
       - name: AOT Build
         run: .\buildAndNpm.ps1
 
