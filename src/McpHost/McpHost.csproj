@@ -17,4 +17,15 @@
     <TrimmerRootAssembly Include="McpHost" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Generators\CliCommandGenerator\CliCommandGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)\..\Plugins\AstCli\Commands\CommandHandler.cs" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)\..\Plugins\MemoryCli\Commands\CommandHandler.cs" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)\..\Plugins\FileReaderCli\Commands\CommandHandler.cs" />
+  </ItemGroup>
+
 </Project>

@@ -114,6 +114,8 @@ try
 
     logger.Info($"Total plugins registered: {toolRegistry.GetProviderNames().Count}");
 
+    CommandTable.PrintTable(line => logger.Info(line));
+
     var server = new McpServer(nameof(McpHost), Versions.McpHost);
 
     // 只注册 Host 层面的管理工具，不暴露 CLI 内部工具
