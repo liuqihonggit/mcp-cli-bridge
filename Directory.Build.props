@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <UnifiedVersion>3.0.12</UnifiedVersion>
+    <UnifiedVersion>3.0.13</UnifiedVersion>
     <McpProtocolVersion>1.0.3</McpProtocolVersion>
     <AsyncFileLockVersion>1.0.0</AsyncFileLockVersion>
   </PropertyGroup>
