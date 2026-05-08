@@ -11,6 +11,7 @@
 
 .trae/agents/
 .trae/specs/
+.trae/documents/
 
 .x/
 */.x/
