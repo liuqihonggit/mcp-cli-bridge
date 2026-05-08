@@ -7,9 +7,12 @@ namespace AstCli.Commands;
 [CliCommandHandler("ast_cli", "AST CLI - Code analysis, symbol query, find references, and refactoring", Category = "code-analysis", ToolNamePrefix = "ast_", HasDocumentation = true)]
 internal sealed partial class CommandHandler
 {
-    [CliCommand("symbol_query", Description = "Query symbols in a C# project by name", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolQuery))]
+    [CliCommand("symbol_query", Description = "Query symbols in a project by name", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolQuery))]
     private static async Task<OperationResult<JsonElement>> QuerySymbolAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.SymbolName))
@@ -24,9 +27,12 @@ internal sealed partial class CommandHandler
         return Ok(result, $"Found {result.TotalCount} symbol(s) matching '{request.SymbolName}'", AstCliJsonContext.Default.QuerySymbolResultDto);
     }
 
-    [CliCommand("reference_find", Description = "Find all references to a symbol in a C# project", Category = "code-analysis", SchemaType = typeof(AstSchemas.ReferenceFind))]
+    [CliCommand("reference_find", Description = "Find all references to a symbol in a project", Category = "code-analysis", SchemaType = typeof(AstSchemas.ReferenceFind))]
     private static async Task<OperationResult<JsonElement>> FindReferencesAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.SymbolName))
@@ -41,9 +47,12 @@ internal sealed partial class CommandHandler
         return Ok(result, $"Found {result.TotalCount} reference(s) for '{request.SymbolName}'", AstCliJsonContext.Default.FindReferencesResultDto);
     }
 
-    [CliCommand("symbol_rename", Description = "Rename a symbol across all files in a C# project", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolRename))]
+    [CliCommand("symbol_rename", Description = "Rename a symbol across all files in a project", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolRename))]
     private static async Task<OperationResult<JsonElement>> RenameSymbolAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.SymbolName))
@@ -60,9 +69,12 @@ internal sealed partial class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.RenameSymbolResultDto);
     }
 
-    [CliCommand("symbol_replace", Description = "Replace a symbol name with a new name across all files in a C# project", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolReplace))]
+    [CliCommand("symbol_replace", Description = "Replace a symbol name with a new name across all files in a project", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolReplace))]
     private static async Task<OperationResult<JsonElement>> ReplaceSymbolAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.SymbolName))
@@ -82,6 +94,9 @@ internal sealed partial class CommandHandler
     [CliCommand("symbol_info", Description = "Get symbol information at a specific position in a file", Category = "code-analysis", SchemaType = typeof(AstSchemas.SymbolInfo))]
     private static async Task<OperationResult<JsonElement>> GetSymbolInfoAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.FilePath))
             return Fail("filePath is required");
 
@@ -96,6 +111,9 @@ internal sealed partial class CommandHandler
     [CliCommand("workspace_overview", Description = "Get project structure overview: file stats, namespace tree, csproj references, directory roles, entry points", Category = "workspace", SchemaType = typeof(AstSchemas.WorkspaceOverview))]
     private static async Task<OperationResult<JsonElement>> WorkspaceOverviewAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
 
@@ -111,6 +129,9 @@ internal sealed partial class CommandHandler
     [CliCommand("file_context", Description = "Analyze file context: usings, project symbol references, same-namespace symbols, reverse dependencies", Category = "file-context", SchemaType = typeof(AstSchemas.FileContext))]
     private static async Task<OperationResult<JsonElement>> FileContextAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.FilePath))
@@ -125,9 +146,12 @@ internal sealed partial class CommandHandler
         return Ok(result, $"File context: {result.ProjectUsings.Count} project usings, {result.ReferencedSymbols.Count} referenced symbols", AstCliJsonContext.Default.FileContextResultDto);
     }
 
-    [CliCommand("diagnostics", Description = "Get syntax diagnostics for a C# project or specific file", Category = "diagnostics", SchemaType = typeof(AstSchemas.Diagnostics))]
+    [CliCommand("diagnostics", Description = "Get syntax diagnostics for a project or specific file", Category = "diagnostics", SchemaType = typeof(AstSchemas.Diagnostics))]
     private static async Task<OperationResult<JsonElement>> DiagnosticsAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
 
@@ -140,9 +164,12 @@ internal sealed partial class CommandHandler
         return Ok(result, result.TotalErrorCount > 0 ? $"Found {result.TotalErrorCount} error(s)" : "No errors found", AstCliJsonContext.Default.DiagnosticsResultDto);
     }
 
-    [CliCommand("symbol_outline", Description = "Get symbol outline of a C# file: types, members, line ranges, accessibility", Category = "symbol", SchemaType = typeof(AstSchemas.SymbolOutline))]
+    [CliCommand("symbol_outline", Description = "Get symbol outline of a file: types, members, line ranges, accessibility", Category = "symbol", SchemaType = typeof(AstSchemas.SymbolOutline))]
     private static async Task<OperationResult<JsonElement>> SymbolOutlineAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.FilePath))
             return Fail("filePath is required");
 
@@ -155,9 +182,12 @@ internal sealed partial class CommandHandler
         return Ok(result, $"Symbol outline: {result.Types.Count} type(s)", AstCliJsonContext.Default.SymbolOutlineResultDto);
     }
 
-    [CliCommand("string_query", Description = "Query string literals in a C# project, optionally filter by prefix or content", Category = "string", SchemaType = typeof(AstSchemas.StringQuery))]
+    [CliCommand("string_query", Description = "Query string literals in a project, optionally filter by prefix or content", Category = "string", SchemaType = typeof(AstSchemas.StringQuery))]
     private static async Task<OperationResult<JsonElement>> StringQueryAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
 
@@ -173,6 +203,9 @@ internal sealed partial class CommandHandler
     [CliCommand("string_prefix", Description = "Insert text at the beginning (position 0) of each string literal", Category = "string", SchemaType = typeof(AstSchemas.StringPrefix))]
     private static async Task<OperationResult<JsonElement>> StringPrefixAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.InsertText))
@@ -191,6 +224,9 @@ internal sealed partial class CommandHandler
     [CliCommand("string_suffix", Description = "Insert text at the end of each string literal", Category = "string", SchemaType = typeof(AstSchemas.StringSuffix))]
     private static async Task<OperationResult<JsonElement>> StringSuffixAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.InsertText))
@@ -209,6 +245,9 @@ internal sealed partial class CommandHandler
     [CliCommand("string_insert", Description = "Insert text at an arbitrary position within each string literal", Category = "string", SchemaType = typeof(AstSchemas.StringInsert))]
     private static async Task<OperationResult<JsonElement>> StringInsertAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.InsertText))
@@ -229,6 +268,9 @@ internal sealed partial class CommandHandler
     [CliCommand("string_replace", Description = "Replace text in each string literal using literal string or regex pattern", Category = "string", SchemaType = typeof(AstSchemas.StringReplace))]
     private static async Task<OperationResult<JsonElement>> StringReplaceAsync(AstCliRequest request)
     {
+        var languageError = ValidateLanguage(request.Language);
+        if (languageError != null) return languageError;
+
         if (string.IsNullOrWhiteSpace(request.ProjectPath))
             return Fail("projectPath is required");
         if (string.IsNullOrWhiteSpace(request.Pattern))
@@ -244,6 +286,32 @@ internal sealed partial class CommandHandler
         var result = await StringLiteralEngine.ReplaceAsync(
             request.ProjectPath, request.FilePath, request.Pattern, request.Replacement, request.UseRegex, request.Filter, request.DryRun);
         return Ok(result, result.Message, AstCliJsonContext.Default.StringReplaceResultDto);
+    }
+
+    private static OperationResult<JsonElement>? ValidateLanguage(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+            return null;
+
+        var provider = LanguageProviderRegistry.GetProvider(language);
+        if (provider.Language.IsSupported)
+            return null;
+
+        var supported = LanguageProviderRegistry.GetSupportedLanguages();
+        var result = new UnsupportedLanguageResultDto
+        {
+            DetectedLanguage = provider.Language.Name,
+            DetectedLanguageDisplayName = provider.Language.DisplayName,
+            SupportedLanguages = supported,
+            Message = $"Language '{provider.Language.DisplayName}' is not supported. Supported languages: {string.Join(", ", supported)}"
+        };
+
+        return new OperationResult<JsonElement>
+        {
+            Success = false,
+            Message = result.Message,
+            Data = JsonSerializer.SerializeToElement(result, AstCliJsonContext.Default.UnsupportedLanguageResultDto)
+        };
     }
 
     private static OperationResult<JsonElement> Fail(string message)

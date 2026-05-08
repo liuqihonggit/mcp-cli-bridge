@@ -49,6 +49,9 @@ public sealed class AstCliRequest
 
     [JsonPropertyName("useRegex")]
     public bool UseRegex { get; set; }
+
+    [JsonPropertyName("language")]
+    public string? Language { get; set; }
 }
 
 public sealed class SymbolInfoDto
@@ -397,6 +400,21 @@ public sealed class StringReplaceResultDto
 
     [JsonPropertyName("modifiedFiles")]
     public List<string> ModifiedFiles { get; set; } = [];
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class UnsupportedLanguageResultDto
+{
+    [JsonPropertyName("detectedLanguage")]
+    public string DetectedLanguage { get; set; } = string.Empty;
+
+    [JsonPropertyName("detectedLanguageDisplayName")]
+    public string DetectedLanguageDisplayName { get; set; } = string.Empty;
+
+    [JsonPropertyName("supportedLanguages")]
+    public List<string> SupportedLanguages { get; set; } = [];
 
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
