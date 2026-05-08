@@ -64,7 +64,7 @@ public sealed class PackageManager : IPackageManager
         foreach (var path in searchPaths)
         {
             var fullPath = path;
-            if (platform == Platforms.Windows && !fullPath.EndsWith(FileExtensions.Exe))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !fullPath.EndsWith(FileExtensions.Exe))
                 fullPath += FileExtensions.Exe;
 
             if (File.Exists(fullPath))
@@ -77,6 +77,7 @@ public sealed class PackageManager : IPackageManager
     public IReadOnlyList<string> DiscoverAvailablePlugins()
     {
         var plugins = new List<string>();
+        var searchPatterns = GetPluginSearchPatterns();
 
         var processDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
         if (!string.IsNullOrEmpty(processDir))
@@ -86,10 +87,25 @@ public sealed class PackageManager : IPackageManager
             {
                 foreach (var subDir in Directory.GetDirectories(pluginsDir))
                 {
-                    var exeFiles = Directory.GetFiles(subDir, "*.exe");
-                    foreach (var exeFile in exeFiles)
+                    foreach (var pattern in searchPatterns)
                     {
-                        var fileName = Path.GetFileNameWithoutExtension(exeFile);
+                        foreach (var file in Directory.GetFiles(subDir, pattern))
+                        {
+                            var fileName = Path.GetFileNameWithoutExtension(file);
+                            if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
+                            {
+                                plugins.Add(fileName);
+                                _logger.Info($"Discovered CLI plugin: {fileName}");
+                            }
+                        }
+                    }
+                }
+
+                foreach (var pattern in searchPatterns)
+                {
+                    foreach (var file in Directory.GetFiles(pluginsDir, pattern))
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension(file);
                         if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
                         {
                             plugins.Add(fileName);
@@ -97,30 +113,21 @@ public sealed class PackageManager : IPackageManager
                         }
                     }
                 }
+            }
 
-                var rootExeFiles = Directory.GetFiles(pluginsDir, "*.exe");
-                foreach (var exeFile in rootExeFiles)
+            foreach (var pattern in searchPatterns)
+            {
+                foreach (var file in Directory.GetFiles(processDir, pattern))
                 {
-                    var fileName = Path.GetFileNameWithoutExtension(exeFile);
+                    var fileName = Path.GetFileNameWithoutExtension(file);
+                    if (fileName.Equals("McpHost", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
                     {
                         plugins.Add(fileName);
                         _logger.Info($"Discovered CLI plugin: {fileName}");
                     }
-                }
-            }
-
-            var exeFilesInRoot = Directory.GetFiles(processDir, "*.exe");
-            foreach (var exeFile in exeFilesInRoot)
-            {
-                var fileName = Path.GetFileNameWithoutExtension(exeFile);
-                if (fileName.Equals("McpHost", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (!plugins.Contains(fileName, StringComparer.OrdinalIgnoreCase))
-                {
-                    plugins.Add(fileName);
-                    _logger.Info($"Discovered CLI plugin: {fileName}");
                 }
             }
         }
@@ -276,5 +283,12 @@ public sealed class PackageManager : IPackageManager
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             return Platforms.OSX;
         return Platforms.Unknown;
+    }
+
+    private static string[] GetPluginSearchPatterns()
+    {
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? ["*.exe"]
+            : ["*"];
     }
 }
