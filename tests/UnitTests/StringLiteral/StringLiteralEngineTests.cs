@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -30,6 +31,15 @@ public sealed class StringLiteralEngineTests
         var tree = CSharpSyntaxTree.ParseText(code, path: "test.cs");
         var root = tree.GetCompilationUnitRoot();
         var rewriter = new TestStringLiteralRewriter(insertText, position, filter);
+        var newRoot = rewriter.Visit(root);
+        return newRoot.ToFullString();
+    }
+
+    private static string ReplaceCode(string code, string pattern, string replacement, bool useRegex = false, string? filter = null)
+    {
+        var tree = CSharpSyntaxTree.ParseText(code, path: "test.cs");
+        var root = tree.GetCompilationUnitRoot();
+        var rewriter = new TestStringLiteralReplacer(pattern, replacement, useRegex, filter);
         var newRoot = rewriter.Visit(root);
         return newRoot.ToFullString();
     }
@@ -289,6 +299,138 @@ public sealed class StringLiteralEngineTests
     }
 
     #endregion
+
+    #region Replace Tests (Literal)
+
+    [Fact]
+    public void Replace_Literal_RegularString_ShouldReplace()
+    {
+        var result = ReplaceCode("""var x = "memory_create";""", "memory_", "men_");
+        result.Should().Contain("\"men_create\"");
+    }
+
+    [Fact]
+    public void Replace_Literal_VerbatimString_ShouldReplace()
+    {
+        var result = ReplaceCode("""var x = @"memory_path\test";""", "memory_", "men_");
+        result.Should().Contain(@"men_path");
+    }
+
+    [Fact]
+    public void Replace_Literal_RawString_ShouldReplace()
+    {
+        var code = "var x = \"\"\"memory_raw\"\"\";";
+        var result = ReplaceCode(code, "memory_", "men_");
+        result.Should().Contain("men_raw");
+    }
+
+    [Fact]
+    public void Replace_Literal_RawString_ShouldNotDuplicateContent()
+    {
+        // Bug: 原始字符串字面量替换时会出现内容重复
+        var code = "var x = \"\"\"memory_test\"\"\";";
+        var result = ReplaceCode(code, "memory_", "men_");
+
+        // 验证只出现一次替换后的内容
+        result.Should().Contain("men_test");
+        result.Should().NotContain("memory_test");
+
+        // 验证没有出现重复内容（如 """men_test""""""men_test"""）
+        var count = result.Split("men_test").Length - 1;
+        count.Should().Be(1, $"内容应该只出现一次，但实际出现 {count} 次。结果：{result}");
+    }
+
+    [Fact]
+    public void Replace_Literal_MultiLineRawString_ShouldPreserveIndentation()
+    {
+        // Bug: 多行原始字符串字面量替换后缩进丢失，导致闭合 """ 不在行首，破坏语法
+        // 用字符串拼接避免嵌套原始字符串字面量的语法问题
+        var inner = "    var a = \"memory_target\";\n    var b = \"other\";\n    ";
+        var code = "var code = \"\"\"\n" + inner + "\"\"\";";
+        var result = ReplaceCode(code, "memory_", "men_");
+
+        result.Should().Contain("men_target");
+        result.Should().NotContain("memory_target");
+
+        // 验证结果可以被正确解析为合法的 C# 代码
+        var parseResult = CSharpSyntaxTree.ParseText(result);
+        var diagnostics = parseResult.GetDiagnostics();
+        diagnostics.Should().BeEmpty($"替换后的代码应该是合法的 C# 代码，但有错误：{string.Join(", ", diagnostics.Select(d => d.ToString()))}");
+    }
+
+    [Fact]
+    public void Replace_Literal_InterpolatedString_ShouldReplace()
+    {
+        var result = ReplaceCode("""var x = $"memory_{name}";""", "memory_", "men_");
+        result.Should().Contain("men_");
+    }
+
+    [Fact]
+    public void Replace_Literal_NoMatch_ShouldNotChange()
+    {
+        var code = """var x = "other_string";""";
+        var result = ReplaceCode(code, "memory_", "men_");
+        result.Should().Be(code);
+    }
+
+    [Fact]
+    public void Replace_Literal_WithFilter_ShouldOnlyModifyMatching()
+    {
+        var code = """
+                   var a = "memory_target";
+                   var b = "other_memory";
+                   """;
+        var result = ReplaceCode(code, "memory_", "men_", filter: "target");
+        result.Should().Contain("men_target");
+        result.Should().Contain("other_memory");
+    }
+
+    [Fact]
+    public void Replace_Literal_MultipleOccurrences_ShouldReplaceAll()
+    {
+        var result = ReplaceCode("""var x = "memory_a and memory_b";""", "memory_", "men_");
+        result.Should().Contain("men_a and men_b");
+    }
+
+    #endregion
+
+    #region Replace Tests (Regex)
+
+    [Fact]
+    public void Replace_Regex_RegularString_ShouldReplace()
+    {
+        var result = ReplaceCode("""var x = "memory_create_entities";""", @"memory_(\w+)", "men_$1", useRegex: true);
+        result.Should().Contain("\"men_create_entities\"");
+    }
+
+    [Fact]
+    public void Replace_Regex_WithCaptureGroup_ShouldReplace()
+    {
+        var result = ReplaceCode("""var x = "prefix_value_suffix";""", @"prefix_(\w+)_suffix", "replaced_$1", useRegex: true);
+        result.Should().Contain("\"replaced_value\"");
+    }
+
+    [Fact]
+    public void Replace_Regex_NoMatch_ShouldNotChange()
+    {
+        var code = """var x = "other_string";""";
+        var result = ReplaceCode(code, @"memory_(\w+)", "men_$1", useRegex: true);
+        result.Should().Be(code);
+    }
+
+    [Fact]
+    public void Replace_Regex_WithFilter_ShouldOnlyModifyMatching()
+    {
+        var code = """
+                   var a = "memory_target_entity";
+                   var b = "memory_other_entity";
+                   """;
+        var result = ReplaceCode(code, @"memory_(\w+)", "men_$1", useRegex: true, filter: "target");
+        result.Should().Contain("men_target_entity");
+        result.Should().Contain("memory_other_entity");
+    }
+
+    #endregion
 }
 
 file sealed class TestStringLiteralCollector : CSharpSyntaxWalker
@@ -536,6 +678,128 @@ file sealed class TestStringLiteralRewriter : CSharpSyntaxRewriter
     }
 }
 
+file sealed class TestStringLiteralReplacer : CSharpSyntaxRewriter
+{
+    private readonly string _pattern;
+    private readonly string _replacement;
+    private readonly bool _useRegex;
+    private readonly string? _filter;
+    private readonly Regex? _regex;
+
+    public TestStringLiteralReplacer(string pattern, string replacement, bool useRegex, string? filter)
+    {
+        _pattern = pattern;
+        _replacement = replacement;
+        _useRegex = useRegex;
+        _filter = filter;
+
+        if (useRegex)
+        {
+            _regex = new Regex(pattern, RegexOptions.Compiled);
+        }
+    }
+
+    public override SyntaxNode? VisitLiteralExpression(LiteralExpressionSyntax node)
+    {
+        if (node.Kind() != SyntaxKind.StringLiteralExpression)
+            return base.VisitLiteralExpression(node);
+
+        var valueText = node.Token.ValueText;
+
+        if (_filter != null && !valueText.Contains(_filter, StringComparison.OrdinalIgnoreCase))
+            return base.VisitLiteralExpression(node);
+
+        var newValue = _useRegex
+            ? _regex!.Replace(valueText, _replacement)
+            : valueText.Replace(_pattern, _replacement, StringComparison.OrdinalIgnoreCase);
+
+        if (newValue == valueText)
+            return base.VisitLiteralExpression(node);
+
+        var kind = TestHelper.GetStringKind(node.Token);
+        SyntaxToken newToken = kind switch
+        {
+            "Verbatim" => TestHelper.CreateVerbatimLiteral(newValue),
+            "Raw" => TestHelper.CreateRawLiteral(node.Token, newValue),
+            _ => SyntaxFactory.Literal(newValue)
+        };
+
+        return node.WithToken(newToken);
+    }
+
+    public override SyntaxNode? VisitInterpolatedStringExpression(InterpolatedStringExpressionSyntax node)
+    {
+        var fullValue = GetInterpolatedValue(node);
+
+        if (_filter != null && !fullValue.Contains(_filter, StringComparison.OrdinalIgnoreCase))
+            return base.VisitInterpolatedStringExpression(node);
+
+        var newFullValue = _useRegex
+            ? _regex!.Replace(fullValue, _replacement)
+            : fullValue.Replace(_pattern, _replacement, StringComparison.OrdinalIgnoreCase);
+
+        if (newFullValue == fullValue)
+            return base.VisitInterpolatedStringExpression(node);
+
+        var newContents = ReplaceInInterpolatedString(node, newFullValue);
+        if (newContents != null)
+        {
+            return node.WithContents(SyntaxFactory.List(newContents));
+        }
+
+        return base.VisitInterpolatedStringExpression(node);
+    }
+
+    private static List<InterpolatedStringContentSyntax>? ReplaceInInterpolatedString(
+        InterpolatedStringExpressionSyntax node, string newFullValue)
+    {
+        var newContents = new List<InterpolatedStringContentSyntax>();
+        var valueIndex = 0;
+
+        foreach (var content in node.Contents)
+        {
+            if (content is InterpolatedStringTextSyntax textPart)
+            {
+                var textValue = textPart.TextToken.ValueText;
+                var textLength = textValue.Length;
+
+                var newText = newFullValue.Substring(valueIndex, Math.Min(textLength, newFullValue.Length - valueIndex));
+                valueIndex += newText.Length;
+
+                if (newText.Length > 0)
+                {
+                    var newToken = SyntaxFactory.Token(
+                        SyntaxFactory.TriviaList(),
+                        SyntaxKind.InterpolatedStringTextToken,
+                        newText,
+                        newText,
+                        SyntaxFactory.TriviaList());
+                    newContents.Add(SyntaxFactory.InterpolatedStringText(newToken));
+                }
+            }
+            else if (content is InterpolationSyntax interpolation)
+            {
+                newContents.Add(interpolation);
+            }
+        }
+
+        return newContents.Count > 0 ? newContents : null;
+    }
+
+    private static string GetInterpolatedValue(InterpolatedStringExpressionSyntax node)
+    {
+        var sb = new StringBuilder();
+        foreach (var content in node.Contents)
+        {
+            if (content is InterpolatedStringTextSyntax textPart)
+                sb.Append(textPart.TextToken.ValueText);
+            else if (content is InterpolationSyntax)
+                sb.Append("{}");
+        }
+        return sb.ToString();
+    }
+}
+
 file static class TestHelper
 {
     public static string GetStringKind(SyntaxToken token)
@@ -572,19 +836,73 @@ file static class TestHelper
     public static SyntaxToken CreateRawLiteral(SyntaxToken originalToken, string newValue)
     {
         var originalText = originalToken.Text;
-        var delimiterEnd = originalText.IndexOf('"');
-        var delimiterStart = originalText.LastIndexOf('"');
 
-        if (delimiterEnd < 0 || delimiterStart <= delimiterEnd)
+        // 提取开头的引号定界符（如 """ 或 "）
+        var quoteCount = 0;
+        while (quoteCount < originalText.Length && originalText[quoteCount] == '"')
+        {
+            quoteCount++;
+        }
+
+        if (quoteCount == 0)
             return SyntaxFactory.Literal(newValue);
 
-        var delimiter = originalText[delimiterEnd..(delimiterStart + 1)];
-        var rawText = delimiter + newValue + delimiter;
+        // 提取结尾的引号定界符
+        var endQuoteCount = 0;
+        var pos = originalText.Length - 1;
+        while (pos >= 0 && originalText[pos] == '"')
+        {
+            endQuoteCount++;
+            pos--;
+        }
+
+        var openDelimiter = originalText[..quoteCount];
+        var closeDelimiter = originalText[(originalText.Length - endQuoteCount)..];
+
+        // 检查开头定界符后是否有换行（多行原始字符串）
+        var afterOpen = originalText[quoteCount..];
+        if (afterOpen.Contains('\n'))
+        {
+            // 多行原始字符串：提取闭合行前的缩进
+            var lineBeforeClose = originalText[..(originalText.Length - endQuoteCount)];
+            var lastNewline = lineBeforeClose.LastIndexOf('\n');
+            var indentation = lastNewline >= 0
+                ? lineBeforeClose[(lastNewline + 1)..]
+                : "";
+
+            // 给 newValue 的每一行添加缩进前缀
+            var indentedValue = IndentLines(newValue, indentation);
+
+            var rawText = openDelimiter + "\n" + indentedValue + "\n" + indentation + closeDelimiter;
+
+            return SyntaxFactory.Literal(
+                SyntaxFactory.TriviaList(),
+                rawText,
+                newValue,
+                SyntaxFactory.TriviaList());
+        }
+
+        // 单行原始字符串：直接拼接
+        var singleLineRawText = openDelimiter + newValue + closeDelimiter;
 
         return SyntaxFactory.Literal(
             SyntaxFactory.TriviaList(),
-            rawText,
+            singleLineRawText,
             newValue,
             SyntaxFactory.TriviaList());
+    }
+
+    private static string IndentLines(string value, string indentation)
+    {
+        if (string.IsNullOrEmpty(indentation))
+            return value;
+
+        var lines = value.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Length > 0)
+                lines[i] = indentation + lines[i];
+        }
+        return string.Join("\n", lines);
     }
 }

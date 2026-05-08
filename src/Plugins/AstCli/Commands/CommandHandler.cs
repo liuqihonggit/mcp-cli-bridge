@@ -226,6 +226,26 @@ internal sealed partial class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.StringInsertResultDto);
     }
 
+    [CliCommand("string_replace", Description = "Replace text in each string literal using literal string or regex pattern", Category = "string", SchemaType = typeof(AstSchemas.StringReplace))]
+    private static async Task<OperationResult<JsonElement>> StringReplaceAsync(AstCliRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.Pattern))
+            return Fail("pattern is required");
+        if (string.IsNullOrWhiteSpace(request.Replacement))
+            return Fail("replacement is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await StringLiteralEngine.ReplaceAsync(
+            request.ProjectPath, request.FilePath, request.Pattern, request.Replacement, request.UseRegex, request.Filter, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.StringReplaceResultDto);
+    }
+
     private static OperationResult<JsonElement> Fail(string message)
     {
         return new OperationResult<JsonElement>

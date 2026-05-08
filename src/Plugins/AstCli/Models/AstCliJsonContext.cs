@@ -32,6 +32,7 @@ namespace AstCli.Models;
 [JsonSerializable(typeof(StringLiteralInfoDto))]
 [JsonSerializable(typeof(StringQueryResultDto))]
 [JsonSerializable(typeof(StringInsertResultDto))]
+[JsonSerializable(typeof(StringReplaceResultDto))]
 [JsonSerializable(typeof(List<StringLiteralInfoDto>))]
 [JsonSerializable(typeof(Dictionary<string, int>))]
 public partial class AstCliJsonContext : JsonSerializerContext

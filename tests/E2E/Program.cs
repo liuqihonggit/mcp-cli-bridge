@@ -2057,6 +2057,178 @@ class Program
                 return true;
             }));
 
+            // Test 50: AstCli - ast_string_replace (literal)
+            testResults.Add(await RunTestAsync("AstCli - string_replace (literal)", async () =>
+            {
+                // 创建一个测试文件用于替换
+                var testFilePath = Path.Combine(astProjectDir, "TestStrings.cs");
+                File.WriteAllText(testFilePath, """
+                    namespace TestProject;
+                    class TestStrings
+                    {
+                        public string Name = "memory_create_entities";
+                        public string Desc = "memory_search_nodes";
+                    }
+                    """);
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 50,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_string_replace",
+                            parameters = new
+                            {
+                                command = "string_replace",
+                                projectPath = astProjectDir,
+                                pattern = "memory_",
+                                replacement = "men_",
+                                useRegex = false,
+                                dryRun = false
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(50, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("men_") ?? false, "Should show replacement result");
+
+                // 验证文件确实被修改了
+                var modifiedContent = File.ReadAllText(testFilePath);
+                AssertTrue(modifiedContent.Contains("men_create_entities"), "File should contain men_create_entities");
+                AssertTrue(modifiedContent.Contains("men_search_nodes"), "File should contain men_search_nodes");
+
+                return true;
+            }));
+
+            // Test 51: AstCli - ast_string_replace (regex)
+            testResults.Add(await RunTestAsync("AstCli - string_replace (regex)", async () =>
+            {
+                // 创建一个测试文件用于替换
+                var testFilePath = Path.Combine(astProjectDir, "TestRegex.cs");
+                File.WriteAllText(testFilePath, """
+                    namespace TestProject;
+                    class TestRegex
+                    {
+                        public string A = "prefix_value1_suffix";
+                        public string B = "prefix_value2_suffix";
+                    }
+                    """);
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 51,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_string_replace",
+                            parameters = new
+                            {
+                                command = "string_replace",
+                                projectPath = astProjectDir,
+                                pattern = @"prefix_(\w+)_suffix",
+                                replacement = "replaced_$1",
+                                useRegex = true,
+                                dryRun = false
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(51, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("replaced_") ?? false, "Should show regex replacement result");
+
+                // 验证文件确实被修改了
+                var modifiedContent = File.ReadAllText(testFilePath);
+                AssertTrue(modifiedContent.Contains("replaced_value1"), "File should contain replaced_value1");
+                AssertTrue(modifiedContent.Contains("replaced_value2"), "File should contain replaced_value2");
+
+                return true;
+            }));
+
+            // Test 52: AstCli - ast_string_replace (dryRun)
+            testResults.Add(await RunTestAsync("AstCli - string_replace (dryRun)", async () =>
+            {
+                // 创建一个测试文件
+                var testFilePath = Path.Combine(astProjectDir, "TestDryRun.cs");
+                File.WriteAllText(testFilePath, """
+                    namespace TestProject;
+                    class TestDryRun
+                    {
+                        public string Name = "memory_test";
+                    }
+                    """);
+
+                var request = new JsonRpcRequest
+                {
+                    Id = 52,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "ast_string_replace",
+                            parameters = new
+                            {
+                                command = "string_replace",
+                                projectPath = astProjectDir,
+                                pattern = "memory_",
+                                replacement = "men_",
+                                useRegex = false,
+                                dryRun = true
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(15));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(52, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                // 验证文件没有被修改
+                var fileContent = File.ReadAllText(testFilePath);
+                AssertTrue(fileContent.Contains("memory_test"), "File should still contain memory_test (dryRun)");
+                AssertFalse(fileContent.Contains("men_test"), "File should not contain men_test (dryRun)");
+
+                return true;
+            }));
+
         }
         finally
         {

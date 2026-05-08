@@ -40,6 +40,15 @@ public sealed class AstCliRequest
 
     [JsonPropertyName("dryRun")]
     public bool DryRun { get; set; }
+
+    [JsonPropertyName("pattern")]
+    public string? Pattern { get; set; }
+
+    [JsonPropertyName("replacement")]
+    public string? Replacement { get; set; }
+
+    [JsonPropertyName("useRegex")]
+    public bool UseRegex { get; set; }
 }
 
 public sealed class SymbolInfoDto
@@ -355,6 +364,30 @@ public sealed class StringInsertResultDto
 
     [JsonPropertyName("mode")]
     public string Mode { get; set; } = string.Empty;
+
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("transformedCount")]
+    public int TransformedCount { get; set; }
+
+    [JsonPropertyName("modifiedFiles")]
+    public List<string> ModifiedFiles { get; set; } = [];
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class StringReplaceResultDto
+{
+    [JsonPropertyName("pattern")]
+    public string Pattern { get; set; } = string.Empty;
+
+    [JsonPropertyName("replacement")]
+    public string Replacement { get; set; } = string.Empty;
+
+    [JsonPropertyName("useRegex")]
+    public bool UseRegex { get; set; }
 
     [JsonPropertyName("success")]
     public bool Success { get; set; }

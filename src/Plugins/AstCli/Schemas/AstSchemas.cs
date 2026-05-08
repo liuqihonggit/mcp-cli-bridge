@@ -253,4 +253,31 @@ internal static class AstSchemas
             return JsonSchemaBuilder.SerializeToJsonElement(schema);
         }
     }
+
+    internal sealed class StringReplace : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("string_replace").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the C# project").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("pattern", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Pattern to search for (regex if useRegex is true, otherwise literal string)").Build())
+                .WithProperty("replacement", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Replacement text. Supports $1, $2, etc. for regex capture groups when useRegex is true").Build())
+                .WithProperty("useRegex", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Whether to use regex pattern matching (default: false)").Build())
+                .WithProperty("filter", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Only modify strings containing this substring").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithRequired("command", "projectPath", "pattern", "replacement")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
 }
