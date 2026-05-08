@@ -148,6 +148,7 @@ Write-Host "`n[Push] Pushing to remotes (timeout: 60s each)..." -ForegroundColor
 
 $pushSuccess = $false
 
+# Push to origin (Gitee)
 if (Invoke-GitPush "origin" "main" 60) {
     $pushSuccess = $true
 }
@@ -156,9 +157,20 @@ if (Invoke-GitPush "origin" "v$newVersion" 60) {
     $pushSuccess = $true
 }
 
+# Push to github (GitHub) for CI/CD trigger
+if (Invoke-GitPush "github" "main" 60) {
+    $pushSuccess = $true
+}
+
+if (Invoke-GitPush "github" "v$newVersion" 60) {
+    $pushSuccess = $true
+}
+
 if (-not $pushSuccess) {
     Write-Host "`n[WARNING] All push attempts failed, but tag is created locally" -ForegroundColor Yellow
-    Write-Host "  You can manually push with: git push origin main && git push origin v$newVersion" -ForegroundColor Gray
+    Write-Host "  You can manually push with:" -ForegroundColor Gray
+    Write-Host "    git push origin main && git push origin v$newVersion" -ForegroundColor Gray
+    Write-Host "    git push github main && git push github v$newVersion" -ForegroundColor Gray
 }
 
 Write-Host "`n[Cache] Cleaning local npm cache..." -ForegroundColor Cyan
