@@ -122,7 +122,7 @@ git push origin main                         # 推送
 | --- | --- | --- | --- |
 | `build.ps1` | 开发者 / AI智能体 | AOT构建所有项目 → 输出到 `publish/` | ✅ 可用 |
 | `buildAndNpm.ps1` | CI/CD 流水线 | 调用 `build.ps1` → 复制 npm 文件 → `npm publish` | ⛔ 禁止使用 |
-| `release.ps1` | 开发者 / AI（用户触发） | 递增版本号 → 更新 package.json / Directory.Build.props → git commit + tag → git push → 清理 npm 缓存 | ⚠️ 仅用户明确要求时 |
+| `release.ps1` | 开发者 / AI（用户触发） | 递增版本号 → 更新 package.json / Directory.Build.props → git commit + tag → **输出推送命令（由用户手动执行）** → 清理 npm 缓存 | ⚠️ 仅用户明确要求时 |
 
 ### ⚠️ 强制规则
 
@@ -131,7 +131,16 @@ git push origin main                         # 推送
 - **⚠️ `release.ps1` 仅用户触发时执行**: AI智能体不得自主执行，但当用户使用以下触发词时必须执行：
   - 触发词：`发布npm`、`发布新的npm`、`发布新版本`、`release`、`发版`
   - 执行方式：`.\release.ps1 [-VersionBump patch|minor|major]`（默认 patch）
-  - 执行后向用户报告：新版本号、git push 结果、CI/CD 监控链接
+  - **脚本行为**: 自动完成版本号递增 → 更新文件 → git commit + tag → 输出推送命令
+  - **⛔ AI智能体禁止执行 git push**: 脚本输出推送命令后，由用户手动执行 `git push` 确保网络通畅
+  - 用户需手动执行的推送命令:
+    ```powershell
+    # 推送到 Gitee
+    git push origin main && git push origin v{新版本号}
+    # 推送到 GitHub (触发 CI/CD)
+    git push github main && git push github v{新版本号}
+    ```
+  - 执行后向用户报告：新版本号、待执行的推送命令、CI/CD 监控链接
 - **⛔ 禁止手动执行 `npm publish`**: 正式发布由 CI/CD 自动完成，AI智能体不得手动发布
 - **Git提交顺序**: CI/CD 发布成功 → git commit → git push
 - **❌ 禁止在 CI/CD 发布成功前 commit**

@@ -78,7 +78,11 @@ function Invoke-GitPush {
     
     $job = Start-Job -ScriptBlock {
         param($remote, $ref)
-        git push $remote $ref 2>&1
+        $output = git push $remote $ref 2>&1
+        [PSCustomObject]@{
+            Output = $output -join "`n"
+            ExitCode = $LASTEXITCODE
+        }
     } -ArgumentList $remote, $ref
     
     $result = Wait-Job $job -Timeout $timeoutSeconds
@@ -88,16 +92,33 @@ function Invoke-GitPush {
         return $false
     }
     
-    $output = Receive-Job $job
+    $jobResult = Receive-Job $job | Select-Object -Last 1
     Remove-Job $job -Force -ErrorAction SilentlyContinue
     
-    if ($LASTEXITCODE -ne 0) {
+    if ($jobResult.ExitCode -ne 0) {
         Write-Host "  [FAILED] git push $remote $ref" -ForegroundColor Yellow
+        Write-Host "  $($jobResult.Output)" -ForegroundColor Red
         return $false
     }
     
     Write-Host "  [OK] git push $remote $ref" -ForegroundColor Green
     return $true
+}
+
+function Show-PushInstructions {
+    param([string]$newVersion)
+    
+    Write-Host "`n========================================" -ForegroundColor Yellow
+    Write-Host "  ⚠️  准备就绪，请手动执行以下命令推送:" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  # 推送到 Gitee (origin)" -ForegroundColor Cyan
+    Write-Host "  git push origin main && git push origin v$newVersion" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  # 推送到 GitHub (github) ← 触发 CI/CD 发布 npm" -ForegroundColor Cyan
+    Write-Host "  git push github main && git push github v$newVersion" -ForegroundColor White
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Yellow
 }
 
 $gitStatus = git status --porcelain 2>$null
@@ -144,34 +165,9 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "`n[Push] Pushing to remotes (timeout: 60s each)..." -ForegroundColor Cyan
+Write-Host "`n[Push] 准备推送命令..." -ForegroundColor Cyan
 
-$pushSuccess = $false
-
-# Push to origin (Gitee)
-if (Invoke-GitPush "origin" "main" 60) {
-    $pushSuccess = $true
-}
-
-if (Invoke-GitPush "origin" "v$newVersion" 60) {
-    $pushSuccess = $true
-}
-
-# Push to github (GitHub) for CI/CD trigger
-if (Invoke-GitPush "github" "main" 60) {
-    $pushSuccess = $true
-}
-
-if (Invoke-GitPush "github" "v$newVersion" 60) {
-    $pushSuccess = $true
-}
-
-if (-not $pushSuccess) {
-    Write-Host "`n[WARNING] All push attempts failed, but tag is created locally" -ForegroundColor Yellow
-    Write-Host "  You can manually push with:" -ForegroundColor Gray
-    Write-Host "    git push origin main && git push origin v$newVersion" -ForegroundColor Gray
-    Write-Host "    git push github main && git push github v$newVersion" -ForegroundColor Gray
-}
+Show-PushInstructions $newVersion
 
 Write-Host "`n[Cache] Cleaning local npm cache..." -ForegroundColor Cyan
 
@@ -194,15 +190,13 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "Release v$newVersion completed!" -ForegroundColor Green
+Write-Host "Release v$newVersion 准备完成!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
-if ($pushSuccess) {
-    Write-Host "`nCI/CD will now:" -ForegroundColor Cyan
-    Write-Host "  1. Build and test" -ForegroundColor Gray
-    Write-Host "  2. Publish to npm" -ForegroundColor Gray
-    Write-Host "  3. Create GitHub Release" -ForegroundColor Gray
-    Write-Host "`nMonitor: https://github.com/liuqihonggit/mcp-cli-bridge/actions" -ForegroundColor Yellow
-    Write-Host "`nAfter CI/CD publishes to npm, install with:" -ForegroundColor Cyan
-    Write-Host "  npm install -g $packageName@latest" -ForegroundColor Gray
-}
+Write-Host "`n推送后 CI/CD 将自动执行:" -ForegroundColor Cyan
+Write-Host "  1. Build and test (AOT编译 + 单元测试 + E2E)" -ForegroundColor Gray
+Write-Host "  2. Publish to npm (发布到 npm registry)" -ForegroundColor Gray
+Write-Host "  3. Create GitHub Release" -ForegroundColor Gray
+Write-Host "`n监控: https://github.com/liuqihonggit/mcp-cli-bridge/actions" -ForegroundColor Yellow
+Write-Host "`nCI/CD 发布成功后，安装新版本:" -ForegroundColor Cyan
+Write-Host "  npm install -g $packageName@latest" -ForegroundColor Gray
