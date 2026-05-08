@@ -9,12 +9,12 @@ internal sealed partial class CommandHandler
     private static readonly System.Text.CompositeFormat s_partialBusyFormat = System.Text.CompositeFormat.Parse(MessageTemplates.PartialBusy);
     private static readonly System.Text.CompositeFormat s_deletedButBusyFormat = System.Text.CompositeFormat.Parse(MessageTemplates.DeletedButBusy);
 
-    private readonly MemoryIoService _ioService;
+    private readonly IKnowledgeGraphStore _store;
     private readonly MemoryOptions _options;
 
-    public CommandHandler(MemoryIoService ioService, MemoryOptions options)
+    public CommandHandler(IKnowledgeGraphStore store, MemoryOptions options)
     {
-        _ioService = ioService ?? throw new ArgumentNullException(nameof(ioService));
+        _store = store ?? throw new ArgumentNullException(nameof(store));
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -34,7 +34,7 @@ internal sealed partial class CommandHandler
         if (validationErrors.Count > 0)
             return Fail(string.Join("; ", validationErrors));
 
-        var loadResult = await _ioService.LoadEntitiesAsync();
+        var loadResult = await _store.LoadEntitiesAsync();
         if (loadResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
 
@@ -47,7 +47,7 @@ internal sealed partial class CommandHandler
             if (existingNames.ContainsKey(entity.Name))
                 continue;
 
-            var appendResult = await _ioService.AppendEntityAsync(entity);
+            var appendResult = await _store.AppendEntityAsync(entity);
             if (appendResult.IsFallback)
                 return Fail(string.Format(null, s_partialBusyFormat, MessageTemplates.BusyPrefix, added, "entities", appendResult.Message));
 
@@ -65,7 +65,7 @@ internal sealed partial class CommandHandler
         if (relations == null || relations.Count == 0)
             return Fail("No relations provided");
 
-        var entitiesResult = await _ioService.LoadEntitiesAsync();
+        var entitiesResult = await _store.LoadEntitiesAsync();
         if (entitiesResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {entitiesResult.Message}");
 
@@ -80,7 +80,7 @@ internal sealed partial class CommandHandler
         if (validationErrors.Count > 0)
             return Fail(string.Join("; ", validationErrors));
 
-        var loadResult = await _ioService.LoadRelationsAsync();
+        var loadResult = await _store.LoadRelationsAsync();
         if (loadResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
 
@@ -95,7 +95,7 @@ internal sealed partial class CommandHandler
             if (existingKeys.Contains(key))
                 continue;
 
-            var appendResult = await _ioService.AppendRelationAsync(relation);
+            var appendResult = await _store.AppendRelationAsync(relation);
             if (appendResult.IsFallback)
                 return Fail(string.Format(null, s_partialBusyFormat, MessageTemplates.BusyPrefix, added, "relations", appendResult.Message));
 
@@ -109,8 +109,8 @@ internal sealed partial class CommandHandler
     [CliCommand("read_graph", Description = "Read the entire knowledge graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.ReadGraph))]
     private async Task<OperationResult<JsonElement>> ReadGraphAsync()
     {
-        var entitiesResult = await _ioService.LoadEntitiesAsync();
-        var relationsResult = await _ioService.LoadRelationsAsync();
+        var entitiesResult = await _store.LoadEntitiesAsync();
+        var relationsResult = await _store.LoadRelationsAsync();
 
         var message = string.Empty;
         if (entitiesResult.IsFallback || relationsResult.IsFallback)
@@ -132,8 +132,8 @@ internal sealed partial class CommandHandler
         if (string.IsNullOrWhiteSpace(query))
             return Fail("Query cannot be empty");
 
-        var entitiesResult = await _ioService.LoadEntitiesAsync();
-        var relationsResult = await _ioService.LoadRelationsAsync();
+        var entitiesResult = await _store.LoadEntitiesAsync();
+        var relationsResult = await _store.LoadRelationsAsync();
 
         var entities = entitiesResult.Data ?? [];
         var relations = relationsResult.Data ?? [];
@@ -171,7 +171,7 @@ internal sealed partial class CommandHandler
         if (string.IsNullOrWhiteSpace(name) || observations == null || observations.Count == 0)
             return Fail("Invalid parameters");
 
-        var loadResult = await _ioService.LoadEntitiesAsync();
+        var loadResult = await _store.LoadEntitiesAsync();
         if (loadResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
 
@@ -182,7 +182,7 @@ internal sealed partial class CommandHandler
 
         entity.Observations.AddRange(observations);
 
-        var saveResult = await _ioService.SaveEntitiesAsync(loadResult.Data ?? []);
+        var saveResult = await _store.SaveEntitiesAsync(loadResult.Data ?? []);
         if (saveResult.IsFallback)
             return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
 
@@ -196,8 +196,8 @@ internal sealed partial class CommandHandler
         if (names == null || names.Count == 0)
             return Fail("No entities specified");
 
-        var entitiesResult = await _ioService.LoadEntitiesAsync();
-        var relationsResult = await _ioService.LoadRelationsAsync();
+        var entitiesResult = await _store.LoadEntitiesAsync();
+        var relationsResult = await _store.LoadRelationsAsync();
 
         if (entitiesResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {entitiesResult.Message}");
@@ -213,11 +213,11 @@ internal sealed partial class CommandHandler
         entities.RemoveAll(e => namesSet.Contains(e.Name.ToLowerInvariant()));
         relations.RemoveAll(r => namesSet.Contains(r.From.ToLowerInvariant()) || namesSet.Contains(r.To.ToLowerInvariant()));
 
-        var saveEntitiesResult = await _ioService.SaveEntitiesAsync(entities);
+        var saveEntitiesResult = await _store.SaveEntitiesAsync(entities);
         if (saveEntitiesResult.IsFallback)
             return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "entities", saveEntitiesResult.Message));
 
-        var saveRelationsResult = await _ioService.SaveRelationsAsync(relations);
+        var saveRelationsResult = await _store.SaveRelationsAsync(relations);
         if (saveRelationsResult.IsFallback)
             return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "entities", saveRelationsResult.Message));
 
@@ -233,7 +233,7 @@ internal sealed partial class CommandHandler
         if (string.IsNullOrWhiteSpace(name) || observations == null || observations.Count == 0)
             return Fail("Invalid parameters: name and observations are required");
 
-        var loadResult = await _ioService.LoadEntitiesAsync();
+        var loadResult = await _store.LoadEntitiesAsync();
         if (loadResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
 
@@ -249,7 +249,7 @@ internal sealed partial class CommandHandler
 
         var deletedCount = originalCount - (entity.Observations?.Count ?? 0);
 
-        var saveResult = await _ioService.SaveEntitiesAsync(loadResult.Data ?? []);
+        var saveResult = await _store.SaveEntitiesAsync(loadResult.Data ?? []);
         if (saveResult.IsFallback)
             return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
 
@@ -263,7 +263,7 @@ internal sealed partial class CommandHandler
         if (relations == null || relations.Count == 0)
             return Fail("No relations provided");
 
-        var loadResult = await _ioService.LoadRelationsAsync();
+        var loadResult = await _store.LoadRelationsAsync();
         if (loadResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
 
@@ -282,7 +282,7 @@ internal sealed partial class CommandHandler
 
         var deletedCount = originalCount - existingRelations.Count;
 
-        var saveResult = await _ioService.SaveRelationsAsync(existingRelations);
+        var saveResult = await _store.SaveRelationsAsync(existingRelations);
         if (saveResult.IsFallback)
             return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "relations", saveResult.Message));
 
@@ -296,8 +296,8 @@ internal sealed partial class CommandHandler
         if (names == null || names.Count == 0)
             return Ok(new KnowledgeGraphData { Entities = [], Relations = [] }, "", CommonJsonContext.Default.KnowledgeGraphData);
 
-        var entitiesResult = await _ioService.LoadEntitiesAsync();
-        var relationsResult = await _ioService.LoadRelationsAsync();
+        var entitiesResult = await _store.LoadEntitiesAsync();
+        var relationsResult = await _store.LoadRelationsAsync();
 
         var entities = entitiesResult.Data ?? [];
         var relations = relationsResult.Data ?? [];

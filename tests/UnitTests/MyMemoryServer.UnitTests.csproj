@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\Common\Common.csproj" />
     <ProjectReference Include="..\..\src\McpHost\McpHost.csproj" />
     <ProjectReference Include="..\..\src\Plugins\AstCli\AstCli.csproj" />
+    <ProjectReference Include="..\..\src\Plugins\MemoryCli\MemoryCli.csproj" />
   </ItemGroup>
 
 </Project>

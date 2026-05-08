@@ -1,6 +1,6 @@
 namespace MemoryCli.Services;
 
-internal sealed class MemoryIoService : IDisposable
+internal sealed class MemoryIoService : IKnowledgeGraphStore
 {
     private static readonly System.Text.CompositeFormat s_lockTimeoutWriteFormat = System.Text.CompositeFormat.Parse(MessageTemplates.LockTimeoutWrite);
     private static readonly System.Text.CompositeFormat s_lockTimeoutSaveFormat = System.Text.CompositeFormat.Parse(MessageTemplates.LockTimeoutSave);
