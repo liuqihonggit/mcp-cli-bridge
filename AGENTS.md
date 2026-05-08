@@ -124,6 +124,71 @@ git push origin main                         # 推送
 | `buildAndNpm.ps1` | CI/CD 流水线 | 调用 `build.ps1` → 复制 npm 文件 → `npm publish` | ⛔ 禁止使用 |
 | `release.ps1` | 开发者 / AI（用户触发） | 递增版本号 → 更新 package.json / Directory.Build.props → git commit + tag → **输出推送命令（由用户手动执行）** → 清理 npm 缓存 | ⚠️ 仅用户明确要求时 |
 
+### 🧪 CI 脚本本地验证（修改 build.yml 后必做）
+
+> **为什么需要？** CI 环境与本地环境存在差异（路径、缓存、nuget源等），推送后才发现问题会浪费大量时间。
+
+#### 验证方法：模拟 CI 完整流程
+
+修改 `.github/workflows/build.yml` 后，**必须**在本地按以下步骤模拟 CI 环境：
+
+```powershell
+# === Step 0: 彻底清理（模拟 CI 的 Clean 步骤）===
+if (Test-Path "nuget") { Remove-Item -Path "nuget" -Recurse -Force }
+if (Test-Path "publish") { Remove-Item -Path "publish" -Recurse -Force }
+
+# === Step 1: 模拟 CI 新增的预编译步骤（按 build.yml 顺序执行）===
+# 关键：创建空 nuget/ 目录！否则 restore 会报 NU1301 错误
+New-Item -ItemType Directory -Path "nuget" -Force | Out-Null
+
+# Restore lib/ 项目（使用 nuget.config）
+Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
+    $name = $_.BaseName
+    if ($name -like "*.Tests") { return }
+    dotnet restore $_.FullName --configfile nuget.config
+}
+
+# Build lib/ 项目
+Get-ChildItem -Path "lib" -Recurse -Filter "*.csproj" -File | ForEach-Object {
+    $name = $_.BaseName
+    if ($name -like "*.Tests") { return }
+    dotnet build $_.FullName -c Release --no-restore
+}
+
+# === Step 2: 验证关键 dll 是否生成 ===
+@(
+    "lib\AsyncFileLock\src\AsyncFileLock\bin\Release\net10.0\AsyncFileLock.dll",
+    "lib\McpProtocol\src\McpProtocol.Contracts\bin\Release\net10.0\McpProtocol.Contracts.dll",
+    "lib\McpProtocol\src\McpProtocol\bin\Release\net10.0\McpProtocol.dll"
+) | ForEach-Object {
+    if (-not (Test-Path $_)) { Write-Error "缺失: $_"; exit 1 }
+}
+
+# === Step 3: 执行完整 AOT Build ===
+.\build.ps1
+```
+
+#### 常见 CI vs 本地差异
+
+| 差异点 | 本地环境 | CI 环境 | 解决方案 |
+| ------ | -------- | ------- | -------- |
+| **nuget/ 目录** | 已存在（有历史缓存） | Clean 步骤删除后不存在 | CI 中必须先 `New-Item nuget` |
+| **NuGet 缓存** | `~/.nuget/packages` 有缓存 | 全新环境无缓存 | lib 项目需显式 restore + build |
+| **nuget.config** | 本地 restore 自动找到 | 必须显式指定 `--configfile` | CI 步骤中传入 config |
+| **路径分隔符** | PowerShell 自动兼容 | GitHub Actions 用 `windows-latest` | 统一用 `\` 或 `/` |
+
+#### 经验教训（v3.0.12 失败案例）
+
+**错误**: `McpProtocol.Contracts.dll to be packed was not found on disk`
+**根因链**:
+1. CI Clean 删除 `nuget/` 目录
+2. `build.ps1` 内的 `dotnet pack` 尝试 pack McpProtocol.Contracts
+3. pack 需要 dll 存在于 `bin/Release/`
+4. 但 `nuget.config` 指向的 local 源 `nuget/` 不存在 → restore 报 NU1301 → dll 未生成
+5. pack 找不到 dll → 失败
+
+**修复**: 在 build.yml 的 AOT Build 步骤前，新增「创建空 nuget/ + 预编译 lib/」步骤
+
 ### ⚠️ 强制规则
 
 - **❌ 禁止手动复制文件**到 `publish/` 目录，必须通过 `build.ps1`
