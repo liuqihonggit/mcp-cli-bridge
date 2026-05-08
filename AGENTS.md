@@ -9,7 +9,9 @@
 ```
 McpHost/
 ├── McpHost.slnx                    # 解决方案文件
-├── build.ps1                       # 构建发布脚本
+├── build.ps1                       # 本地构建脚本（AI智能体唯一可用的构建脚本）
+├── buildAndNpm.ps1                 # CI/CD 专属发布脚本（⛔ AI智能体禁止使用）
+├── release.ps1                     # 版本发布脚本（用户明确要求时 AI 可执行）
 ├── package.json                    # npm 包配置
 │
 ├── src/                            # 源代码
@@ -37,7 +39,7 @@ McpHost/
 ## ⚡ 关键约束（修改代码前必读）
 
 1. ❌ **禁止缓存CLI工具列表**（未来可能上万命令）
-2. ✅ 必须通过 `build.ps1` 发布到 `publish/`
+2. ✅ 必须通过 `build.ps1` 发布到 `publish/`（`buildAndNpm.ps1` 是 CI/CD 专属，AI智能体禁止使用）
 3. 🔒 `src/Plugins/` 是外部插件，内部项目不得直接引用
 4. 🎯 MCP Server 只暴露 Host 层工具，CLI工具通过 `tool_execute` 调用
 5. 🚫 **必须支持 NativeAOT 编译**
@@ -98,25 +100,41 @@ var result = await GetDataAsync(ct);
 ### 命令
 
 ```powershell
-# 构建（唯一方式）
+# 本地构建（AI智能体唯一可用的构建脚本）
 .\build.ps1
+
+# ⛔ CI/CD 专属（AI智能体禁止使用）
+# .\buildAndNpm.ps1
 
 # 开发流程
 dotnet build McpHost.slnx -c Release        # 编译
 dotnet test McpHost.slnx -c Release          # 测试
 dotnet run --project tests\E2E\MyMemoryServer.E2E.csproj -c Release  # E2E
-.\build.ps1                                 # 发布（npm publish 在此执行）
+.\build.ps1                                 # 本地构建
 git push origin main                         # 推送
 
-# ⚠️ 注意：npm publish 必须在 git commit 之前！
-# 这是因为版本号可能需要递增，避免git提交之后再改版本号。
+# ⚠️ 注意：npm publish 由 CI/CD 自动执行，禁止手动操作！
 ```
+
+### 📦 构建脚本说明
+
+| 脚本 | 使用者 | 执行内容 | AI智能体可用 |
+| --- | --- | --- | --- |
+| `build.ps1` | 开发者 / AI智能体 | AOT构建所有项目 → 输出到 `publish/` | ✅ 可用 |
+| `buildAndNpm.ps1` | CI/CD 流水线 | 调用 `build.ps1` → 复制 npm 文件 → `npm publish` | ⛔ 禁止使用 |
+| `release.ps1` | 开发者 / AI（用户触发） | 递增版本号 → 更新 package.json / Directory.Build.props → git commit + tag → git push → 清理 npm 缓存 | ⚠️ 仅用户明确要求时 |
 
 ### ⚠️ 强制规则
 
 - **❌ 禁止手动复制文件**到 `publish/` 目录，必须通过 `build.ps1`
-- **Git提交顺序**: npm publish 成功 → git commit → git push
-- **❌ 禁止在 npm publish 成功前 commit**
+- **⛔ 禁止执行 `buildAndNpm.ps1`**: 该脚本仅供 CI/CD 流水线使用，AI智能体不得调用
+- **⚠️ `release.ps1` 仅用户触发时执行**: AI智能体不得自主执行，但当用户使用以下触发词时必须执行：
+  - 触发词：`发布npm`、`发布新的npm`、`发布新版本`、`release`、`发版`
+  - 执行方式：`.\release.ps1 [-VersionBump patch|minor|major]`（默认 patch）
+  - 执行后向用户报告：新版本号、git push 结果、CI/CD 监控链接
+- **⛔ 禁止手动执行 `npm publish`**: 正式发布由 CI/CD 自动完成，AI智能体不得手动发布
+- **Git提交顺序**: CI/CD 发布成功 → git commit → git push
+- **❌ 禁止在 CI/CD 发布成功前 commit**
 - **⛔ 禁止并行子智能体期间提交 Git**: 指派子智能体时必须告知"当前处于并行期间，禁止 git commit/push"，由主智能体统一提交
 - **⚠️ Git 提交前遇到错误禁止强行提交**: 可能是并行子智能体正在操作同一仓库，应等待并行任务完成后再统一处理
 
@@ -132,6 +150,6 @@ git push origin main                         # 推送
 | ------- | ----------- | ---------------------------------- |
 | CLI加载失败 | 引用了 McpHost | 移除引用，只依赖 Common + Common.Contracts |
 | 进程池耗尽   | 超时配置不当      | 检查超时配置，确保进程正确释放                    |
-| npm发布失败 | 版本已存在       | 递增 package.json 版本号，重新 build.ps1   |
+| npm发布失败 | 版本已存在 | 递增 package.json 版本号，通过 CI/CD 重新发布 |
 | AOT编译失败 | 使用了不兼容特性    | 检查：动态类型、反射emit、直接解析JSON            |
 
