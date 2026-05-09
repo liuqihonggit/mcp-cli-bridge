@@ -18,7 +18,7 @@ internal sealed partial class CommandHandler
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
-    [CliCommand("create_entities", Description = "Create multiple new entities in the knowledge graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.CreateEntities))]
+    [CliCommand("create_entities", Description = "Create or update entities in the knowledge graph (upsert: same name overwrites)", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.CreateEntities))]
     private async Task<OperationResult<JsonElement>> CreateEntitiesAsync(CliRequest request)
     {
         var entities = request.Entities;
@@ -38,24 +38,46 @@ internal sealed partial class CommandHandler
         if (loadResult.IsFallback)
             return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
 
-        var existingNames = (loadResult.Data ?? [])
+        var existingEntities = loadResult.Data ?? [];
+        var existingNames = existingEntities
             .ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
         var added = 0;
+        var updated = 0;
+        var needsSave = false;
 
         foreach (var entity in entities)
         {
-            if (existingNames.ContainsKey(entity.Name))
-                continue;
+            if (existingNames.TryGetValue(entity.Name, out var existing))
+            {
+                existingNames[entity.Name] = entity;
+                var idx = existingEntities.IndexOf(existing);
+                existingEntities[idx] = entity;
+                updated++;
+                needsSave = true;
+            }
+            else
+            {
+                var appendResult = await _store.AppendEntityAsync(entity);
+                if (appendResult.IsFallback)
+                    return Fail(string.Format(null, s_partialBusyFormat, MessageTemplates.BusyPrefix, added, "entities", appendResult.Message));
 
-            var appendResult = await _store.AppendEntityAsync(entity);
-            if (appendResult.IsFallback)
-                return Fail(string.Format(null, s_partialBusyFormat, MessageTemplates.BusyPrefix, added, "entities", appendResult.Message));
-
-            existingNames[entity.Name] = entity;
-            added++;
+                existingNames[entity.Name] = entity;
+                existingEntities.Add(entity);
+                added++;
+            }
         }
 
-        return Ok(new CountResult { Count = added }, $"Created {added} entities", CommonJsonContext.Default.CountResult);
+        if (needsSave)
+        {
+            var saveResult = await _store.SaveEntitiesAsync(existingEntities);
+            if (saveResult.IsFallback)
+                return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "entities", saveResult.Message));
+        }
+
+        var message = updated > 0
+            ? $"Created {added} entities, updated {updated} entities"
+            : $"Created {added} entities";
+        return Ok(new CountResult { Count = added, Updated = updated }, message, CommonJsonContext.Default.CountResult);
     }
 
     [CliCommand("create_relations", Description = "Create relations between entities", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.CreateRelations))]

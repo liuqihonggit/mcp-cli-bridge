@@ -148,6 +148,9 @@ public sealed class CountResult
 {
     [JsonPropertyName("count")]
     public int Count { get; set; }
+
+    [JsonPropertyName("updated")]
+    public int Updated { get; set; }
 }
 
 /// <summary>
