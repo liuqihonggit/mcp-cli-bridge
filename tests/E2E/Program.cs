@@ -2229,6 +2229,93 @@ class Program
                 return true;
             }));
 
+            // ============================================
+            // MemoryCli - Conversation Summary Tests
+            // ============================================
+
+            // Test 53: memory_save_summary - save a conversation summary
+            testResults.Add(await RunTestAsync("MemoryCli - save_summary", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 53,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_save_summary",
+                            parameters = new
+                            {
+                                command = "save_summary",
+                                title = "E2E测试对话摘要",
+                                userMessages = new[] { "用户消息1", "用户消息2" }
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(53, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+
+                return true;
+            }));
+
+            // Test 54: memory_get_recent_summaries - retrieve conversation summaries
+            testResults.Add(await RunTestAsync("MemoryCli - get_recent_summaries", async () =>
+            {
+                var request = new JsonRpcRequest
+                {
+                    Id = 54,
+                    Method = "tools/call",
+                    Params = new CallToolRequestParams
+                    {
+                        Name = "tool_execute",
+                        Arguments = new
+                        {
+                            tool = "memory_get_recent_summaries",
+                            parameters = new
+                            {
+                                command = "get_recent_summaries",
+                                limit = 10
+                            }
+                        }
+                    }
+                };
+
+                responseTcs = new TaskCompletionSource<string>();
+                await SendRequestAsync(writer, request);
+                var response = await WaitForResponseAsync(responseTcs, TimeSpan.FromSeconds(10));
+
+                var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                AssertEqual(54, root.GetProperty("id").GetInt32(), "Response ID should match");
+                AssertFalse(root.GetProperty("result").GetProperty("isError").GetBoolean(), "Should not be error");
+
+                var content = root.GetProperty("result").GetProperty("content").EnumerateArray().First();
+                var text = content.GetProperty("text").GetString();
+                AssertTrue(text?.Contains("success") ?? false, "Should contain success field");
+                AssertTrue(text?.Contains("true") ?? false, "Should indicate success");
+                AssertTrue(text?.Contains("summaries") ?? false, "Should contain summaries");
+                AssertTrue(text?.Contains("totalCount") ?? false, "Should contain totalCount");
+
+                return true;
+            }));
+
         }
         finally
         {

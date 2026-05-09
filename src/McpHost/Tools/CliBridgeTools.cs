@@ -422,20 +422,28 @@ internal sealed class CliBridgeTools : IDisposable
         try
         {
             var recentCalls = _tracker.GetRecent(SummaryTriggerThreshold);
+            if (recentCalls.Count == 0) return;
+
             var userMessages = recentCalls
                 .Select(c => string.IsNullOrEmpty(c.Description) ? c.ToolName : c.Description)
                 .ToList();
 
-            var title = $"Session activity ({recentCalls.First().Timestamp:yyyy-MM-dd HH:mm})";
+            var title = $"Session activity ({recentCalls[0].Timestamp:yyyy-MM-dd HH:mm})";
 
-            var summaryParams = new Dictionary<string, JsonElement>
+            var request = new CliRequest
             {
-                ["command"] = JsonSerializer.SerializeToElement("save_summary", CommonJsonContext.Default.String),
-                ["title"] = JsonSerializer.SerializeToElement(title, CommonJsonContext.Default.String),
-                ["userMessages"] = JsonSerializer.SerializeToElement(userMessages, CommonJsonContext.Default.ListString)
+                Command = "save_summary",
+                Title = title,
+                UserMessages = userMessages
             };
 
-            await _toolRegistry.ExecuteToolAsync("memory_save_summary", summaryParams);
+            var jsonParams = JsonSerializer.Serialize(request, CommonJsonContext.Default.CliRequest);
+            using var doc = JsonDocument.Parse(jsonParams);
+            var parameters = new Dictionary<string, JsonElement>();
+            foreach (var prop in doc.RootElement.EnumerateObject())
+                parameters[prop.Name] = prop.Value.Clone();
+
+            await _toolRegistry.ExecuteToolAsync("memory_save_summary", parameters);
             _logger.Info($"Auto-saved conversation summary: {title}");
         }
         catch (Exception ex)

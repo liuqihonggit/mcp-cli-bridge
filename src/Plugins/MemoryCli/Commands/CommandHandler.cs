@@ -202,13 +202,22 @@ internal sealed partial class CommandHandler
         if (entity == null)
             return Fail($"Entity not found: {name}");
 
-        entity.Observations.AddRange(observations);
+        var existing = entity.Observations.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var added = 0;
+        foreach (var obs in observations)
+        {
+            if (existing.Add(obs))
+            {
+                entity.Observations.Add(obs);
+                added++;
+            }
+        }
 
         var saveResult = await _store.SaveEntitiesAsync(loadResult.Data ?? []);
         if (saveResult.IsFallback)
             return Fail(string.Format(null, s_deletedButBusyFormat, MessageTemplates.BusyPrefix, "observations", saveResult.Message));
 
-        return Ok(new CountResult { Count = observations.Count }, $"Added {observations.Count} observations to {name}", CommonJsonContext.Default.CountResult);
+        return Ok(new CountResult { Count = added }, $"Added {added} observations to {name}", CommonJsonContext.Default.CountResult);
     }
 
     [CliCommand("delete_entities", Description = "Delete entities from the graph", Category = "knowledge-graph", SchemaType = typeof(MemorySchemas.DeleteEntities))]
@@ -352,6 +361,7 @@ internal sealed partial class CommandHandler
             BaseDirectory = _options.BaseDirectory,
             MemoryFilePath = _options.GetMemoryPath(),
             RelationsFilePath = _options.GetRelationsPath(),
+            SummariesFilePath = _options.GetSummariesPath(),
             EnvironmentVariable = "MCP_MEMORY_PATH"
         };
 

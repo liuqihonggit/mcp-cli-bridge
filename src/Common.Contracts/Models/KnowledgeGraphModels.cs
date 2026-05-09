@@ -83,6 +83,9 @@ public sealed class StorageInfo
     [JsonPropertyName("relationsFilePath")]
     public string RelationsFilePath { get; set; } = string.Empty;
 
+    [JsonPropertyName("summariesFilePath")]
+    public string SummariesFilePath { get; set; } = string.Empty;
+
     [JsonPropertyName("environmentVariable")]
     public string EnvironmentVariable { get; set; } = string.Empty;
 }
