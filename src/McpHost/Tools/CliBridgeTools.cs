@@ -1,5 +1,7 @@
 global using static Common.Constants.ConstantManager;
 
+using McpHost.Services;
+
 namespace McpHost.Tools;
 
 /// <summary>
@@ -9,19 +11,24 @@ namespace McpHost.Tools;
 /// </summary>
 internal sealed class CliBridgeTools : IDisposable
 {
+    private const int SummaryTriggerThreshold = 5;
+
     private readonly IToolRegistry _toolRegistry;
     private readonly IPackageManager _packageManager;
     private readonly ILogger _logger;
+    private readonly ConversationTracker _tracker;
     private bool _disposed;
 
     public CliBridgeTools(
         IToolRegistry toolRegistry,
         IPackageManager packageManager,
-        ILogger logger)
+        ILogger logger,
+        ConversationTracker tracker)
     {
         _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
         _packageManager = packageManager ?? throw new ArgumentNullException(nameof(packageManager));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _tracker = tracker ?? throw new ArgumentNullException(nameof(tracker));
     }
 
     /// <summary>
@@ -221,6 +228,15 @@ internal sealed class CliBridgeTools : IDisposable
         try
         {
             var result = await _toolRegistry.ExecuteToolAsync(tool, parameters);
+
+            var description = ExtractDescription(tool, parameters);
+            _tracker.Record(tool, description);
+
+            if (_tracker.TotalCount > 0 && _tracker.TotalCount % SummaryTriggerThreshold == 0)
+            {
+                _ = TriggerAutoSummaryAsync();
+            }
+
             return result.Output ?? "{\"success\":false,\"message\":\"No output from CLI tool\",\"data\":null}";
         }
         catch (Exception ex)
@@ -358,6 +374,74 @@ internal sealed class CliBridgeTools : IDisposable
             CommandCount = meta?.CommandCount ?? 0,
             HasDocumentation = meta?.HasDocumentation ?? true
         };
+    }
+
+    private static string ExtractDescription(string toolName, Dictionary<string, JsonElement> parameters)
+    {
+        return toolName switch
+        {
+            string t when t.StartsWith("memory_create_entities") || t.StartsWith("memory_save_summary") =>
+                TryGetStringArray(parameters, "entities") is { Count: > 0 } names
+                    ? $"{t}: {string.Join(", ", names.Take(3))}"
+                    : t,
+            string t when t.StartsWith("memory_search_nodes") =>
+                TryGetString(parameters, "query") is { Length: > 0 } q
+                    ? $"{t}: search '{q}'"
+                    : t,
+            _ => toolName
+        };
+    }
+
+    private static string? TryGetString(Dictionary<string, JsonElement> parameters, string key)
+    {
+        return parameters.TryGetValue(key, out var elem) && elem.ValueKind == JsonValueKind.String
+            ? elem.GetString()
+            : null;
+    }
+
+    private static List<string>? TryGetStringArray(Dictionary<string, JsonElement> parameters, string key)
+    {
+        if (!parameters.TryGetValue(key, out var elem) || elem.ValueKind != JsonValueKind.Array)
+            return null;
+
+        var names = new List<string>();
+        foreach (var item in elem.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.Object &&
+                item.TryGetProperty("name", out var nameProp) &&
+                nameProp.ValueKind == JsonValueKind.String)
+            {
+                names.Add(nameProp.GetString() ?? "");
+            }
+        }
+        return names;
+    }
+
+    private async Task TriggerAutoSummaryAsync()
+    {
+        try
+        {
+            var recentCalls = _tracker.GetRecent(SummaryTriggerThreshold);
+            var userMessages = recentCalls
+                .Select(c => string.IsNullOrEmpty(c.Description) ? c.ToolName : c.Description)
+                .ToList();
+
+            var title = $"Session activity ({recentCalls.First().Timestamp:yyyy-MM-dd HH:mm})";
+
+            var summaryParams = new Dictionary<string, JsonElement>
+            {
+                ["command"] = JsonSerializer.SerializeToElement("save_summary", CommonJsonContext.Default.String),
+                ["title"] = JsonSerializer.SerializeToElement(title, CommonJsonContext.Default.String),
+                ["userMessages"] = JsonSerializer.SerializeToElement(userMessages, CommonJsonContext.Default.ListString)
+            };
+
+            await _toolRegistry.ExecuteToolAsync("memory_save_summary", summaryParams);
+            _logger.Info($"Auto-saved conversation summary: {title}");
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(LogLevel.Warn, ex, "Failed to auto-save conversation summary");
+        }
     }
 
     private static string CreateErrorResponse(string message)

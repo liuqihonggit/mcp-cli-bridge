@@ -5,11 +5,13 @@ public class McpServer : IMcpServer
     private readonly Dictionary<string, IToolHandler> _tools = new(StringComparer.Ordinal);
     private readonly string _serverName;
     private readonly string _serverVersion;
+    private readonly string? _instructions;
 
-    public McpServer(string serverName = "McpServer", string? serverVersion = null)
+    public McpServer(string serverName = "McpServer", string? serverVersion = null, string? instructions = null)
     {
         _serverName = serverName;
         _serverVersion = serverVersion ?? "1.0.0";
+        _instructions = instructions;
     }
 
     public void RegisterTool<T>(T toolInstance) where T : class
@@ -187,7 +189,8 @@ public class McpServer : IMcpServer
             {
                 Name = _serverName,
                 Version = _serverVersion
-            }
+            },
+            Instructions = _instructions
         };
     }
 

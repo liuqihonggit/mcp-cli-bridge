@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="McpProtocol" Version="$(McpProtocolVersion)" />
+    <ProjectReference Include="..\..\lib\McpProtocol\src\McpProtocol\McpProtocol.csproj" />
   </ItemGroup>
 
   <ItemGroup>

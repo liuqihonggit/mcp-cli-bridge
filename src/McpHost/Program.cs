@@ -13,6 +13,18 @@ static List<(string NormalizedName, string ExeFileName)> DiscoverCliPlugins(IPac
         .ToList();
 }
 
+static string BuildInstructions()
+{
+    return """
+记忆系统使用指南：
+1. 新对话开始时，调用 tool_execute(tool="memory_get_recent_summaries", parameters={"command":"get_recent_summaries","limit":5}) 获取近期对话摘要，了解用户最近关注的内容
+2. 当用户让你"记住"某个事实时，调用 tool_execute(tool="memory_create_entities", parameters={"command":"create_entities","entities":[...]}) 保存（同名实体会覆盖更新）
+3. 需要回忆用户信息时，调用 tool_execute(tool="memory_search_nodes", parameters={"command":"search_nodes","query":"..."}) 搜索
+4. 系统会自动保存对话摘要，你也可以主动调用 tool_execute(tool="memory_save_summary", parameters={"command":"save_summary","title":"...","userMessages":[...]}) 保存重要对话
+5. 调用 tool_search("记忆") 可发现记忆相关插件，tool_describe("memory_cli") 查看全部命令
+""";
+}
+
 var services = new ServiceContainer();
 
 services.AddInstance<ILogger>(new Logger(
@@ -50,6 +62,7 @@ services.AddSingleton<IMiddlewarePipeline>(sp =>
 });
 
 services.AddSingleton<CliBridgeTools>();
+services.AddSingleton<ConversationTracker>();
 
 var serviceProvider = services;
 var logger = serviceProvider.GetService<ILogger>();
@@ -116,7 +129,7 @@ try
 
     CommandTable.PrintTable(line => logger.Info(line));
 
-    var server = new McpServer(nameof(McpHost), Versions.McpHost);
+    var server = new McpServer(nameof(McpHost), Versions.McpHost, instructions: BuildInstructions());
 
     // 只注册 Host 层面的管理工具，不暴露 CLI 内部工具
     var bridgeTools = serviceProvider.GetService<CliBridgeTools>();

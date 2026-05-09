@@ -22,6 +22,9 @@ public class InitializeResult
 
     [JsonPropertyName("serverInfo")]
     public Implementation ServerInfo { get; set; } = new();
+
+    [JsonPropertyName("instructions")]
+    public string? Instructions { get; set; }
 }
 
 public class ClientCapabilities
