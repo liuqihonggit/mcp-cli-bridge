@@ -43,6 +43,33 @@ public sealed class KnowledgeGraphData
 }
 
 /// <summary>
+/// 对话摘要 - 跨会话连续性层
+/// </summary>
+public sealed class ConversationSummary
+{
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("userMessages")]
+    public List<string> UserMessages { get; set; } = [];
+
+    [JsonPropertyName("timestamp")]
+    public string Timestamp { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// 对话摘要列表
+/// </summary>
+public sealed class ConversationSummaryList
+{
+    [JsonPropertyName("summaries")]
+    public List<ConversationSummary> Summaries { get; set; } = [];
+
+    [JsonPropertyName("totalCount")]
+    public int TotalCount { get; set; }
+}
+
+/// <summary>
 /// 记忆存储信息
 /// </summary>
 public sealed class StorageInfo

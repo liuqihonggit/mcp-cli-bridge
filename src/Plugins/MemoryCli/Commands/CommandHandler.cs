@@ -358,6 +358,53 @@ internal sealed partial class CommandHandler
         return Ok(info, "", CommonJsonContext.Default.StorageInfo);
     }
 
+    [CliCommand("save_summary", Description = "Save a conversation summary for cross-session continuity", Category = "conversation", SchemaType = typeof(MemorySchemas.SaveSummary))]
+    private async Task<OperationResult<JsonElement>> SaveSummaryAsync(CliRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+            return Fail("Title is required");
+
+        if (request.UserMessages == null || request.UserMessages.Count == 0)
+            return Fail("At least one user message is required");
+
+        var summary = new ConversationSummary
+        {
+            Title = request.Title,
+            UserMessages = request.UserMessages,
+            Timestamp = DateTime.UtcNow.ToString("O")
+        };
+
+        var appendResult = await _store.AppendSummaryAsync(summary);
+        if (appendResult.IsFallback)
+            return Fail($"{MessageTemplates.BusyPrefix} {appendResult.Message}");
+
+        return Ok(new CountResult { Count = 1 }, "Summary saved", CommonJsonContext.Default.CountResult);
+    }
+
+    [CliCommand("get_recent_summaries", Description = "Get recent conversation summaries for cross-session context", Category = "conversation", SchemaType = typeof(MemorySchemas.GetRecentSummaries))]
+    private async Task<OperationResult<JsonElement>> GetRecentSummariesAsync(CliRequest request)
+    {
+        var limit = request.Limit ?? 15;
+
+        var loadResult = await _store.LoadSummariesAsync();
+        if (loadResult.IsFallback)
+            return Fail($"{MessageTemplates.BusyPrefix} {loadResult.Message}");
+
+        var allSummaries = loadResult.Data ?? [];
+        var recentSummaries = allSummaries
+            .OrderByDescending(s => s.Timestamp)
+            .Take(limit)
+            .ToList();
+
+        var result = new ConversationSummaryList
+        {
+            Summaries = recentSummaries,
+            TotalCount = allSummaries.Count
+        };
+
+        return Ok(result, $"Retrieved {recentSummaries.Count} of {allSummaries.Count} summaries", CommonJsonContext.Default.ConversationSummaryList);
+    }
+
     private static OperationResult<JsonElement> Fail(string message)
     {
         return new OperationResult<JsonElement>

@@ -9,20 +9,24 @@ internal sealed class MemoryIoService : IKnowledgeGraphStore
     private readonly MemoryOptions _options;
     private readonly string _memoryPattern;
     private readonly string _relationPattern;
+    private readonly string _summariesPattern;
     private readonly SemaphoreSlim _semaphore;
     private string _currentMemoryPath;
     private string _currentRelationPath;
+    private string _currentSummariesPath;
 
     public MemoryIoService(MemoryOptions? options = null)
     {
         _options = options ?? new MemoryOptions();
         _memoryPattern = $"{_options.MemoryFileName.TrimEnd(FileExtensions.Jsonl.ToCharArray())}*{FileExtensions.Jsonl}";
         _relationPattern = $"{_options.RelationsFileName.TrimEnd(FileExtensions.Jsonl.ToCharArray())}*{FileExtensions.Jsonl}";
+        _summariesPattern = $"{_options.SummariesFileName.TrimEnd(FileExtensions.Jsonl.ToCharArray())}*{FileExtensions.Jsonl}";
 
         FileOperationHelper.EnsureDirectory(_options.GetMemoryPath());
         _semaphore = new SemaphoreSlim(1, 1);
         _currentMemoryPath = _options.GetMemoryPath();
         _currentRelationPath = _options.GetRelationsPath();
+        _currentSummariesPath = _options.GetSummariesPath();
     }
 
     public async Task<OperationResult<List<KnowledgeGraphEntity>>> LoadEntitiesAsync()
@@ -213,6 +217,68 @@ internal sealed class MemoryIoService : IKnowledgeGraphStore
         }
     }
 
+    public async Task<OperationResult<List<ConversationSummary>>> LoadSummariesAsync()
+    {
+        var lockAcquired = await TryAcquireLockAsync();
+        if (!lockAcquired)
+        {
+            return CreateFallbackResult<List<ConversationSummary>>([], []);
+        }
+
+        try
+        {
+            var (data, sourceFiles) = await LoadAllFromFilesAsync<ConversationSummary>(_summariesPattern);
+            return new OperationResult<List<ConversationSummary>>
+            {
+                Success = true,
+                Data = data,
+                Message = string.Empty,
+                Metadata = new Dictionary<string, object>
+                {
+                    [nameof(sourceFiles)] = sourceFiles
+                }
+            };
+        }
+        finally
+        {
+            ReleaseLock();
+        }
+    }
+
+    public async Task<OperationResult<object>> AppendSummaryAsync(ConversationSummary summary)
+    {
+        var lockAcquired = await TryAcquireLockAsync();
+        if (!lockAcquired)
+        {
+            var timestamp = DateTime.Now.ToString(DateTimeFormats.FileTimestamp);
+            _currentSummariesPath = Path.Combine(_options.BaseDirectory, $"{FileNames.Summaries}_{timestamp}{FileExtensions.Jsonl}");
+        }
+
+        try
+        {
+            await FileOperationHelper.AppendJsonLineAsync(
+                _currentSummariesPath,
+                summary,
+                CommonJsonContext.Default.ConversationSummary);
+
+            return new OperationResult<object>
+            {
+                Success = true,
+                Data = null!,
+                Message = lockAcquired ? string.Empty : string.Format(null, s_lockTimeoutWriteFormat, MessageTemplates.BusyPrefix, _currentSummariesPath),
+                Metadata = new Dictionary<string, object>
+                {
+                    ["isFallback"] = !lockAcquired,
+                    ["sourceFiles"] = new List<string> { _currentSummariesPath }
+                }
+            };
+        }
+        finally
+        {
+            if (lockAcquired) ReleaseLock();
+        }
+    }
+
     private void SwitchToFallbackPaths()
     {
         var timestamp = DateTime.Now.ToString(DateTimeFormats.FileTimestamp);
@@ -289,6 +355,7 @@ internal sealed class MemoryIoService : IKnowledgeGraphStore
         {
             KnowledgeGraphEntity e => e.Name.ToLowerInvariant(),
             KnowledgeGraphRelation r => $"{r.From.ToLowerInvariant()}{Separators.RelationKey}{r.To.ToLowerInvariant()}{Separators.RelationKey}{r.RelationType.ToLowerInvariant()}",
+            ConversationSummary s => $"{s.Timestamp}_{s.Title.ToLowerInvariant()}",
             _ => string.Empty
         };
     }
@@ -299,6 +366,8 @@ internal sealed class MemoryIoService : IKnowledgeGraphStore
             return (System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>)(object)CommonJsonContext.Default.KnowledgeGraphEntity;
         if (typeof(T) == typeof(KnowledgeGraphRelation))
             return (System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>)(object)CommonJsonContext.Default.KnowledgeGraphRelation;
+        if (typeof(T) == typeof(ConversationSummary))
+            return (System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>)(object)CommonJsonContext.Default.ConversationSummary;
         throw new NotSupportedException($"Type {typeof(T)} not supported");
     }
 

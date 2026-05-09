@@ -21,6 +21,8 @@ internal interface IKnowledgeGraphStore : IDisposable
     Task<OperationResult<object>> AppendRelationAsync(KnowledgeGraphRelation relation);
     Task<OperationResult<object>> SaveEntitiesAsync(List<KnowledgeGraphEntity> entities);
     Task<OperationResult<object>> SaveRelationsAsync(List<KnowledgeGraphRelation> relations);
+    Task<OperationResult<List<ConversationSummary>>> LoadSummariesAsync();
+    Task<OperationResult<object>> AppendSummaryAsync(ConversationSummary summary);
 }
 
 internal sealed class JsonlStoreProvider : IStoreProvider

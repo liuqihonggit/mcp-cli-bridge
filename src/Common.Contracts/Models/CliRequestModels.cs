@@ -25,4 +25,13 @@ public class CliRequest
 
     [JsonPropertyName("names")]
     public List<string>? Names { get; set; }
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("userMessages")]
+    public List<string>? UserMessages { get; set; }
+
+    [JsonPropertyName("limit")]
+    public int? Limit { get; set; }
 }

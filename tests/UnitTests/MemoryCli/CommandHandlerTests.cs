@@ -119,4 +119,70 @@ public sealed class CommandHandlerTests : IDisposable
         countResult!.Count.Should().Be(1);
         countResult.Updated.Should().Be(1);
     }
+
+    [Fact]
+    public async Task SaveSummary_ShouldPersistAndGetRecent()
+    {
+        var saveRequest = new CliRequest
+        {
+            Command = "save_summary",
+            Title = "讨论项目架构",
+            UserMessages = ["我想用微服务架构", "数据库选型用PostgreSQL"]
+        };
+        var saveResult = await _handler.ExecuteAsync(saveRequest);
+        saveResult.Success.Should().BeTrue();
+
+        var getRequest = new CliRequest
+        {
+            Command = "get_recent_summaries",
+            Limit = 10
+        };
+        var getResult = await _handler.ExecuteAsync(getRequest);
+        getResult.Success.Should().BeTrue();
+
+        var summaries = getResult.Data.Deserialize(CommonJsonContext.Default.ConversationSummaryList);
+        summaries!.Summaries.Should().HaveCount(1);
+        summaries.Summaries[0].Title.Should().Be("讨论项目架构");
+        summaries.Summaries[0].UserMessages.Should().Contain("我想用微服务架构");
+    }
+
+    [Fact]
+    public async Task GetRecentSummaries_ShouldReturnLimitedResults()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            var saveRequest = new CliRequest
+            {
+                Command = "save_summary",
+                Title = $"对话{i}",
+                UserMessages = [$"用户消息{i}"]
+            };
+            await _handler.ExecuteAsync(saveRequest);
+        }
+
+        var getRequest = new CliRequest
+        {
+            Command = "get_recent_summaries",
+            Limit = 3
+        };
+        var getResult = await _handler.ExecuteAsync(getRequest);
+        getResult.Success.Should().BeTrue();
+
+        var summaries = getResult.Data.Deserialize(CommonJsonContext.Default.ConversationSummaryList);
+        summaries!.Summaries.Should().HaveCount(3);
+        summaries.TotalCount.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task SaveSummary_EmptyTitle_ShouldFail()
+    {
+        var saveRequest = new CliRequest
+        {
+            Command = "save_summary",
+            Title = "",
+            UserMessages = ["test"]
+        };
+        var result = await _handler.ExecuteAsync(saveRequest);
+        result.Success.Should().BeFalse();
+    }
 }

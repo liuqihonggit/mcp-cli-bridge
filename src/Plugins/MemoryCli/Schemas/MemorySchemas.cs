@@ -184,6 +184,39 @@ internal static class MemorySchemas
         }
     }
 
+    internal sealed class SaveSummary : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("save_summary").Build())
+                .WithProperty("title", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Title of the conversation").Build())
+                .WithProperty("userMessages", new JsonSchemaPropertyBuilder()
+                    .WithType("array").WithDescription("Key user messages from the conversation")
+                    .WithItems(new JsonSchemaPropertyBuilder().WithType("string").Build()).Build())
+                .WithRequired("command", "title", "userMessages")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class GetRecentSummaries : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("get_recent_summaries").Build())
+                .WithProperty("limit", new JsonSchemaPropertyBuilder()
+                    .WithType("integer").WithDescription("Maximum number of summaries to return (default: 15)").Build())
+                .WithRequired("command")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
     private static JsonSchemaProperty CreateEntitySchemaProperty()
     {
         return new JsonSchemaPropertyBuilder()

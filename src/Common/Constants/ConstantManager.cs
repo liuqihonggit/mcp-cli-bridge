@@ -479,6 +479,7 @@ public static class ConstantManager
     {
         public static string Memory => GetString(nameof(Memory));
         public static string Relations => GetString(nameof(Relations));
+        public static string Summaries => GetString(nameof(Summaries));
         public static string Tools => GetString(nameof(Tools));
         public static string Npm => GetString(nameof(Npm));
         public static string NpmCmd => GetString(nameof(NpmCmd));
@@ -644,6 +645,10 @@ public static class ConstantManager
             public static string OpenNodes => GetString(nameof(OpenNodes));
             [CliName("get_storage_info")]
             public static string GetStorageInfo => GetString(nameof(GetStorageInfo));
+            [CliName("save_summary")]
+            public static string SaveSummary => GetString(nameof(SaveSummary));
+            [CliName("get_recent_summaries")]
+            public static string GetRecentSummaries => GetString(nameof(GetRecentSummaries));
             [CliName("list_tools")]
             public static string ListTools => GetString(nameof(ListTools));
         }

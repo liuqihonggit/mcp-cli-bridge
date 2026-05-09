@@ -33,6 +33,11 @@ namespace Common.Json;
 [JsonSerializable(typeof(List<KnowledgeGraphRelation>))]
 [JsonSerializable(typeof(StorageInfo))]
 
+// 对话摘要模型
+[JsonSerializable(typeof(ConversationSummary))]
+[JsonSerializable(typeof(List<ConversationSummary>))]
+[JsonSerializable(typeof(ConversationSummaryList))]
+
 // 工具定义模型
 [JsonSerializable(typeof(ToolDefinition))]
 [JsonSerializable(typeof(List<ToolDefinition>))]

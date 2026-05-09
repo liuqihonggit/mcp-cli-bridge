@@ -10,6 +10,8 @@ public sealed class MemoryOptions : OptionsBase<MemoryOptions>
 
     public string RelationsFileName { get; set; } = $"{FileNames.Relations}{FileExtensions.Jsonl}";
 
+    public string SummariesFileName { get; set; } = $"{FileNames.Summaries}{FileExtensions.Jsonl}";
+
     public TimeSpan LockTimeout { get; set; } = Timeouts.DefaultLock;
 
     public MemoryOptions()
@@ -40,4 +42,6 @@ public sealed class MemoryOptions : OptionsBase<MemoryOptions>
     public string GetMemoryPath() => Path.Combine(BaseDirectory, MemoryFileName);
 
     public string GetRelationsPath() => Path.Combine(BaseDirectory, RelationsFileName);
+
+    public string GetSummariesPath() => Path.Combine(BaseDirectory, SummariesFileName);
 }
