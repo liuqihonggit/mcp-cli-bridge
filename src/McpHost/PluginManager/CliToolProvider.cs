@@ -51,7 +51,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         var executablePath = ResolveExecutablePath();
         if (string.IsNullOrEmpty(executablePath))
         {
-            _logger.Log(LogLevel.Error, $"{_cliCommand} executable not found, cannot discover tools");
+            await _logger.LogAsync(LogLevel.Error, $"{_cliCommand} executable not found, cannot discover tools");
             return false;
         }
 
@@ -62,7 +62,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
 
             if (!result.Success)
             {
-                _logger.Log(LogLevel.Error, $"Failed to discover tools from {_cliCommand}: {result.Error}");
+                await _logger.LogAsync(LogLevel.Error, $"Failed to discover tools from {_cliCommand}: {result.Error}");
                 return false;
             }
 
@@ -76,7 +76,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Error discovering tools from {_cliCommand}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Error discovering tools from {_cliCommand}");
             return false;
         }
     }
@@ -99,7 +99,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         var executablePath = ResolveExecutablePath();
         if (string.IsNullOrEmpty(executablePath))
         {
-            _logger.Log(LogLevel.Error, $"{_cliCommand} executable not found");
+            await _logger.LogAsync(LogLevel.Error, $"{_cliCommand} executable not found", cancellationToken);
             return CreateErrorResult($"{_cliCommand} executable not found");
         }
 
@@ -163,12 +163,12 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
             }
             else
             {
-                _logger.Log(LogLevel.Warn, $"Failed to load commands from {_cliCommand}: {result.Error}");
+                await _logger.LogAsync(LogLevel.Warn, $"Failed to load commands from {_cliCommand}: {result.Error}");
             }
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Error loading commands from {_cliCommand}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Error loading commands from {_cliCommand}");
         }
     }
 
@@ -303,7 +303,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
             var stdout = await stdoutTask ?? string.Empty;
             var stderr = await stderrTask ?? string.Empty;
 
-            _logger.Log(LogLevel.Info, $"CLI executed in {stopwatch.ElapsedMilliseconds}ms, ExitCode: {process.ExitCode}, OutputLength: {stdout.Length}");
+            await _logger.LogAsync(LogLevel.Info, $"CLI executed in {stopwatch.ElapsedMilliseconds}ms, ExitCode: {process.ExitCode}, OutputLength: {stdout.Length}", cancellationToken);
 
             var result = new OperationResult
             {
@@ -320,7 +320,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         catch (OperationCanceledException)
         {
             stopwatch.Stop();
-            _logger.Log(LogLevel.Error, $"CLI command timed out after {timeout.TotalSeconds}s");
+            await _logger.LogAsync(LogLevel.Error, $"CLI command timed out after {timeout.TotalSeconds}s", CancellationToken.None);
 
             pooledProcess?.Kill();
 
@@ -331,7 +331,7 @@ public sealed class CliToolProvider : IToolProvider, IAsyncDisposable, IDisposab
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.Log(LogLevel.Error, ex, "CLI execution failed");
+            await _logger.LogAsync(LogLevel.Error, ex, "CLI execution failed", CancellationToken.None);
 
             var result = OperationResultFactoryNonGeneric.FromException(ex, stopwatch.Elapsed.TotalMilliseconds);
             await ReleaseProcessAsync(pool, pooledProcess).ConfigureAwait(false);

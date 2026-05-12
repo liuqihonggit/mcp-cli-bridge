@@ -286,21 +286,21 @@ public sealed class ToolRegistry : IToolRegistry
 
             stopwatch.Stop();
 
-            _logger.Log(LogLevel.Debug,
-                $"Tool '{toolName}' executed by '{providerName}' in {stopwatch.ElapsedMilliseconds}ms. Success: {result.Success}");
+            await _logger.LogAsync(LogLevel.Debug,
+                $"Tool '{toolName}' executed by '{providerName}' in {stopwatch.ElapsedMilliseconds}ms. Success: {result.Success}", cancellationToken).ConfigureAwait(false);
 
             return result;
         }
         catch (OperationCanceledException)
         {
             stopwatch.Stop();
-            _logger.Log(LogLevel.Warn, $"Tool '{toolName}' execution was cancelled.");
+            await _logger.LogAsync(LogLevel.Warn, $"Tool '{toolName}' execution was cancelled.", CancellationToken.None).ConfigureAwait(false);
             return OperationResultFactoryNonGeneric.Cancelled(stopwatch.Elapsed.TotalMilliseconds);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.Log(LogLevel.Error, ex, $"Tool '{toolName}' execution failed: {ex.Message}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Tool '{toolName}' execution failed: {ex.Message}", CancellationToken.None).ConfigureAwait(false);
             return OperationResultFactoryNonGeneric.FromException(ex, stopwatch.Elapsed.TotalMilliseconds);
         }
     }

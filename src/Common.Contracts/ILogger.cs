@@ -4,6 +4,8 @@ public interface ILogger
 {
     void Log(LogLevel level, string message);
     void Log(LogLevel level, Exception exception, string message);
+    Task LogAsync(LogLevel level, string message, CancellationToken cancellationToken = default);
+    Task LogAsync(LogLevel level, Exception exception, string message, CancellationToken cancellationToken = default);
 }
 
 [Flags]

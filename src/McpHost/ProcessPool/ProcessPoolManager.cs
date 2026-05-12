@@ -76,14 +76,14 @@ public sealed class ProcessPoolManager : IProcessPoolManager
 
             if (removedCount > 0)
             {
-                _logger.Log(LogLevel.Info, $"Health check completed, removed {removedCount} unhealthy processes");
+                await _logger.LogAsync(LogLevel.Info, $"Health check completed, removed {removedCount} unhealthy processes");
             }
 
             return removedCount;
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, "Health check failed");
+            await _logger.LogAsync(LogLevel.Error, ex, "Health check failed");
             return 0;
         }
     }
@@ -130,7 +130,7 @@ public sealed class ProcessPoolManager : IProcessPoolManager
             _poolOptions.TryRemove(cliName, out _);
             _executablePaths.TryRemove(cliName, out _);
 
-            _logger.Log(LogLevel.Info, $"Process pool '{cliName}' removed and disposed");
+            await _logger.LogAsync(LogLevel.Info, $"Process pool '{cliName}' removed and disposed");
         }
     }
 
@@ -168,7 +168,7 @@ public sealed class ProcessPoolManager : IProcessPoolManager
         var tasks = _pools.Values.Select(pool => pool.ClearIdleAsync());
         await Task.WhenAll(tasks);
 
-        _logger.Log(LogLevel.Info, "Cleared all idle processes from all pools");
+        await _logger.LogAsync(LogLevel.Info, "Cleared all idle processes from all pools");
     }
 
     /// <summary>
@@ -216,7 +216,7 @@ public sealed class ProcessPoolManager : IProcessPoolManager
         {
             await _healthCheckTimer.DisposeAsync();
             _healthCheckTimer = null;
-            _logger.Log(LogLevel.Info, "Health check stopped");
+            await _logger.LogAsync(LogLevel.Info, "Health check stopped");
         }
 
         var disposeTasks = _pools.Values.Select(pool => pool.DisposeAsync().AsTask());
@@ -226,7 +226,7 @@ public sealed class ProcessPoolManager : IProcessPoolManager
         _poolOptions.Clear();
         _executablePaths.Clear();
 
-        _logger.Log(LogLevel.Info, "ProcessPoolManager disposed");
+        await _logger.LogAsync(LogLevel.Info, "ProcessPoolManager disposed");
     }
 
     public void Dispose()

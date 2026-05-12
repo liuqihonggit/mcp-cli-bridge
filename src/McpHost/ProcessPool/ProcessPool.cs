@@ -115,7 +115,7 @@ public sealed class ProcessPool : IProcessPool
                 if (idleProcess.IsIdle && IsProcessValid(idleProcess))
                 {
                     idleProcess.MarkInUse();
-                    _logger.Log(LogLevel.Debug, $"Reused process PID={idleProcess.ProcessId} from pool '{PoolName}'");
+                    await _logger.LogAsync(LogLevel.Debug, $"Reused process PID={idleProcess.ProcessId} from pool '{PoolName}'", CancellationToken.None).ConfigureAwait(false);
                     return idleProcess;
                 }
 
@@ -127,7 +127,7 @@ public sealed class ProcessPool : IProcessPool
             var newProcess = await CreateNewProcessAsync(cts.Token);
             newProcess.MarkInUse();
 
-            _logger.Log(LogLevel.Info, $"Created new process PID={newProcess.ProcessId} for pool '{PoolName}'");
+            await _logger.LogAsync(LogLevel.Info, $"Created new process PID={newProcess.ProcessId} for pool '{PoolName}'", CancellationToken.None).ConfigureAwait(false);
             return newProcess;
         }
         catch (OperationCanceledException)
@@ -182,7 +182,7 @@ public sealed class ProcessPool : IProcessPool
         _idleQueue.Enqueue(process);
         _poolSemaphore.Release();
 
-        _logger.Log(LogLevel.Debug, $"Released process PID={process.ProcessId} to pool '{PoolName}'");
+        await _logger.LogAsync(LogLevel.Debug, $"Released process PID={process.ProcessId} to pool '{PoolName}'").ConfigureAwait(false);
     }
 
     /// <summary>
@@ -315,9 +315,6 @@ public sealed class ProcessPool : IProcessPool
         _logger.Log(LogLevel.Info, $"Process PID={processId} {reason}, recycling in pool '{PoolName}'");
     }
 
-    /// <summary>
-    /// 记录健康检查结果
-    /// </summary>
     private void LogHealthCheckResult(int removedCount)
     {
         if (removedCount > 0)
@@ -326,9 +323,6 @@ public sealed class ProcessPool : IProcessPool
         }
     }
 
-    /// <summary>
-    /// 记录清理结果
-    /// </summary>
     private void LogCleanupResult(int removedCount)
     {
         if (removedCount > 0)
@@ -392,7 +386,7 @@ public sealed class ProcessPool : IProcessPool
         catch (Exception ex)
         {
             process.Dispose();
-            _logger.Log(LogLevel.Error, ex, $"Failed to create process for pool '{PoolName}'");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Failed to create process for pool '{PoolName}'", CancellationToken.None).ConfigureAwait(false);
             throw;
         }
     }
@@ -409,7 +403,7 @@ public sealed class ProcessPool : IProcessPool
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Debug, ex, $"Error while removing process PID={process.ProcessId}");
+            await _logger.LogAsync(LogLevel.Debug, ex, $"Error while removing process PID={process.ProcessId}").ConfigureAwait(false);
         }
         finally
         {

@@ -23,14 +23,13 @@ public sealed class ExecutionMiddleware : LoggingMiddlewareBase
         // 检查是否已取消
         if (context.IsCancelled)
         {
-            Logger.Debug($"[{nameof(ExecutionMiddleware)}] 执行已取消: {toolName}");
+            await Logger.DebugAsync($"[{nameof(ExecutionMiddleware)}] 执行已取消: {toolName}");
             return;
         }
 
-        // 检查是否已有结果（如缓存命中）
         if (!string.IsNullOrEmpty(context.Result))
         {
-            Logger.Debug($"[{nameof(ExecutionMiddleware)}] 已有结果，跳过执行: {toolName}");
+            await Logger.DebugAsync($"[{nameof(ExecutionMiddleware)}] 已有结果，跳过执行: {toolName}");
             await nextMiddleware();
             return;
         }
@@ -42,7 +41,7 @@ public sealed class ExecutionMiddleware : LoggingMiddlewareBase
             // 获取工具元数据
             if (!_toolRegistry.TryGetTool(toolName, out var metadata) || metadata is null)
             {
-                Logger.Error($"[{nameof(ExecutionMiddleware)}] 工具未找到: {toolName}");
+                await Logger.ErrorAsync($"[{nameof(ExecutionMiddleware)}] 工具未找到: {toolName}");
                 ErrorResponseFactory.SetToolNotFoundResult(context, toolName);
                 return;
             }
@@ -55,11 +54,11 @@ public sealed class ExecutionMiddleware : LoggingMiddlewareBase
             // 设置结果
             context.Result = JsonSerializer.Serialize(result, CommonJsonContext.Default.OperationResult);
 
-            Logger.Info($"[{nameof(ExecutionMiddleware)}] 工具执行完成: {toolName}, 成功: {result.Success}");
+            await Logger.InfoAsync($"[{nameof(ExecutionMiddleware)}] 工具执行完成: {toolName}, 成功: {result.Success}");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"[{nameof(ExecutionMiddleware)}] 工具执行异常: {toolName}");
+            await Logger.ErrorAsync(ex, $"[{nameof(ExecutionMiddleware)}] 工具执行异常: {toolName}");
             ErrorResponseFactory.SetExecutionErrorResult(context, toolName, ex);
         }
 

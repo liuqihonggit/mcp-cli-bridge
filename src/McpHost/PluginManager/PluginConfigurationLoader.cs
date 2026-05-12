@@ -24,7 +24,7 @@ public sealed class PluginConfigurationLoader
     {
         if (!File.Exists(configPath))
         {
-            _logger.Log(LogLevel.Warn, $"Plugin configuration file not found: {configPath}");
+            await _logger.LogAsync(LogLevel.Warn, $"Plugin configuration file not found: {configPath}", cancellationToken);
             return [];
         }
 
@@ -37,7 +37,7 @@ public sealed class PluginConfigurationLoader
 
             if (configuration?.Providers == null || configuration.Providers.Count == 0)
             {
-                _logger.Log(LogLevel.Warn, "No providers found in configuration file");
+                await _logger.LogAsync(LogLevel.Warn, "No providers found in configuration file", cancellationToken);
                 return [];
             }
 
@@ -46,16 +46,16 @@ public sealed class PluginConfigurationLoader
             {
                 foreach (var error in validationResult.Errors)
                 {
-                    _logger.Log(LogLevel.Error, $"Validation error [{error.Code}]: {error.Message}" +
-                        (error.Location != null ? $" at {error.Location}" : ""));
+                    await _logger.LogAsync(LogLevel.Error, $"Validation error [{error.Code}]: {error.Message}" +
+                        (error.Location != null ? $" at {error.Location}" : ""), cancellationToken);
                 }
                 return [];
             }
 
             foreach (var warning in validationResult.Warnings)
             {
-                _logger.Log(LogLevel.Warn, $"Validation warning [{warning.Code}]: {warning.Message}" +
-                    (warning.Location != null ? $" at {warning.Location}" : ""));
+                await _logger.LogAsync(LogLevel.Warn, $"Validation warning [{warning.Code}]: {warning.Message}" +
+                    (warning.Location != null ? $" at {warning.Location}" : ""), cancellationToken);
             }
 
             var providers = new List<IToolProvider>();
@@ -68,23 +68,23 @@ public sealed class PluginConfigurationLoader
 
                 if (providerConfig.Tools.Count == 0)
                 {
-                    _logger.Log(LogLevel.Info, $"No tools defined in config for {provider.ProviderName}, discovering via CLI protocol...");
+                    await _logger.LogAsync(LogLevel.Info, $"No tools defined in config for {provider.ProviderName}, discovering via CLI protocol...", cancellationToken);
                     var discovered = await provider.DiscoverToolsAsync();
                     if (!discovered)
                     {
-                        _logger.Log(LogLevel.Warn, $"Tool discovery failed for {provider.ProviderName}, provider will have no tools");
+                        await _logger.LogAsync(LogLevel.Warn, $"Tool discovery failed for {provider.ProviderName}, provider will have no tools", cancellationToken);
                     }
                 }
 
                 providers.Add(provider);
-                _logger.Log(LogLevel.Info, $"Loaded provider: {provider.ProviderName}");
+                await _logger.LogAsync(LogLevel.Info, $"Loaded provider: {provider.ProviderName}", cancellationToken);
             }
 
             return providers;
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Failed to load plugin configuration from {configPath}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Failed to load plugin configuration from {configPath}", cancellationToken);
             return [];
         }
     }
@@ -98,12 +98,12 @@ public sealed class PluginConfigurationLoader
                 configuration,
                 McpHostContext.Default.PluginConfiguration,
                 cancellationToken);
-            _logger.Log(LogLevel.Info, $"Saved plugin configuration to {configPath}");
+            await _logger.LogAsync(LogLevel.Info, $"Saved plugin configuration to {configPath}", cancellationToken);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Failed to save plugin configuration to {configPath}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Failed to save plugin configuration to {configPath}", cancellationToken);
             return false;
         }
     }

@@ -241,7 +241,7 @@ internal sealed class CliBridgeTools : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Tool execution failed: {tool}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Tool execution failed: {tool}");
             return CreateErrorResponse($"Tool execution failed: {ex.Message}");
         }
     }
@@ -358,7 +358,7 @@ internal sealed class CliBridgeTools : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, ex, $"Package installation failed: {packageName}");
+            await _logger.LogAsync(LogLevel.Error, ex, $"Package installation failed: {packageName}");
             return CreateErrorResponse($"Failed to install package {packageName}: {ex.Message}");
         }
     }
@@ -444,11 +444,11 @@ internal sealed class CliBridgeTools : IDisposable
                 parameters[prop.Name] = prop.Value.Clone();
 
             await _toolRegistry.ExecuteToolAsync("memory_save_summary", parameters);
-            _logger.Info($"Auto-saved conversation summary: {title}");
+            await _logger.InfoAsync($"Auto-saved conversation summary: {title}");
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Warn, ex, "Failed to auto-save conversation summary");
+            await _logger.LogAsync(LogLevel.Warn, ex, "Failed to auto-save conversation summary");
         }
     }
 

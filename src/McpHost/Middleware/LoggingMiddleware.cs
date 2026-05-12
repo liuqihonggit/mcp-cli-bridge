@@ -18,7 +18,7 @@ public sealed class LoggingMiddleware : LoggingMiddlewareBase
         var toolName = context.ToolName;
         var parameters = JsonParameterHelper.SerializeForLog(context.Parameters);
 
-        Logger.Info($"[{nameof(LoggingMiddleware)}] 参数: {parameters}");
+        await Logger.InfoAsync($"[{nameof(LoggingMiddleware)}] 参数: {parameters}");
 
         using var scope = Logger.CreateMiddlewareScope(nameof(LoggingMiddleware), toolName);
 
@@ -27,7 +27,7 @@ public sealed class LoggingMiddleware : LoggingMiddlewareBase
             await nextMiddleware();
 
             var result = context.Result ?? "(无结果)";
-            Logger.Debug($"[{nameof(LoggingMiddleware)}] 结果: {result}");
+            await Logger.DebugAsync($"[{nameof(LoggingMiddleware)}] 结果: {result}");
         }
         catch (Exception ex)
         {

@@ -41,15 +41,37 @@ public sealed class Logger : ILogger, IDisposable
 
         if (_output.HasFlag(LogOutput.File) && _fileWriter is not null)
         {
-            _fileLock.Wait();
-            try
-            {
-                _fileWriter.WriteLine(formatted);
-            }
-            finally
-            {
-                _fileLock.Release();
-            }
+            _ = WriteToFileAsync(formatted).ConfigureAwait(false);
+        }
+    }
+
+    public async Task LogAsync(LogLevel level, string message, CancellationToken cancellationToken = default)
+    {
+        if (level < _minLevel) return;
+
+        var formatted = FormatMessage(level, message);
+
+        if (_output.HasFlag(LogOutput.StdErr))
+        {
+            await Console.Error.WriteLineAsync(formatted).ConfigureAwait(false);
+        }
+
+        if (_output.HasFlag(LogOutput.File) && _fileWriter is not null)
+        {
+            await WriteToFileAsync(formatted, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task WriteToFileAsync(string formatted, CancellationToken cancellationToken = default)
+    {
+        await _fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _fileWriter!.WriteLineAsync(formatted).ConfigureAwait(false);
+        }
+        finally
+        {
+            _fileLock.Release();
         }
     }
 
@@ -59,6 +81,15 @@ public sealed class Logger : ILogger, IDisposable
         if (exception.StackTrace is not null)
         {
             Log(level, exception.StackTrace);
+        }
+    }
+
+    public async Task LogAsync(LogLevel level, Exception exception, string message, CancellationToken cancellationToken = default)
+    {
+        await LogAsync(level, $"{message}: {exception.Message}", cancellationToken).ConfigureAwait(false);
+        if (exception.StackTrace is not null)
+        {
+            await LogAsync(level, exception.StackTrace, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -100,6 +131,12 @@ public static class LoggerExtensions
     public static void Warn(this ILogger logger, string message) => logger.Log(LogLevel.Warn, message);
     public static void Error(this ILogger logger, string message) => logger.Log(LogLevel.Error, message);
     public static void Error(this ILogger logger, Exception exception, string message) => logger.Log(LogLevel.Error, exception, message);
+
+    public static Task DebugAsync(this ILogger logger, string message, CancellationToken ct = default) => logger.LogAsync(LogLevel.Debug, message, ct);
+    public static Task InfoAsync(this ILogger logger, string message, CancellationToken ct = default) => logger.LogAsync(LogLevel.Info, message, ct);
+    public static Task WarnAsync(this ILogger logger, string message, CancellationToken ct = default) => logger.LogAsync(LogLevel.Warn, message, ct);
+    public static Task ErrorAsync(this ILogger logger, string message, CancellationToken ct = default) => logger.LogAsync(LogLevel.Error, message, ct);
+    public static Task ErrorAsync(this ILogger logger, Exception exception, string message, CancellationToken ct = default) => logger.LogAsync(LogLevel.Error, exception, message, ct);
 }
 
 /// <summary>

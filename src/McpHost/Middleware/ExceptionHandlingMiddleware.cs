@@ -25,12 +25,12 @@ public sealed class ExceptionHandlingMiddleware : LoggingMiddlewareBase
             var logLevel = ExceptionMessageFormatter.GetSeverity(ex);
             var logMessage = ExceptionMessageFormatter.FormatForLog(ex, nameof(ExceptionHandlingMiddleware));
             
-            Logger.Log(logLevel, ex, $"[{nameof(ExceptionHandlingMiddleware)}] 工具执行异常: {context.ToolName}");
+            await Logger.LogAsync(logLevel, ex, $"[{nameof(ExceptionHandlingMiddleware)}] 工具执行异常: {context.ToolName}");
 
             var errorMessage = ExceptionMessageFormatter.Format(ex);
             ErrorResponseFactory.SetValidationFailedResult(context, [errorMessage]);
 
-            Logger.Info($"[{nameof(ExceptionHandlingMiddleware)}] 异常已处理，阻止后续中间件执行");
+            await Logger.InfoAsync($"[{nameof(ExceptionHandlingMiddleware)}] 异常已处理，阻止后续中间件执行");
         }
     }
 }

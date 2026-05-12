@@ -42,12 +42,12 @@ public sealed class CacheMiddleware : MiddlewareBase
         // 尝试从缓存获取
         if (_cache.TryGet<string>(cacheKey, out var cachedResult))
         {
-            _logger.Log(LogLevel.Debug, $"Cache hit for tool '{context.ToolName}'");
+            await _logger.LogAsync(LogLevel.Debug, $"Cache hit for tool '{context.ToolName}'").ConfigureAwait(false);
             context.Result = cachedResult;
             return;
         }
 
-        _logger.Log(LogLevel.Debug, $"Cache miss for tool '{context.ToolName}'");
+        await _logger.LogAsync(LogLevel.Debug, $"Cache miss for tool '{context.ToolName}'").ConfigureAwait(false);
 
         // 执行工具
         await nextMiddleware().ConfigureAwait(false);
@@ -58,7 +58,7 @@ public sealed class CacheMiddleware : MiddlewareBase
         {
             var cacheOptions = GetCacheOptions(context.ToolName);
             _cache.SetValue(cacheKey, context.Result, cacheOptions);
-            _logger.Log(LogLevel.Debug, $"Cached result for tool '{context.ToolName}'");
+            await _logger.LogAsync(LogLevel.Debug, $"Cached result for tool '{context.ToolName}'").ConfigureAwait(false);
         }
     }
 

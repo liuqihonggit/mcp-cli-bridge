@@ -20,22 +20,20 @@ public sealed class McpToolExecutionMiddleware : LoggingMiddlewareBase
         // 检查是否已取消
         if (context.IsCancelled)
         {
-            Logger.Debug($"[{nameof(McpToolExecutionMiddleware)}] 执行已取消: {context.ToolName}");
+            await Logger.DebugAsync($"[{nameof(McpToolExecutionMiddleware)}] 执行已取消: {context.ToolName}");
             return;
         }
 
-        // 检查是否已有结果（如缓存命中）
         if (!string.IsNullOrEmpty(context.Result))
         {
-            Logger.Debug($"[{nameof(McpToolExecutionMiddleware)}] 已有结果，跳过执行: {context.ToolName}");
+            await Logger.DebugAsync($"[{nameof(McpToolExecutionMiddleware)}] 已有结果，跳过执行: {context.ToolName}");
             await nextMiddleware();
             return;
         }
 
-        // 获取工具处理器
         if (!context.Items.TryGetValue("ToolHandler", out var handlerObj) || handlerObj is not ToolHandlerInfo handler)
         {
-            Logger.Error($"[{nameof(McpToolExecutionMiddleware)}] 工具处理器未找到: {context.ToolName}");
+            await Logger.ErrorAsync($"[{nameof(McpToolExecutionMiddleware)}] 工具处理器未找到: {context.ToolName}");
             ErrorResponseFactory.SetToolNotFoundResult(context, context.ToolName);
             return;
         }
@@ -50,11 +48,11 @@ public sealed class McpToolExecutionMiddleware : LoggingMiddlewareBase
             // 设置结果
             context.Result = result;
 
-            Logger.Info($"[{nameof(McpToolExecutionMiddleware)}] 工具执行完成: {context.ToolName}");
+            await Logger.InfoAsync($"[{nameof(McpToolExecutionMiddleware)}] 工具执行完成: {context.ToolName}");
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"[{nameof(McpToolExecutionMiddleware)}] 工具执行异常: {context.ToolName}");
+            await Logger.ErrorAsync(ex, $"[{nameof(McpToolExecutionMiddleware)}] 工具执行异常: {context.ToolName}");
             ErrorResponseFactory.SetExecutionErrorResult(context, context.ToolName, ex);
         }
 
