@@ -308,4 +308,127 @@ internal static class AstSchemas
             return JsonSchemaBuilder.SerializeToJsonElement(schema);
         }
     }
+
+    internal sealed class AsyncRename : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("async_rename").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Current method name (e.g. SendLog)").Build())
+                .WithProperty("newName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("New method name (e.g. SendLogAsync)").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName", "newName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class AsyncAddModifier : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("async_add_modifier").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name to add async modifier to").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class AsyncReturnType : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("async_return_type").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name to change return type for").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class AsyncAddAwait : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("async_add_await").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name whose invocations should be awaited").Build())
+                .WithProperty("addConfigureAwait", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Whether to append .ConfigureAwait(false) after await (default: false)").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class AsyncParamAdd : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("async_param_add").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name to add parameter to").Build())
+                .WithProperty("paramType", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Parameter type (e.g. CancellationToken)").Build())
+                .WithProperty("paramName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Parameter name (e.g. ct)").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName", "paramType", "paramName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
 }

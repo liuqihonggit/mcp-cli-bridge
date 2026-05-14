@@ -52,6 +52,15 @@ public sealed class AstCliRequest
 
     [JsonPropertyName("language")]
     public string? Language { get; set; }
+
+    [JsonPropertyName("paramType")]
+    public string? ParamType { get; set; }
+
+    [JsonPropertyName("paramName")]
+    public string? ParamName { get; set; }
+
+    [JsonPropertyName("addConfigureAwait")]
+    public bool AddConfigureAwait { get; set; }
 }
 
 public sealed class SymbolInfoDto
@@ -415,6 +424,27 @@ public sealed class UnsupportedLanguageResultDto
 
     [JsonPropertyName("supportedLanguages")]
     public List<string> SupportedLanguages { get; set; } = [];
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = string.Empty;
+}
+
+public sealed class AsyncMigrationResultDto
+{
+    [JsonPropertyName("command")]
+    public string Command { get; set; } = string.Empty;
+
+    [JsonPropertyName("symbolName")]
+    public string SymbolName { get; set; } = string.Empty;
+
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("modifiedFiles")]
+    public List<string> ModifiedFiles { get; set; } = [];
+
+    [JsonPropertyName("modifiedFileCount")]
+    public int ModifiedFileCount { get; set; }
 
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;

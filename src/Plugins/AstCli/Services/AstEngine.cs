@@ -937,6 +937,88 @@ public sealed class AstEngine
             _ => null
         };
     }
+
+    internal static async Task<AsyncMigrationResultDto> AsyncRenameAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, string newName, bool dryRun)
+    {
+        var rewriter = new MethodRenameRewriter(symbolName, newName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "async_rename", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> AsyncAddModifierAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, bool dryRun)
+    {
+        var rewriter = new AsyncModifierRewriter(symbolName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "async_add_modifier", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> AsyncReturnTypeAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, bool dryRun)
+    {
+        var rewriter = new ReturnTypeRewriter(symbolName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "async_return_type", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> AsyncAddAwaitAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, bool addConfigureAwait, bool dryRun)
+    {
+        var rewriter = new AwaitInvocationRewriter(symbolName, addConfigureAwait);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "async_add_await", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> AsyncParamAddAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, string paramType, string paramName, bool dryRun)
+    {
+        var rewriter = new ParameterAddRewriter(symbolName, paramType, paramName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "async_param_add", symbolName, dryRun);
+    }
+
+    private static async Task<AsyncMigrationResultDto> ApplyRewriterAsync(
+        ILanguageProvider provider, string projectPath, string? filePath,
+        CSharpSyntaxRewriter rewriter, string command, string symbolName, bool dryRun)
+    {
+        var files = filePath != null
+            ? new List<string> { filePath }
+            : GetProjectFiles(projectPath, provider.FileSearchPattern);
+
+        var modifiedFiles = new List<string>();
+
+        foreach (var file in files)
+        {
+#pragma warning disable MCP001
+            if (!File.Exists(file)) continue;
+#pragma warning restore MCP001
+
+            try
+            {
+                var content = await ReadFileWithLockAsync(file);
+                var tree = CSharpSyntaxTree.ParseText(content, path: file);
+                var root = tree.GetCompilationUnitRoot();
+
+                var newRoot = rewriter.Visit(root);
+                if (newRoot == null || newRoot.IsEquivalentTo(root))
+                    continue;
+
+                if (!dryRun)
+                {
+                    var newContent = newRoot.ToFullString();
+                    await WriteFileWithLockAsync(file, newContent);
+                }
+
+                modifiedFiles.Add(file);
+            }
+            catch
+            {
+            }
+        }
+
+        return new AsyncMigrationResultDto
+        {
+            Command = command,
+            SymbolName = symbolName,
+            Success = modifiedFiles.Count > 0,
+            ModifiedFiles = modifiedFiles,
+            ModifiedFileCount = modifiedFiles.Count,
+            Message = modifiedFiles.Count > 0
+                ? $"{command}: modified {modifiedFiles.Count} file(s) for '{symbolName}'{(dryRun ? " (dry run)" : "")}"
+                : $"{command}: no changes needed for '{symbolName}'"
+        };
+    }
 }
 
 file sealed class SymbolRenameRewriter : CSharpSyntaxRewriter

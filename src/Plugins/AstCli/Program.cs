@@ -18,7 +18,7 @@ var jsonInputOption = new Option<string>(
 
 var commandOption = new Option<string>(
     name: Cli.Command,
-    description: "Command to execute: symbol_query, reference_find, symbol_rename, symbol_replace, symbol_info, workspace_overview, file_context, diagnostics, symbol_outline, list_tools")
+    description: "Command to execute: symbol_query, reference_find, symbol_rename, symbol_replace, symbol_info, workspace_overview, file_context, diagnostics, symbol_outline, string_query, string_prefix, string_suffix, string_insert, string_replace, async_rename, async_add_modifier, async_return_type, async_add_await, async_param_add, list_tools")
 {
     IsRequired = false
 };

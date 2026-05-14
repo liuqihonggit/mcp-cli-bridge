@@ -288,6 +288,112 @@ internal sealed partial class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.StringReplaceResultDto);
     }
 
+    [CliCommand("async_rename", Description = "Rename a method and all its call sites (e.g. SendLog → SendLogAsync)", Category = "async-migration", SchemaType = typeof(AstSchemas.AsyncRename))]
+    private static async Task<OperationResult<JsonElement>> AsyncRenameAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+        if (string.IsNullOrWhiteSpace(request.NewName))
+            return Fail("newName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.AsyncRenameAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.NewName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("async_add_modifier", Description = "Add async modifier to a method declaration", Category = "async-migration", SchemaType = typeof(AstSchemas.AsyncAddModifier))]
+    private static async Task<OperationResult<JsonElement>> AsyncAddModifierAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.AsyncAddModifierAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("async_return_type", Description = "Change method return type: void → Task, T → Task<T>", Category = "async-migration", SchemaType = typeof(AstSchemas.AsyncReturnType))]
+    private static async Task<OperationResult<JsonElement>> AsyncReturnTypeAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.AsyncReturnTypeAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("async_add_await", Description = "Add await (and optionally .ConfigureAwait(false)) to method invocations", Category = "async-migration", SchemaType = typeof(AstSchemas.AsyncAddAwait))]
+    private static async Task<OperationResult<JsonElement>> AsyncAddAwaitAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.AsyncAddAwaitAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.AddConfigureAwait, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("async_param_add", Description = "Add a parameter to a method declaration (e.g. CancellationToken ct)", Category = "async-migration", SchemaType = typeof(AstSchemas.AsyncParamAdd))]
+    private static async Task<OperationResult<JsonElement>> AsyncParamAddAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+        if (string.IsNullOrWhiteSpace(request.ParamType))
+            return Fail("paramType is required");
+        if (string.IsNullOrWhiteSpace(request.ParamName))
+            return Fail("paramName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.AsyncParamAddAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.ParamType, request.ParamName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
     private static (ILanguageProvider Provider, OperationResult<JsonElement>? Error) ResolveProvider(string? language)
     {
         var provider = LanguageProviderRegistry.GetProvider(language);
