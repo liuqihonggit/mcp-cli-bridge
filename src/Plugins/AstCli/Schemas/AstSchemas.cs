@@ -431,4 +431,98 @@ internal static class AstSchemas
             return JsonSchemaBuilder.SerializeToJsonElement(schema);
         }
     }
+
+    internal sealed class SyncRemoveModifier : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("sync_remove_modifier").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name to remove async modifier from").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class SyncReturnType : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("sync_return_type").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name to unwrap return type for").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class SyncRemoveAwait : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("sync_remove_await").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name whose invocations should have await removed").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
+
+    internal sealed class SyncParamRemove : ICliSchemaProvider
+    {
+        public static JsonElement GetSchema()
+        {
+            var schema = new JsonSchemaBuilder()
+                .WithProperty("command", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithConst("sync_param_remove").Build())
+                .WithProperty("projectPath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Root path of the project to modify").Build())
+                .WithProperty("filePath", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Optional: specific file to modify (modifies entire project if omitted)").Build())
+                .WithProperty("symbolName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Method name to remove parameter from").Build())
+                .WithProperty("paramName", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Parameter name to remove (e.g. ct)").Build())
+                .WithProperty("dryRun", new JsonSchemaPropertyBuilder()
+                    .WithType("boolean").WithDescription("Preview mode: do not actually modify files (default: false)").Build())
+                .WithProperty("language", new JsonSchemaPropertyBuilder()
+                    .WithType("string").WithDescription("Programming language (default: csharp)").Build())
+                .WithRequired("command", "projectPath", "symbolName", "paramName")
+                .Build();
+            return JsonSchemaBuilder.SerializeToJsonElement(schema);
+        }
+    }
 }

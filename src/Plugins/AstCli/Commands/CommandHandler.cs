@@ -394,6 +394,88 @@ internal sealed partial class CommandHandler
         return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
     }
 
+    [CliCommand("sync_remove_modifier", Description = "Remove async modifier from a method declaration", Category = "sync-migration", SchemaType = typeof(AstSchemas.SyncRemoveModifier))]
+    private static async Task<OperationResult<JsonElement>> SyncRemoveModifierAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.SyncRemoveModifierAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("sync_return_type", Description = "Unwrap method return type: Task → void, Task<T> → T", Category = "sync-migration", SchemaType = typeof(AstSchemas.SyncReturnType))]
+    private static async Task<OperationResult<JsonElement>> SyncReturnTypeAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.SyncReturnTypeAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("sync_remove_await", Description = "Remove await (and .ConfigureAwait(false)) from method invocations", Category = "sync-migration", SchemaType = typeof(AstSchemas.SyncRemoveAwait))]
+    private static async Task<OperationResult<JsonElement>> SyncRemoveAwaitAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.SyncRemoveAwaitAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
+    [CliCommand("sync_param_remove", Description = "Remove a parameter from a method declaration", Category = "sync-migration", SchemaType = typeof(AstSchemas.SyncParamRemove))]
+    private static async Task<OperationResult<JsonElement>> SyncParamRemoveAsync(AstCliRequest request)
+    {
+        var (provider, langError) = ResolveProvider(request.Language);
+        if (langError != null) return langError;
+
+        if (string.IsNullOrWhiteSpace(request.ProjectPath))
+            return Fail("projectPath is required");
+        if (string.IsNullOrWhiteSpace(request.SymbolName))
+            return Fail("symbolName is required");
+        if (string.IsNullOrWhiteSpace(request.ParamName))
+            return Fail("paramName is required");
+
+#pragma warning disable MCP001
+        if (!Directory.Exists(request.ProjectPath))
+            return Fail($"Project path not found: {request.ProjectPath}");
+#pragma warning restore MCP001
+
+        var result = await AstEngine.SyncParamRemoveAsync(provider, request.ProjectPath, request.FilePath, request.SymbolName, request.ParamName, request.DryRun);
+        return Ok(result, result.Message, AstCliJsonContext.Default.AsyncMigrationResultDto);
+    }
+
     private static (ILanguageProvider Provider, OperationResult<JsonElement>? Error) ResolveProvider(string? language)
     {
         var provider = LanguageProviderRegistry.GetProvider(language);

@@ -346,4 +346,267 @@ public sealed class AsyncMigrationEngineTests
     }
 
     #endregion
+
+    #region sync_remove_modifier - 移除 async 关键字
+
+    [Fact]
+    public void SyncRemoveModifier_AsyncMethod_ShouldRemoveAsync()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task SendLog(string msg) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncModifierRemoverRewriter("SendLog"));
+        result.Should().Contain("public Task SendLog");
+        result.Should().NotContain("public async Task SendLog");
+    }
+
+    [Fact]
+    public void SyncRemoveModifier_NoAsync_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task SendLog(string msg) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncModifierRemoverRewriter("SendLog"));
+        result.Should().Contain("public Task SendLog");
+    }
+
+    [Fact]
+    public void SyncRemoveModifier_NoMatch_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task Other() { }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncModifierRemoverRewriter("SendLog"));
+        result.Should().Contain("public async Task Other");
+    }
+
+    #endregion
+
+    #region sync_return_type - Task→void, Task<T>→T
+
+    [Fact]
+    public void SyncReturnType_TaskToVoid_ShouldChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task SendLog(string msg) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncReturnTypeRewriter("SendLog"));
+        result.Should().Contain("public void SendLog");
+        result.Should().NotContain("public Task SendLog");
+    }
+
+    [Fact]
+    public void SyncReturnType_TaskStringToString_ShouldUnwrap()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task<string> GetName() { return null; }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncReturnTypeRewriter("GetName"));
+        result.Should().Contain("public string GetName");
+        result.Should().NotContain("Task<string>");
+    }
+
+    [Fact]
+    public void SyncReturnType_TaskIntToInt_ShouldUnwrap()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task<int> GetCount() { return 0; }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncReturnTypeRewriter("GetCount"));
+        result.Should().Contain("public int GetCount");
+    }
+
+    [Fact]
+    public void SyncReturnType_Void_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public void SendLog(string msg) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncReturnTypeRewriter("SendLog"));
+        result.Should().Contain("public void SendLog");
+    }
+
+    [Fact]
+    public void SyncReturnType_PlainType_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public string GetName() { return ""; }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncReturnTypeRewriter("GetName"));
+        result.Should().Contain("public string GetName");
+    }
+
+    #endregion
+
+    #region sync_remove_await - 移除 await + ConfigureAwait
+
+    [Fact]
+    public void SyncRemoveAwait_AwaitedInvocation_ShouldRemoveAwait()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task Bar()
+                       {
+                           await SendLogAsync("msg");
+                       }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncAwaitRemoverRewriter("SendLogAsync"));
+        result.Should().Contain("SendLogAsync(");
+        result.Should().NotContain("await SendLogAsync");
+    }
+
+    [Fact]
+    public void SyncRemoveAwait_AwaitedWithConfigureAwait_ShouldRemoveBoth()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task Bar()
+                       {
+                           await SendLogAsync("msg").ConfigureAwait(false);
+                       }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncAwaitRemoverRewriter("SendLogAsync"));
+        result.Should().Contain("SendLogAsync(");
+        result.Should().NotContain("await");
+        result.Should().NotContain("ConfigureAwait");
+    }
+
+    [Fact]
+    public void SyncRemoveAwait_Assignment_ShouldRemoveAwait()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task Bar()
+                       {
+                           var result = await GetNameAsync();
+                       }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncAwaitRemoverRewriter("GetNameAsync"));
+        result.Should().Contain("var result = GetNameAsync()");
+        result.Should().NotContain("await");
+    }
+
+    [Fact]
+    public void SyncRemoveAwait_AssignmentWithConfigureAwait_ShouldRemoveBoth()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task Bar()
+                       {
+                           var result = await GetNameAsync().ConfigureAwait(false);
+                       }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncAwaitRemoverRewriter("GetNameAsync"));
+        result.Should().Contain("var result = GetNameAsync()");
+        result.Should().NotContain("await");
+        result.Should().NotContain("ConfigureAwait");
+    }
+
+    [Fact]
+    public void SyncRemoveAwait_NoMatch_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public async Task Bar()
+                       {
+                           await OtherAsync();
+                       }
+                   }
+                   """;
+        var result = RewriteCode(code, new SyncAwaitRemoverRewriter("SendLogAsync"));
+        result.Should().Contain("await OtherAsync");
+    }
+
+    #endregion
+
+    #region sync_param_remove - 移除参数
+
+    [Fact]
+    public void SyncParamRemove_ShouldRemoveParam()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task SendLogAsync(string msg, CancellationToken ct) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new ParameterRemoveRewriter("SendLogAsync", "ct"));
+        result.Should().Contain("SendLogAsync(string msg)");
+        result.Should().NotContain("CancellationToken");
+    }
+
+    [Fact]
+    public void SyncParamRemove_OnlyParam_ShouldLeaveEmpty()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task SendLogAsync(CancellationToken ct) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new ParameterRemoveRewriter("SendLogAsync", "ct"));
+        result.Should().Contain("SendLogAsync()");
+        result.Should().NotContain("CancellationToken");
+    }
+
+    [Fact]
+    public void SyncParamRemove_NoMatch_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task Other(string msg) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new ParameterRemoveRewriter("SendLogAsync", "ct"));
+        result.Should().Contain("Task Other(string msg)");
+    }
+
+    [Fact]
+    public void SyncParamRemove_ParamNotFound_ShouldNotChange()
+    {
+        var code = """
+                   public class Foo
+                   {
+                       public Task SendLogAsync(string msg) { }
+                   }
+                   """;
+        var result = RewriteCode(code, new ParameterRemoveRewriter("SendLogAsync", "ct"));
+        result.Should().Contain("SendLogAsync(string msg)");
+    }
+
+    #endregion
 }

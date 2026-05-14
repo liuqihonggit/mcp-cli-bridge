@@ -968,6 +968,30 @@ public sealed class AstEngine
         return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "async_param_add", symbolName, dryRun);
     }
 
+    internal static async Task<AsyncMigrationResultDto> SyncRemoveModifierAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, bool dryRun)
+    {
+        var rewriter = new SyncModifierRemoverRewriter(symbolName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "sync_remove_modifier", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> SyncReturnTypeAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, bool dryRun)
+    {
+        var rewriter = new SyncReturnTypeRewriter(symbolName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "sync_return_type", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> SyncRemoveAwaitAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, bool dryRun)
+    {
+        var rewriter = new SyncAwaitRemoverRewriter(symbolName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "sync_remove_await", symbolName, dryRun);
+    }
+
+    internal static async Task<AsyncMigrationResultDto> SyncParamRemoveAsync(ILanguageProvider provider, string projectPath, string? filePath, string symbolName, string paramName, bool dryRun)
+    {
+        var rewriter = new ParameterRemoveRewriter(symbolName, paramName);
+        return await ApplyRewriterAsync(provider, projectPath, filePath, rewriter, "sync_param_remove", symbolName, dryRun);
+    }
+
     private static async Task<AsyncMigrationResultDto> ApplyRewriterAsync(
         ILanguageProvider provider, string projectPath, string? filePath,
         CSharpSyntaxRewriter rewriter, string command, string symbolName, bool dryRun)

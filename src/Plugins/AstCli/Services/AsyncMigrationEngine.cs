@@ -268,3 +268,160 @@ internal sealed class ParameterAddRewriter : CSharpSyntaxRewriter
         return tokens;
     }
 }
+
+internal sealed class SyncModifierRemoverRewriter : CSharpSyntaxRewriter
+{
+    private readonly string _methodName;
+
+    public SyncModifierRemoverRewriter(string methodName)
+    {
+        _methodName = methodName;
+    }
+
+    public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        if (!node.Identifier.Text.Equals(_methodName, StringComparison.Ordinal))
+            return base.VisitMethodDeclaration(node);
+
+        var asyncIndex = node.Modifiers.IndexOf(SyntaxKind.AsyncKeyword);
+        if (asyncIndex < 0)
+            return base.VisitMethodDeclaration(node);
+
+        var newModifiers = node.Modifiers.RemoveAt(asyncIndex);
+        return node.WithModifiers(newModifiers);
+    }
+}
+
+internal sealed class SyncReturnTypeRewriter : CSharpSyntaxRewriter
+{
+    private readonly string _methodName;
+
+    public SyncReturnTypeRewriter(string methodName)
+    {
+        _methodName = methodName;
+    }
+
+    public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        if (!node.Identifier.Text.Equals(_methodName, StringComparison.Ordinal))
+            return base.VisitMethodDeclaration(node);
+
+        var returnType = node.ReturnType;
+
+        if (returnType is IdentifierNameSyntax id
+            && id.Identifier.Text.Equals("Task", StringComparison.Ordinal))
+        {
+            return node.WithReturnType(
+                SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))
+                    .WithTrailingTrivia(SyntaxFactory.Space));
+        }
+
+        if (returnType is GenericNameSyntax generic
+            && generic.Identifier.Text.Equals("Task", StringComparison.Ordinal)
+            && generic.TypeArgumentList.Arguments.Count == 1)
+        {
+            var innerType = generic.TypeArgumentList.Arguments[0]
+                .WithTrailingTrivia(SyntaxFactory.Space);
+            return node.WithReturnType(innerType);
+        }
+
+        return base.VisitMethodDeclaration(node);
+    }
+}
+
+internal sealed class SyncAwaitRemoverRewriter : CSharpSyntaxRewriter
+{
+    private readonly string _methodName;
+
+    public SyncAwaitRemoverRewriter(string methodName)
+    {
+        _methodName = methodName;
+    }
+
+    public override SyntaxNode? VisitAwaitExpression(AwaitExpressionSyntax node)
+    {
+        var expression = node.Expression;
+
+        if (expression is InvocationExpressionSyntax configureAwaitCall
+            && configureAwaitCall.Expression is MemberAccessExpressionSyntax memberAccess
+            && memberAccess.Name.Identifier.Text.Equals("ConfigureAwait", StringComparison.Ordinal))
+        {
+            expression = memberAccess.Expression;
+        }
+
+        if (!IsTargetMethod(expression))
+            return base.VisitAwaitExpression(node);
+
+        return expression.WithLeadingTrivia(node.GetLeadingTrivia());
+    }
+
+    private bool IsTargetMethod(ExpressionSyntax expression)
+    {
+        return expression switch
+        {
+            InvocationExpressionSyntax inv => IsTargetInvocation(inv),
+            IdentifierNameSyntax id => id.Identifier.Text.Equals(_methodName, StringComparison.Ordinal),
+            _ => false
+        };
+    }
+
+    private bool IsTargetInvocation(InvocationExpressionSyntax invocation)
+    {
+        return invocation.Expression switch
+        {
+            IdentifierNameSyntax id => id.Identifier.Text.Equals(_methodName, StringComparison.Ordinal),
+            MemberAccessExpressionSyntax member => member.Name.Identifier.Text.Equals(_methodName, StringComparison.Ordinal),
+            _ => false
+        };
+    }
+}
+
+internal sealed class ParameterRemoveRewriter : CSharpSyntaxRewriter
+{
+    private readonly string _methodName;
+    private readonly string _paramName;
+
+    public ParameterRemoveRewriter(string methodName, string paramName)
+    {
+        _methodName = methodName;
+        _paramName = paramName;
+    }
+
+    public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        if (!node.Identifier.Text.Equals(_methodName, StringComparison.Ordinal))
+            return base.VisitMethodDeclaration(node);
+
+        var paramIndex = -1;
+        for (var i = 0; i < node.ParameterList.Parameters.Count; i++)
+        {
+            if (node.ParameterList.Parameters[i].Identifier.Text.Equals(_paramName, StringComparison.Ordinal))
+            {
+                paramIndex = i;
+                break;
+            }
+        }
+
+        if (paramIndex < 0)
+            return base.VisitMethodDeclaration(node);
+
+        var newParams = node.ParameterList.Parameters.RemoveAt(paramIndex);
+        var separators = BuildSeparatorsWithTrailingSpace(newParams.Count);
+
+        return node.WithParameterList(node.ParameterList.WithParameters(
+            SyntaxFactory.SeparatedList(newParams, separators)));
+    }
+
+    private static SyntaxTriviaList TrailingSpace => SyntaxFactory.TriviaList(SyntaxFactory.Space);
+
+    private static SyntaxTokenList BuildSeparatorsWithTrailingSpace(int count)
+    {
+        var tokens = new SyntaxTokenList();
+        for (var i = 0; i < count - 1; i++)
+        {
+            tokens = tokens.Add(SyntaxFactory.Token(SyntaxKind.CommaToken)
+                .WithTrailingTrivia(TrailingSpace));
+        }
+        return tokens;
+    }
+}
