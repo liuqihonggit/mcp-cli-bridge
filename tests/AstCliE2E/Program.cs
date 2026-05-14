@@ -348,6 +348,315 @@ class Program
 
         Console.WriteLine();
 
+        // ========================================
+        // async migration: sync → async
+        // ========================================
+        Console.WriteLine("--- Step 14: Re-prepare CodeDemo for async migration tests ---");
+        demo.CleanAndCopy();
+        Console.WriteLine("CodeDemo reset.");
+        Console.WriteLine();
+
+        Console.WriteLine("--- Step 15: async_rename test ---");
+        RunTest("async_rename renames method and call sites", () =>
+        {
+            var testDir = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging");
+            var testFile = Path.Combine(testDir, "MigrationDemo.cs");
+            Directory.CreateDirectory(testDir);
+            File.WriteAllText(testFile, """
+                namespace Common.Logging;
+
+                public class MigrationDemo
+                {
+                    public void SendLog(string msg)
+                    {
+                        System.Console.WriteLine(msg);
+                    }
+
+                    public void Process()
+                    {
+                        SendLog("start");
+                        SendLog("end");
+                    }
+                }
+                """);
+
+            var beforeSendLog = demo.CountOccurrences("SendLog", "src\\Common\\Logging");
+            Assert(beforeSendLog > 0, $"should have SendLog before rename, got {beforeSendLog}");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_rename",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLog",
+                ["newName"] = "SendLogAsync",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"async_rename failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+            Assert(json.GetProperty("modifiedFileCount").GetInt32() > 0, "modifiedFileCount should be > 0");
+
+            var content = File.ReadAllText(testFile);
+            Assert(!content.Contains("SendLog("), "SendLog( should be fully renamed");
+            Assert(content.Contains("SendLogAsync("), "should contain SendLogAsync(");
+        });
+
+        Console.WriteLine();
+
+        Console.WriteLine("--- Step 16: async_return_type test ---");
+        RunTest("async_return_type changes void to Task", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_return_type",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"async_return_type failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(content.Contains("public Task SendLogAsync"), "should contain 'public Task SendLogAsync'");
+            Assert(!content.Contains("public void SendLogAsync"), "should not contain 'public void SendLogAsync'");
+        });
+
+        Console.WriteLine();
+
+        Console.WriteLine("--- Step 17: async_add_modifier test ---");
+        RunTest("async_add_modifier adds async keyword", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_add_modifier",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"async_add_modifier failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(content.Contains("public async Task SendLogAsync"), "should contain 'public async Task SendLogAsync'");
+        });
+
+        Console.WriteLine();
+
+        Console.WriteLine("--- Step 18: async_add_await test ---");
+        RunTest("async_add_await adds await and ConfigureAwait", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_add_await",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["addConfigureAwait"] = true,
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"async_add_await failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(content.Contains("await SendLogAsync"), "should contain 'await SendLogAsync'");
+            Assert(content.Contains("ConfigureAwait(false)"), "should contain 'ConfigureAwait(false)'");
+        });
+
+        Console.WriteLine();
+
+        Console.WriteLine("--- Step 19: async_param_add test ---");
+        RunTest("async_param_add adds CancellationToken parameter", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_param_add",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["paramType"] = "CancellationToken",
+                ["paramName"] = "ct",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"async_param_add failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(content.Contains("CancellationToken ct"), "should contain 'CancellationToken ct'");
+        });
+
+        Console.WriteLine();
+
+        // ========================================
+        // sync migration: async → sync (reverse)
+        // ========================================
+        Console.WriteLine("--- Step 20: sync migration (reverse) tests ---");
+
+        RunTest("sync_param_remove removes CancellationToken parameter", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "sync_param_remove",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["paramName"] = "ct",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"sync_param_remove failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(!content.Contains("CancellationToken ct"), "should not contain 'CancellationToken ct'");
+        });
+
+        RunTest("sync_remove_await removes await and ConfigureAwait", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "sync_remove_await",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"sync_remove_await failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(!content.Contains("await SendLogAsync"), "should not contain 'await SendLogAsync'");
+            Assert(!content.Contains("ConfigureAwait"), "should not contain 'ConfigureAwait'");
+        });
+
+        RunTest("sync_remove_modifier removes async keyword", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "sync_remove_modifier",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"sync_remove_modifier failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(!content.Contains("public async Task SendLogAsync"), "should not contain 'public async Task SendLogAsync'");
+            Assert(content.Contains("public Task SendLogAsync"), "should contain 'public Task SendLogAsync'");
+        });
+
+        RunTest("sync_return_type changes Task to void", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "sync_return_type",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"sync_return_type failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(content.Contains("public void SendLogAsync"), "should contain 'public void SendLogAsync'");
+            Assert(!content.Contains("public Task SendLogAsync"), "should not contain 'public Task SendLogAsync'");
+        });
+
+        RunTest("async_rename reverse: SendLogAsync → SendLog", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_rename",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLogAsync",
+                ["newName"] = "SendLog",
+                ["filePath"] = testFile
+            });
+
+            Assert(result.IsSuccess, $"async_rename reverse failed: {result}");
+            var json = result.ParseJson();
+            Assert(json.GetProperty("success").GetBoolean(), "success should be true");
+
+            var content = File.ReadAllText(testFile);
+            Assert(content.Contains("public void SendLog("), "should contain 'public void SendLog('");
+            Assert(content.Contains("SendLog("), "should contain 'SendLog(' call sites");
+            Assert(!content.Contains("SendLogAsync"), "should not contain 'SendLogAsync'");
+        });
+
+        RunTest("full round-trip: final file matches original", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "MigrationDemo.cs");
+            var content = File.ReadAllText(testFile);
+
+            Assert(content.Contains("public void SendLog(string msg)"), "should have original SendLog declaration");
+            Assert(content.Contains("SendLog(\"start\")"), "should have original SendLog call");
+            Assert(content.Contains("SendLog(\"end\")"), "should have original SendLog call");
+            Assert(!content.Contains("Async"), "should not contain any Async suffix");
+            Assert(!content.Contains("await"), "should not contain await");
+            Assert(!content.Contains("ConfigureAwait"), "should not contain ConfigureAwait");
+            Assert(!content.Contains("CancellationToken"), "should not contain CancellationToken");
+        });
+
+        Console.WriteLine();
+
+        // ========================================
+        // dryRun for migration commands
+        // ========================================
+        Console.WriteLine("--- Step 21: dryRun for migration commands ---");
+
+        RunTest("async_rename dryRun does not modify files", () =>
+        {
+            var testFile = Path.Combine(demo.CodeDemoDir, "src", "Common", "Logging", "Logger.cs");
+            var beforeContent = File.ReadAllText(testFile);
+
+            var result = runner.Execute(new Dictionary<string, object>
+            {
+                ["command"] = "async_rename",
+                ["projectPath"] = demo.CodeDemoDir,
+                ["symbolName"] = "SendLog",
+                ["newName"] = "SendLogAsync",
+                ["filePath"] = testFile,
+                ["dryRun"] = true
+            });
+
+            Assert(result.IsSuccess, $"async_rename dryRun failed: {result}");
+
+            var afterContent = File.ReadAllText(testFile);
+            Assert(beforeContent == afterContent, "dryRun should not modify files");
+        });
+
+        Console.WriteLine();
+
         PrintSummary();
 
         return Results.Count(r => !r.Passed);
